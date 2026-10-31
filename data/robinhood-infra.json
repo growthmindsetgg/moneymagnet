@@ -1,0 +1,32 @@
+{
+  "note": "Robinhood Chain (4663) infrastructure: pools, liquidity managers, routers, launchpad factories and bonding-curve/vault contracts. Never a holder, never a deployer. Each entry says how it was identified (2026-10-24, from creation txs and the first transfers of YMB, NUZL, microduck, LONG and Pons tokens).",
+  "addresses": [
+    { "address": "0x8366a39cc670b4001a1121b8f6a443a643e40951", "role": "v4-pool-manager", "label": "Uniswap v4 PoolManager", "identifiedBy": "24,009-byte singleton that pays out every v4 swap of YMB/NUZL/LONG tokens and emits Initialize for their pools" },
+    { "address": "0x58daec3116aae6d93017baaea7749052e8a04fa7", "role": "liquidity-manager", "label": "Uniswap v4 PositionManager", "identifiedBy": "tx.to of the deployer's LP-seeding tx for YMB (multicall 0xac9650d8) and NUZL (modifyLiquidities 0xdd46508f)" },
+    { "address": "0x8876789976decbfcbbbe364623c63652db8c0904", "role": "router", "label": "Uniswap Universal Router", "identifiedBy": "tx.to of early YMB buys, execute() selector 0x3593564c" },
+    { "address": "0xd6d35b56237a05afd4cd7e441226fefc3f78c4e6", "role": "router", "label": "aggregator router (0xe6cb474f)", "identifiedBy": "tx.to of early YMB buys" },
+    { "address": "0x8d76761e79bebf8556acdcdfee656a7b4a2da9cc", "role": "router", "label": "aggregator router (0xb3938887)", "identifiedBy": "tx.to of early NUZL buys" },
+    { "address": "0x00000000e91fc5bad977c0cc4ad60557c06886a2", "role": "router", "label": "router (0x1dcd4dad)", "identifiedBy": "tx.to of an early YMB buy" },
+    { "address": "0x2be87ad70cf11ea294d7c42044b5b8277a3e4874", "role": "router", "label": "swap helper (13.6 KB)", "identifiedBy": "receives tokens from the PoolManager inside Universal Router swaps (YMB)" },
+    { "address": "0x0bd7d308f8e1639fab988df18a8011f41eacad73", "role": "quote-token", "label": "WETH (quote currency of NUZL / Pons pools)", "identifiedBy": "currency0 of NUZL's v4 pool key and present in Pons creation txs" },
+    { "address": "0x1eef016f22a943abc7dd11422edee9d235942104", "role": "launchpad-factory", "launchpad": "LONG", "label": "LONG launchpad factory (proxy)", "identifiedBy": "tx.to of the creation tx of LONG tokens VCE, GROKFI (…1e18 vanity addresses)" },
+    { "address": "0xeb7c034704ef8dcd2d32324c1545f62fb4ad0862", "role": "bonding-curve", "label": "shared vault of LONG and …aac launchpads (mint recipient)", "identifiedBy": "Transfer-from-0x0 recipient of LONG and …aac launchpad tokens" },
+    { "address": "0x4e3468951d49f2eea976ed0d6e75ffcb44a9a544", "role": "hook", "label": "v4 hook used by LONG and …aac launchpads (25.5 KB)", "identifiedBy": "emits logs in every LONG and …aac creation tx" },
+    { "address": "0x6f02324d20cc679d0e585290caa6b16bacbc0f77", "role": "launchpad-factory", "launchpad": "LONG", "label": "LONG pool initializer", "identifiedBy": "emits logs in LONG creation txs" },
+    { "address": "0x8212f89caff7cb72e74008327983b52c909494ff", "role": "launchpad-factory", "launchpad": "…aac launchpad", "label": "launchpad factory for …aac vanity tokens (name not confirmed on-chain: Odyssey or NOXA)", "identifiedBy": "tx.to of the creation tx of BEVO, SUNSP (…aac addresses, HoodScan launchpad 'other')" },
+    { "address": "0x9982538f41f2ae29ddb9d3d9307010052984fdbb", "role": "launchpad-factory", "launchpad": "…aac launchpad", "label": "…aac launchpad pool initializer", "identifiedBy": "emits logs in …aac creation txs" },
+    { "address": "0xe33e9e479df8802cb0866d5d05258bec4cf62948", "role": "launchpad-factory", "launchpad": "Pons", "label": "Pons launcher", "identifiedBy": "tx.to of the creation tx of microduck and Pons token YMB(0x207e…)" },
+    { "address": "0x6319141dcc29e7dceaab6c4563cca1fb58e8cce2", "role": "launchpad-factory", "launchpad": "Pons", "label": "Pons launcher v2", "identifiedBy": "tx.to of the creation tx of Pons token APES" },
+    { "address": "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e", "role": "launchpad-factory", "launchpad": "Pons", "label": "Pons core (24 KB)", "identifiedBy": "emits logs in every Pons creation tx" },
+    { "address": "0x31ea5b453a6cd60f36203830de046ff32dec2cdb", "role": "launchpad-factory", "launchpad": "Pons", "label": "Pons helper", "identifiedBy": "emits logs in every Pons creation tx" },
+    { "address": "0x6fda94aceedc5a97171469a8873d00fb9983bb8c", "role": "launchpad-factory", "launchpad": "Lunch.fun", "label": "Lunch.fun launcher", "identifiedBy": "tx.to and mint recipient of the creation tx of RICH" },
+    { "address": "0xb153fe8dcde85186b223dcb76ba495508d39090c", "role": "launchpad-factory", "launchpad": "other launchpad", "label": "launchpad factory (NTEST)", "identifiedBy": "tx.to of the creation tx of NTEST" },
+    { "address": "0x26371a4eeb550e3f4365c8b2f0aa82395e29b4fa", "role": "bonding-curve", "label": "bonding curve (NTEST launchpad)", "identifiedBy": "mint recipient of NTEST" },
+    { "address": "0x0000000000000000000000000000000000000000", "role": "burn", "label": "zero address", "identifiedBy": "burn" },
+    { "address": "0x000000000000000000000000000000000000dead", "role": "burn", "label": "dead address", "identifiedBy": "burn" }
+  ],
+  "lpSeedingSelectors": {
+    "note": "Calls whose token transfers are liquidity provision, not sales (when sent to a liquidity manager or router).",
+    "selectors": ["0xac9650d8", "0xdd46508f", "0x88316456", "0x219f5d17", "0xe8e33700", "0xf305d719"]
+  }
+}

@@ -1,0 +1,720 @@
+{
+  "recordedAt": "2026-10-29T12:55:34.840Z",
+  "note": "小小徐 — Clanker launch whose LP was burned and 220k USDC pulled at 11:31Z; indexers still showed $2.24M. Expected F (liquidity removed).",
+  "snapshot": {
+    "chain": "base",
+    "address": "0x5ad1d043031659a562c34803eea3b51bb2156b07",
+    "name": "小小徐",
+    "symbol": "小小徐",
+    "launchpad": "Clanker",
+    "anchor": null,
+    "assetKind": null,
+    "tokenExists": true,
+    "priceUsd": 0.00002036965668,
+    "fdvUsd": 2040654,
+    "liquidityUsd": 2237960.3774,
+    "volume24hUsd": 26601455.575740535,
+    "poolCount": 1,
+    "mainPoolLiquidityUsd": 2237960.3774,
+    "mainPoolSharePct": 100,
+    "liqFdvPct": 109.6687815474843,
+    "liqChange24hPct": 0,
+    "liqChange7dPct": 0,
+    "liqChange24hWindow": "5m of history",
+    "liqChange7dWindow": "5m of history",
+    "liqHistoryPoints": 2,
+    "liquidityTotalUsd": 2242308.63,
+    "poolAddresses": [
+      "0x49fc5fd4b75873bc6bf674614c6fc794b33289d2"
+    ],
+    "createdAt": "2026-10-29T00:06:57.000Z",
+    "ageHours": 12.810351944444445,
+    "ageMinutes": 768.6,
+    "totalSupply": 99999999999.99998,
+    "holderCount": 4837,
+    "top10SharePct": 99.99,
+    "top1SharePct": 99.98729473287673,
+    "accumulatorCount": null,
+    "accumulatorSupplyPct": null,
+    "earlyCohortSize": null,
+    "earlyExitRatePct": null,
+    "earlyRetentionPct": null,
+    "deployerAddress": "0xa83b4fca82265ae81f6254c9e410a13418f25f92",
+    "deployerHoldingPct": 0,
+    "deployerSoldPct": null,
+    "deployerHasSold": null,
+    "deployerDistributedPct": null,
+    "insiderNetworks": null,
+    "holders": [
+      {
+        "address": "0x0efb3ae3531f39df631a0e6bb0df49e571257793",
+        "qty": 99987294732.87672,
+        "pct": 99.98729473287673,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xaa25a3678096e6d835ff0ad0669d01f850490780",
+        "qty": 1019388.7966357168,
+        "pct": 0.0010193887966356999,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x820d27be3b67afaacc85b1a05da127a6aa71f1c6",
+        "qty": 2284.9563383297923,
+        "pct": 0.0000022849563383,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xb9d00655cae73b4d0905d199150c82d3b124da7c",
+        "qty": 1095.994,
+        "pct": 0.000001095994,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x8ed58019e205809eaca14dc89d1323b29de6ef9d",
+        "qty": 1011.5452710382166,
+        "pct": 0.000001011545271,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x57729969d330248d0ae7a9e145535c4558808c96",
+        "qty": 1001.5001745948031,
+        "pct": 0.0000010015001745,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x1d03322c7c9530a96145086b2e2530dfc78fc4f4",
+        "qty": 1001.402116704624,
+        "pct": 0.0000010014021167,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xcd72a29fa4a7a3bc9d283787d485a9cf261cbdc8",
+        "qty": 987.8289810038309,
+        "pct": 9.87828981e-7,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x5a97212d530e780953d0218d4718370691dd657c",
+        "qty": 980.4059878547206,
+        "pct": 9.804059878000001e-7,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      }
+    ],
+    "swapHolders": [],
+    "liquidityHolders": [
+      {
+        "address": "0x4ff1d40fb7b56665bf95d8d8e3a5320de46709a1",
+        "qty": 10221719.269712172,
+        "pct": 0.0102217192697121,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      }
+    ],
+    "liquidityHeldPct": 0.01,
+    "holderSource": "goplus",
+    "staleFields": {},
+    "netFlowRatio24h": null,
+    "netFlowUsd24h": null,
+    "netFlowRatio7d": null,
+    "flowConsistent": null,
+    "buyers24h": 209,
+    "sellers24h": 202,
+    "buyerSellerRatio": 1.0346534653465347,
+    "singleTradeWalletSharePct": null,
+    "tradesPerWallet": 9.316301703163017,
+    "smartMoneyNetUsd": null,
+    "smartBuyers": null,
+    "volLiqRatio": 11.886472988697577,
+    "repeatedSizeSharePct": null,
+    "bundleSharePct": null,
+    "washFlag": false,
+    "honeypot": false,
+    "sellable": false,
+    "liquidityPulled": true,
+    "deadCurve": null,
+    "deadLaunch": null,
+    "lastTradeHoursAgo": null,
+    "launchBuyers": 209,
+    "zeroActivity": [],
+    "roundTripLossPct": null,
+    "mintAuthority": false,
+    "freezeAuthority": null,
+    "verified": true,
+    "ownerRenounced": true,
+    "upgradeable": false,
+    "lpLockedPct": 0,
+    "isLaunchpad": true,
+    "volMcRatio": 13.035750095675471,
+    "volMcBar": 1.2,
+    "volMcVsBar": 10.86312507972956,
+    "feesSol": null,
+    "feesPerMcap15k": null,
+    "snipeRatioPct": null,
+    "feedWindow": null,
+    "bundleScore": null,
+    "organicScore": null,
+    "timingEntropy": null,
+    "devBuySol": null,
+    "devBuySharePct": null,
+    "freshWalletsTop20": null,
+    "fundingClusterMax": null,
+    "clusterSupplyPct": null,
+    "bundlerMajority": null,
+    "makersCount": null,
+    "makersHoldersRatio": null,
+    "creatorPriorMints": null,
+    "creatorRugRatePct": null,
+    "creatorHasSocials": null,
+    "socialLinks": null,
+    "curveProgressPct": null,
+    "realSolReserves": null,
+    "curveCirculatingPct": null,
+    "uniqueBuyers": null,
+    "sells24h": 1926,
+    "buyTxs24h": 2062,
+    "sellTxs24h": 1926,
+    "buyersBasis": "unique wallets",
+    "allBuyersExited": null,
+    "insiderSupplyPct": null,
+    "first5mSharePct": null,
+    "launchPriceUsd": null,
+    "bundlersFlushed": null,
+    "launchRetraced30": null,
+    "launchWindow": null,
+    "identicalCandleSharePct": null,
+    "identicalWindow": null,
+    "hugeCandlesOnly": null,
+    "staircase": null,
+    "staircaseWindow": null,
+    "trendScore": null,
+    "trendWindow": null,
+    "brokeHigherLow": null,
+    "upOnlyChart": null,
+    "honeypotPattern": null,
+    "patterns": [],
+    "tmWinnerSimilarity": null,
+    "tmRugSimilarity": null,
+    "nullReasons": {
+      "identicalCandleSharePct": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "staircase": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "trendScore": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "brokeHigherLow": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "upOnlyChart": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "launchRetraced30": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "launchPriceUsd": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "hugeCandlesOnly": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)"
+    },
+    "provenance": {
+      "honeypot": [
+        {
+          "source": "base-sim",
+          "label": "Base sell simulation",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "sellable": [
+        {
+          "source": "base-sim",
+          "label": "Base sell simulation",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "liquidityPulled": [
+        {
+          "source": "base-sim",
+          "label": "Base sell simulation",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "totalSupply": [
+        {
+          "source": "base-rpc",
+          "label": "Base RPC",
+          "value": 99999999999.99998,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": true
+        }
+      ],
+      "deployerHoldingPct": [
+        {
+          "source": "base-rpc",
+          "label": "Base RPC",
+          "value": 0,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 0,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "ownerRenounced": [
+        {
+          "source": "base-rpc",
+          "label": "Base RPC",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "upgradeable": [
+        {
+          "source": "base-rpc",
+          "label": "Base RPC",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "priceUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 0.0000204,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 0.00002036965668,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "fdvUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 2040654,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 2036965.668,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "liquidityUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 2242308.59,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 2237960.3774,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "volume24hUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 27794674.2,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 26601455.575740535,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "poolCount": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 1,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "mainPoolLiquidityUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 2242308.59,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 2237960.3774,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "mainPoolSharePct": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 100,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 100,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "liquidityTotalUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 2242308.63,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 2237960.4006906888,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "createdAt": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": "2026-10-29T00:06:57.000Z",
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": "2026-10-29T00:06:57.000Z",
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "ageHours": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 12.810351944444445,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 12.810351944444445,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "sells24h": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1926,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 1854,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "buyTxs24h": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 2062,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "sellTxs24h": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1926,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "buyers24h": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 209,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "sellers24h": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 202,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "buyerSellerRatio": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 1.0346534653465347,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "tradesPerWallet": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 9.316301703163017,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "holderCount": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 4837,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "top10SharePct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 99.99,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "top1SharePct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 99.98729473287673,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "deployerAddress": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": "0xa83b4fca82265ae81f6254c9e410a13418f25f92",
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "liquidityHeldPct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 0.01,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "mintAuthority": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "verified": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "lpLockedPct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 0,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ],
+      "isLaunchpad": [
+        {
+          "source": "base-launch",
+          "label": "Base launch signals",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:55:34.267Z",
+          "onchain": false
+        }
+      ]
+    },
+    "fakeSignals": [
+      {
+        "kind": "wash",
+        "level": "warn",
+        "text": "24h volume is 11.9× liquidity (elevated turnover)",
+        "source": "HoodTier heuristic"
+      }
+    ],
+    "links": [
+      {
+        "label": "DexScreener",
+        "url": "https://dexscreener.com/base/0x49fc5fd4b75873bc6bf674614c6fc794b33289d2"
+      },
+      {
+        "label": "GeckoTerminal",
+        "url": "https://www.geckoterminal.com/base/tokens/0x5ad1d043031659a562c34803eea3b51bb2156b07"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "base-sim",
+      "label": "Base sell simulation",
+      "state": "ok",
+      "message": "liquidity removed — every pool is dry · pool 0x49fc5fd4… (v3, fee 0.01%): v3 pool has 0 in-range liquidity · pool 0x6b8f5178… (v4, hook 0xb429…): buy quote failed (NotEnoughLiquidity — the pool cannot absorb the trade) — no usable liquidity",
+      "ms": 2473
+    },
+    {
+      "id": "base-rpc",
+      "label": "Base RPC",
+      "state": "ok",
+      "message": "supply 100,000,000,000 · not a proxy · no owner() function",
+      "ms": 888
+    },
+    {
+      "id": "dexscreener",
+      "label": "DexScreener",
+      "state": "ok",
+      "message": "2 pairs",
+      "ms": 229,
+      "url": "https://dexscreener.com/base/0x49fc5fd4b75873bc6bf674614c6fc794b33289d2"
+    },
+    {
+      "id": "geckoterminal",
+      "label": "GeckoTerminal",
+      "state": "partial",
+      "message": "2 pools · OHLCV failed: HTTP 429: {\"status\":{\"error_code\":429,\"error_message\":\"You've exceeded the Rate Limit. Please visit https:",
+      "ms": 5348,
+      "url": "https://www.geckoterminal.com/base/tokens/0x5ad1d043031659a562c34803eea3b51bb2156b07"
+    },
+    {
+      "id": "goplus",
+      "label": "GoPlus",
+      "state": "ok",
+      "message": "4837 holders · honeypot: no (GoPlus) · sell tax 0%",
+      "ms": 156,
+      "url": "https://gopluslabs.io/token-security/8453/0x5ad1d043031659a562c34803eea3b51bb2156b07"
+    },
+    {
+      "id": "basescan",
+      "label": "Basescan",
+      "state": "skipped",
+      "message": "BASESCAN_API_KEY not set (Etherscan v2; Base needs a paid plan)"
+    },
+    {
+      "id": "base-launch",
+      "label": "Base launch signals",
+      "state": "ok",
+      "message": "Clanker: v4 pool 0x6b8f5178… uses Clanker v4 hook",
+      "ms": 793
+    }
+  ]
+}

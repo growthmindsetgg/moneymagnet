@@ -1,0 +1,146 @@
+{
+ "recordedAt": "2026-10-29T12:16:56.896Z",
+ "note": "GET https://api.robinx.io/report/<microduck>?tier=free — social + launch blocks only (deployer/market trimmed)",
+ "body": {
+  "data": {
+   "token": "0xd5f1afea47b1a9eab414d2ee740cf1d6d039e725",
+   "identity": {
+    "symbol": "microduck"
+   },
+   "launch": {
+    "block": 47404695,
+    "first_seen": "2026-08-27T12:13:50.671408+00:00"
+   },
+   "social": {
+    "mentions_total": 146,
+    "mentions_24h": 35,
+    "first_mention": {
+     "account": "biggalordTE",
+     "when": "2026-08-29T03:25:33+00:00",
+     "followers": 229757
+    },
+    "earliest_callers": [
+     {
+      "account": "biggalordTE",
+      "when": "2026-08-29T03:25:33+00:00",
+      "followers": 229757,
+      "verified": true,
+      "likes": 20,
+      "views": 5014,
+      "measured": {
+       "calls": 27,
+       "early_rate": 0.148148148148148,
+       "momentum_rate": 0,
+       "med_1h": 0.00400692154371241,
+       "coordinated": false,
+       "cluster_id": null
+      }
+     },
+     {
+      "account": "CryptoWhales_X",
+      "when": "2026-08-29T06:00:48+00:00",
+      "followers": 77599,
+      "verified": true,
+      "likes": 205,
+      "views": 22150,
+      "measured": null
+     },
+     {
+      "account": "Rendoshi1",
+      "when": "2026-08-29T11:05:19+00:00",
+      "followers": 20809,
+      "verified": true,
+      "likes": 1,
+      "views": 269,
+      "measured": null
+     },
+     {
+      "account": "bankrbot",
+      "when": "2026-08-29T18:31:14+00:00",
+      "followers": 115351,
+      "verified": true,
+      "likes": 0,
+      "views": 73,
+      "measured": {
+       "calls": 537,
+       "early_rate": 0.0949720670391061,
+       "momentum_rate": 0.0335195530726257,
+       "med_1h": -0.00235917452837797,
+       "coordinated": false,
+       "cluster_id": null
+      }
+     },
+     {
+      "account": "dexevents_1",
+      "when": "2026-08-30T10:29:49+00:00",
+      "followers": 503,
+      "verified": true,
+      "likes": 0,
+      "views": 100,
+      "measured": {
+       "calls": 23,
+       "early_rate": 0.217391304347826,
+       "momentum_rate": 0.217391304347826,
+       "med_1h": 0.000593475521881714,
+       "coordinated": false,
+       "cluster_id": null
+      }
+     },
+     {
+      "account": "0xBackwards",
+      "when": "2026-08-30T10:31:31+00:00",
+      "followers": 97083,
+      "verified": true,
+      "likes": 0,
+      "views": 148,
+      "measured": null
+     },
+     {
+      "account": "zer0smh",
+      "when": "2026-08-30T10:35:22+00:00",
+      "followers": 3,
+      "verified": false,
+      "likes": 0,
+      "views": 28,
+      "measured": null
+     },
+     {
+      "account": "OrdzWorld",
+      "when": "2026-08-30T11:11:46+00:00",
+      "followers": 23967,
+      "verified": true,
+      "likes": 3,
+      "views": 450,
+      "measured": {
+       "calls": 36,
+       "early_rate": 0.166666666666667,
+       "momentum_rate": 0.138888888888889,
+       "med_1h": -0.0239223981461091,
+       "coordinated": true,
+       "cluster_id": "clu6"
+      }
+     },
+     {
+      "account": "StayBullAI",
+      "when": "2026-09-03T06:10:20+00:00",
+      "followers": 11454,
+      "verified": false,
+      "likes": 1,
+      "views": 38,
+      "measured": null
+     },
+     {
+      "account": "AlexGol36927047",
+      "when": "2026-10-04T10:33:04+00:00",
+      "followers": 48,
+      "verified": false,
+      "likes": 0,
+      "views": 3,
+      "measured": null
+     }
+    ],
+    "note": "measured = from the RobinX caller-lift table (early_rate: share of calls placed BEFORE a run; med_1h: median 1h forward return after their calls; coordinated: in a cluster (accounts that follow each other or repeatedly post one shared text), counted as one voice). Follower counts are not signal."
+   }
+  }
+ }
+}

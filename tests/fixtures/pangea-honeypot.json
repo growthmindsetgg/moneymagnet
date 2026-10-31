@@ -1,0 +1,865 @@
+{
+  "recordedAt": "2026-10-23T17:39:59.489Z",
+  "note": "Robinhood Chain token ScanHood flags DANGER: honeypot (97.8% round-trip loss). Expected F.",
+  "snapshot": {
+    "chain": "robinhood",
+    "address": "0x30de7ae4c9578d110a97367ede9f7765cdce06ea",
+    "name": "Pangea",
+    "symbol": "PANGEA",
+    "launchpad": null,
+    "anchor": null,
+    "priceUsd": 0.0012276066629384606,
+    "fdvUsd": 1635664,
+    "liquidityUsd": 218865.99000000002,
+    "volume24hUsd": 1630314.9700000004,
+    "poolCount": 5,
+    "mainPoolLiquidityUsd": 110177.66,
+    "mainPoolSharePct": 50.34023787798186,
+    "liqFdvPct": 13.380864896457952,
+    "liqChange24hPct": -0.5761089279735386,
+    "liqChange7dPct": -0.5761089279735386,
+    "liqChange24hWindow": "1.1h of history",
+    "liqChange7dWindow": "1.1h of history",
+    "liqHistoryPoints": 7,
+    "liquidityTotalUsd": 222056.48000000013,
+    "poolAddresses": [
+      "0x77d957bbb4c013931182d85b88f8990245687bad",
+      "0xb7ba55bc009eba03a14e9dd79573369a7210f2f1",
+      "0x958f38b5dbda6e6f0c74021a5b20658bb30ad909",
+      "0x64c4efa915bc3f62f84586c62471c0fd347e7de6"
+    ],
+    "createdAt": "2026-10-21T16:34:45.000Z",
+    "ageHours": 48.6,
+    "totalSupply": 1603698780.3341959,
+    "holderCount": 2331,
+    "top10SharePct": 16.9959,
+    "top1SharePct": 2.84,
+    "accumulatorCount": 7,
+    "accumulatorSupplyPct": 30.01979321059377,
+    "earlyCohortSize": 20,
+    "earlyExitRatePct": 90,
+    "earlyRetentionPct": 10,
+    "deployerAddress": "0xb7741096409ac903880ff3af4cb14bbad7a5be85",
+    "deployerHoldingPct": 0,
+    "deployerSoldPct": 0,
+    "deployerHasSold": false,
+    "insiderNetworks": null,
+    "holders": [
+      {
+        "address": "0xf8f10c47b26e890b45755414cfbd8891b5eb2f49",
+        "qty": 45545451.675904825,
+        "pct": 2.84,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xea054157214b9eda7e9c464c156be3f1c319581e",
+        "qty": 35627731.58772241,
+        "pct": 2.2215,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x0a6ebed0155edb4b21d92ad02897a626cd90119e",
+        "qty": 33678701.23912676,
+        "pct": 2.1,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xdc4d9ca78e96ddfdeb07eaeef53a0e2523e9da2d",
+        "qty": 29599388.482165765,
+        "pct": 1.8456,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x6f88a722ae3235f30039b47447a83aee621afd9f",
+        "qty": 25000000,
+        "pct": 1.5588,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x4d356f15a97a2bc6978780f7a105d7806b413be6",
+        "qty": 22473076.35559109,
+        "pct": 1.4013,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x1978276bbb44d16f0d2e3e3ea34f889e03b2ef86",
+        "qty": 21943580.556325953,
+        "pct": 1.3683,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x0c5ce01793ea538dd988594af2d3f580c6d67cdf",
+        "qty": 21491936.49470268,
+        "pct": 1.3401,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xf876b75d7326cf20a58dbb1092836d92041fb1f7",
+        "qty": 18750000,
+        "pct": 1.1691,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x6c376b584d5bba472c402bd411afd5fc20d21b1f",
+        "qty": 18463188.911240034,
+        "pct": 1.1512,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x592065d6f0e076a7ed1878be458e6f1e4f643d9c",
+        "qty": 17058473.57680158,
+        "pct": 1.0636,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xf83143c99163778a0021b35912b2fcd1006506c5",
+        "qty": 16046965.365937814,
+        "pct": 1.0006,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xfb2f8e284ed4149358775409f163cb917a62f51e",
+        "qty": 15712290.994672203,
+        "pct": 0.9797,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x000000000000000000000000000000000000dead",
+        "qty": 14393097.151479598,
+        "pct": 0.8974,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xe9d43d044a1881b7be79b0114d6fe2ae4750bc4d",
+        "qty": 13333222,
+        "pct": 0.8314,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x9a3985ebdb916a6e60ac1b0e6a1ecf673777d38b",
+        "qty": 13153299.894978408,
+        "pct": 0.8201,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x496655a4c7528df38c9b11aa21c623ccc5a4ce4b",
+        "qty": 12613647.794018041,
+        "pct": 0.7865,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x469879b5f6a77c10c1ab1e14848c8c9dcd167eaf",
+        "qty": 11801778.804725884,
+        "pct": 0.7359,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xa0670863bd5cd0d60022bab2eed78e81e1a06bce",
+        "qty": 11622888.041542696,
+        "pct": 0.7247,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xbf18935a6ae2823082fa45094b0ce92896b11540",
+        "qty": 10743015.003861446,
+        "pct": 0.6698,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x8d23468147acb21c8b6dd5382f23b6ad337d5f3e",
+        "qty": 10400711.136477957,
+        "pct": 0.6485,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xaa2def96f758fcf747c6e122e30c7165350bb23a",
+        "qty": 10291227.183530709,
+        "pct": 0.6417,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x690de3a521741d3fba8bd95923518e79772ffcbf",
+        "qty": 10252318.604926497,
+        "pct": 0.6392,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xc1a70fa23e6926b8f3033e67f8b5b0684319b732",
+        "qty": 10032539.164342243,
+        "pct": 0.6255,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x67e5b22e5fbf88a9bebcdd4a94eedcdc6800a4b4",
+        "qty": 10024594.319852078,
+        "pct": 0.625,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x87abee25731d856fddb6cb2cd3085abf7082a3a5",
+        "qty": 10004303.11123698,
+        "pct": 0.6238,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x2f7b91ca7db414e4baf0deb5b6b9795a51e2ba71",
+        "qty": 10000000.072546808,
+        "pct": 0.6235,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xcee998de5974f53bea37c272ae1b6720c5d89f55",
+        "qty": 9846728.195452932,
+        "pct": 0.614,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x87d4ffe87b7d924470e7d24d56effe34e997747b",
+        "qty": 9612377.327028126,
+        "pct": 0.5993,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x762565c177986a09f091b32ac204aa262b3f200a",
+        "qty": 9495889.982208153,
+        "pct": 0.5921,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x387da09b6740c8aed2797c738fe35210c80e3e2e",
+        "qty": 9400150.81116131,
+        "pct": 0.5861,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x084e4c5ad1eb0536e1c0299bbd43c4a2e33eca39",
+        "qty": 9262096.775046192,
+        "pct": 0.5775,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x10594d1afa036f09b9a443eabcdc78ce38d97467",
+        "qty": 9063321.278275412,
+        "pct": 0.5651,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xf24022ba0fea5926d30fba8fece6d7a852732989",
+        "qty": 8825587.821310865,
+        "pct": 0.5503,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xeaad3bc23784bc9325aff1af2bfd6839527812e2",
+        "qty": 8695910.482220817,
+        "pct": 0.5422,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x539f0cf2989a4d53f84b18b290c15e810aaa15b0",
+        "qty": 8511538.655755255,
+        "pct": 0.5307,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x4fff63cde5a79a6cfa847952b259d99991c50082",
+        "qty": 8333333,
+        "pct": 0.5196,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x2509ce6102947b04bc2a3f6ce4277ae6b1abf303",
+        "qty": 7903730.068410396,
+        "pct": 0.4928,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x38e23acc292d79b3ade1dd6022830a3756755487",
+        "qty": 7710304.282391806,
+        "pct": 0.4807,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x4cc17f3ee58a09d5a284299d113afb1190cec4b1",
+        "qty": 7485000,
+        "pct": 0.4667,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xa4ec44411f62be6e79f5224aa7b26c5278634f06",
+        "qty": 7485000,
+        "pct": 0.4667,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x556f642c79bbe43424065fbf40355e9f3dd3aadb",
+        "qty": 7485000,
+        "pct": 0.4667,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xd03e270679a28bf7f8f390f8a222e0b680177a6b",
+        "qty": 7470759.821262796,
+        "pct": 0.4658,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xe0fed359054d83b686141e7ac6534ad9e85e90c6",
+        "qty": 7459556.297506852,
+        "pct": 0.4651,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x38de37b5d7a48d7d068b783b47f14b776492ce8c",
+        "qty": 7327119.041754591,
+        "pct": 0.4568,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x6fb1e8163acb6b0c77bcfce3166eab8770cca325",
+        "qty": 7302035.863216926,
+        "pct": 0.4553,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xe1a74a3bb19b4e895d2b980610585f8a3d60acb5",
+        "qty": 7196357.426427444,
+        "pct": 0.4487,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xc44d036306a833f1f2ce5dfbd9cf15c19118a20d",
+        "qty": 7194361.338153003,
+        "pct": 0.4486,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xc7c0c05bbacb3cda87c3d1164a10c004af8ad014",
+        "qty": 7079690.116255572,
+        "pct": 0.4414,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xf9d33b7def5d8d6015ce2784e6fcf82802e247dd",
+        "qty": 7061121.742325768,
+        "pct": 0.4403,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x38f95b8caa1f6511e2fc654289234bcf1e03066f",
+        "qty": 7024493.568092519,
+        "pct": 0.438,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xa580cdba20944a0d58e1198ff7e6e7e517f389dd",
+        "qty": 6884675.957044821,
+        "pct": 0.4292,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x007ed8ef7544ef869aca6f4a704cb5ea338e63d6",
+        "qty": 6736500,
+        "pct": 0.42,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xb6e76a44fa0cb2c599d2f0f35847963d8afcc089",
+        "qty": 6646612.787920517,
+        "pct": 0.4144,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xf009a2f3e38c2fe62130fb5dcb0411de595ae35a",
+        "qty": 6489586.299179532,
+        "pct": 0.4046,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x14e08aa2b65fcf9259f3bfe5df5c7b894baa21f7",
+        "qty": 6445908.228383814,
+        "pct": 0.4019,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xb5a0448d1ff740186ff625ff96a27ceabe85511e",
+        "qty": 6409987.191774967,
+        "pct": 0.3997,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x17fb03925acec7a799022ad5e268d2f27e9748b3",
+        "qty": 6396296.758296727,
+        "pct": 0.3988,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      }
+    ],
+    "swapHolders": [
+      {
+        "address": "0xb7741096409ac903880ff3af4cb14bbad7a5be85",
+        "qty": 300000000.0008303,
+        "pct": null,
+        "buys": 1,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0xe950337f36e45c316c53c69a5f285487b54f0bad",
+        "qty": 164691432.2616751,
+        "pct": null,
+        "buys": 1390,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0x9a3811b1afeadf2800b499eb234a7ab8f366dfbf",
+        "qty": 154923610.62438723,
+        "pct": null,
+        "buys": 1359,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0xa0f2d8dfa71c93cf0e24330c91c644afa5ba3cc0",
+        "qty": 48055604.6596929,
+        "pct": null,
+        "buys": 1,
+        "sells": 8,
+        "isContract": null
+      },
+      {
+        "address": "0xc0eb5965e76c6ab0ca0aab148608cc7aaa157e5f",
+        "qty": 45469253.72481734,
+        "pct": null,
+        "buys": 723,
+        "sells": 499,
+        "isContract": null
+      },
+      {
+        "address": "0xd83ca4575de76b2a96f0ecbefc7df5269cd4f992",
+        "qty": 45082936.828313634,
+        "pct": null,
+        "buys": 2,
+        "sells": 8,
+        "isContract": null
+      },
+      {
+        "address": "0xf8f10c47b26e890b45755414cfbd8891b5eb2f49",
+        "qty": 44274942.62411372,
+        "pct": null,
+        "buys": 21,
+        "sells": 11,
+        "isContract": null
+      },
+      {
+        "address": "0x23ae47ac4e5a04b544c76362d0edde92b6534415",
+        "qty": 38926922.93514246,
+        "pct": null,
+        "buys": 22,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0xea054157214b9eda7e9c464c156be3f1c319581e",
+        "qty": 35627731.58772241,
+        "pct": null,
+        "buys": 9,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0x254700ca159f4b5c3a1e4bf18e1b8aae988afc8d",
+        "qty": 35178313.53055772,
+        "pct": null,
+        "buys": 45,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0x4bed8185137fddc990e7ff43a95ae5214be077f6",
+        "qty": 33678701.23912676,
+        "pct": null,
+        "buys": 2,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0x9506cfc79db8b0fdac703fbd3e3697142b158070",
+        "qty": 29110221.53144341,
+        "pct": null,
+        "buys": 99,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0x329ca263df30c3e506c39081403ec95d5942ece8",
+        "qty": 28435308.41209423,
+        "pct": null,
+        "buys": 509,
+        "sells": 324,
+        "isContract": null
+      },
+      {
+        "address": "0x14641763680a4d7e9da5e1eb5eb5b46eb23e7950",
+        "qty": 22968825.106211755,
+        "pct": null,
+        "buys": 19,
+        "sells": 0,
+        "isContract": null
+      },
+      {
+        "address": "0x4d356f15a97a2bc6978780f7a105d7806b413be6",
+        "qty": 22656954.224324413,
+        "pct": null,
+        "buys": 4,
+        "sells": 0,
+        "isContract": null
+      }
+    ],
+    "liquidityHolders": [
+      {
+        "address": "0xbe17cdf528abb0797b8dd8e3d47e43a2baf9cb34",
+        "qty": 228754880.40502563,
+        "pct": 14.2642,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      },
+      {
+        "address": "0x8366a39cc670b4001a1121b8f6a443a643e40951",
+        "qty": 73768429.68453407,
+        "pct": 4.5998,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      }
+    ],
+    "liquidityHeldPct": 18.864,
+    "holderSource": "onchain",
+    "staleFields": {},
+    "netFlowRatio24h": 0.003,
+    "netFlowUsd24h": 3979.56,
+    "netFlowRatio7d": -0.0032786044944011503,
+    "flowConsistent": true,
+    "buyers24h": 653,
+    "sellers24h": 1159,
+    "buyerSellerRatio": 0.5634167385677308,
+    "singleTradeWalletSharePct": 54.6,
+    "tradesPerWallet": 4.06,
+    "smartMoneyNetUsd": 0,
+    "smartBuyers": 0,
+    "volLiqRatio": 7.448918719623823,
+    "repeatedSizeSharePct": 0,
+    "bundleSharePct": 3,
+    "washFlag": false,
+    "honeypot": true,
+    "sellable": false,
+    "roundTripLossPct": 96.5,
+    "mintAuthority": null,
+    "freezeAuthority": null,
+    "verified": null,
+    "ownerRenounced": false,
+    "upgradeable": false,
+    "lpLockedPct": null,
+    "isLaunchpad": false,
+    "volMcRatio": 0.9967297501198292,
+    "volMcBar": 1,
+    "volMcVsBar": 0.9967297501198292,
+    "feesSol": null,
+    "feesPerMcap15k": null,
+    "snipeRatioPct": null,
+    "feedWindow": null,
+    "bundleScore": null,
+    "organicScore": null,
+    "timingEntropy": null,
+    "devBuySol": null,
+    "devBuySharePct": null,
+    "freshWalletsTop20": null,
+    "fundingClusterMax": null,
+    "clusterSupplyPct": null,
+    "bundlerMajority": null,
+    "makersCount": 1513,
+    "makersHoldersRatio": 0.6490776490776491,
+    "creatorPriorMints": null,
+    "creatorRugRatePct": null,
+    "creatorHasSocials": null,
+    "socialLinks": null,
+    "curveProgressPct": null,
+    "realSolReserves": null,
+    "curveCirculatingPct": null,
+    "uniqueBuyers": null,
+    "sells24h": 2918,
+    "allBuyersExited": null,
+    "insiderSupplyPct": null,
+    "first5mSharePct": 0.8,
+    "launchPriceUsd": null,
+    "bundlersFlushed": null,
+    "launchRetraced30": null,
+    "launchWindow": null,
+    "identicalCandleSharePct": null,
+    "identicalWindow": null,
+    "hugeCandlesOnly": null,
+    "staircase": null,
+    "staircaseWindow": null,
+    "trendScore": null,
+    "trendWindow": null,
+    "brokeHigherLow": null,
+    "upOnlyChart": null,
+    "honeypotPattern": null,
+    "patterns": [],
+    "nullReasons": {
+      "creatorHasSocials": "Robinhood Chain ERC-20s carry no social-link metadata",
+      "lpLockedPct": "main pool unknown"
+    },
+    "fakeSignals": [
+      {
+        "kind": "other",
+        "level": "danger",
+        "text": "honeypot — high sell tax",
+        "source": "ScanHood"
+      },
+      {
+        "kind": "other",
+        "level": "warn",
+        "text": "thin liquidity ($1)",
+        "source": "ScanHood"
+      },
+      {
+        "kind": "other",
+        "level": "info",
+        "text": "HoodScan risk flag: thin liquidity",
+        "source": "HoodScan"
+      }
+    ],
+    "links": [
+      {
+        "label": "ScanHood",
+        "url": "https://scanhood.xyz/scanner"
+      },
+      {
+        "label": "HoodScan",
+        "url": "https://hoodscan.co/token/0x30de7ae4c9578d110a97367ede9f7765cdce06ea"
+      },
+      {
+        "label": "DexScreener",
+        "url": "https://dexscreener.com/robinhood/0xcfe04bc182706f8683f4f486104b52fb6a4115cfe9e4471c468fca65703f9b9d"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "scanhood",
+      "label": "ScanHood",
+      "state": "ok",
+      "message": "verdict DANGER, round-trip 96.5%",
+      "ms": 2616,
+      "url": "https://scanhood.xyz/scanner"
+    },
+    {
+      "id": "rpc",
+      "label": "Robinhood RPC",
+      "state": "ok",
+      "message": "deployer 0xb77410… · replay at block 96119959 (118,491 Transfer logs)",
+      "ms": 1245
+    },
+    {
+      "id": "hoodscan",
+      "label": "HoodScan",
+      "state": "ok",
+      "message": "token + evidence + 100 swaps",
+      "ms": 18264,
+      "url": "https://hoodscan.co/token/0x30de7ae4c9578d110a97367ede9f7765cdce06ea"
+    },
+    {
+      "id": "geckoterminal",
+      "label": "GeckoTerminal",
+      "state": "failed",
+      "message": "HTTP 429: {\"status\":{\"error_code\":429,\"error_message\":\"You've exceeded the Rate Limit. Please visit https://www.coingecko.com/en/api/pricing to subscribe to our API plans",
+      "ms": 40
+    },
+    {
+      "id": "dexscreener",
+      "label": "DexScreener",
+      "state": "ok",
+      "message": "28 pairs",
+      "ms": 419,
+      "url": "https://dexscreener.com/robinhood/0xcfe04bc182706f8683f4f486104b52fb6a4115cfe9e4471c468fca65703f9b9d"
+    }
+  ]
+}

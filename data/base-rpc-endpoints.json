@@ -1,0 +1,202 @@
+{
+ "note": "Public Base (8453) RPC endpoints, probed 2026-10-29 between 11:51 and 12:40 UTC with an adapted copy of scripts/probe-rpcs.mjs (chainId, head, eth_getLogs span on an empty filter and on DEGEN Transfer logs, eth_call state override with `code`, `stateDiff` and `state`, eth_getStorageAt on the v4 PoolManager, 20 concurrent eth_blockNumber), plus archive/trace checks. Same shape as data/rpc-endpoints.json: 'logs' = serves eth_getLogs over a ≥ 10,000-block range (lib/onchain/rpc.ts routes eth_getLogs only to these); logsMaxSpan = widest span that succeeded (callers must chunk by it); 'override' = eth_call state override (`code`) works. Extra fields: stateDiff/state = the override object accepts those keys; logsHistory = how far back logs are served; archiveState = eth_getCode/eth_getBalance at an old block; trace = debug_traceTransaction(callTracer). Nothing here was assumed: every field is a call result from this run.",
+ "probedAt": "2026-10-29T11:53:16.695Z",
+ "endpoints": [
+  {
+   "url": "https://base-rpc.publicnode.com",
+   "logs": true,
+   "logsMaxSpan": 50000,
+   "logsError": "100000 blocks: 'exceed maximum block range: 50000'",
+   "logsHistory": "served at head-2,000,000; refused at head-5,000,000 ('Archive requests require a personal token')",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": false,
+   "latencyMs": 158,
+   "burst429": "0/20",
+   "historical": false
+  },
+  {
+   "url": "https://base.rpc.blxrbdn.com",
+   "logs": true,
+   "logsMaxSpan": 50000,
+   "logsError": "100000 blocks: request timed out (25s)",
+   "logsHistory": "'pruned history unavailable: earliest available 51500000'",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": false,
+   "trace": "debug_traceTransaction HTTP 403; eth_getBlockReceipts ok",
+   "latencyMs": 196,
+   "burst429": "0/20",
+   "historical": false
+  },
+  {
+   "url": "https://base.gateway.tenderly.co",
+   "logs": false,
+   "logsMaxSpan": 1000,
+   "logsError": "2000 blocks: 'invalid params'",
+   "logsHistory": "block 25,000,000 served",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": true,
+   "trace": "debug_traceTransaction / trace_filter: HTTP 429 -32005 'rate limit exceeded' (after the burst)",
+   "latencyMs": 324,
+   "burst429": "0/20",
+   "historical": true
+  },
+  {
+   "url": "https://gateway.tenderly.co/public/base",
+   "logs": false,
+   "logsMaxSpan": 1000,
+   "logsError": "10000 blocks: 'invalid params'",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "latencyMs": 354,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://base.api.pocket.network",
+   "logs": false,
+   "logsMaxSpan": 2000,
+   "logsError": "3000 blocks: 'block range exceeds maximum 500' (inconsistent backends: 2000 succeeded, the error names 500)",
+   "logsHistory": "block 25,000,000 served",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": "inconsistent: eth_getCode at block 30,000,001 ok, eth_getBalance at 16,777,216 'pruned'",
+   "trace": "debug_traceTransaction ok, trace_transaction ok, trace_filter 'Method not supported'",
+   "latencyMs": 608,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://base.drpc.org",
+   "logs": false,
+   "logsMaxSpan": 100,
+   "logsError": "500 blocks: HTTP 400 code 35 'ranges over 10000 blocks are not supported on free plan' (message does not match the span sent)",
+   "logsHistory": "block 25,000,000 served (50-block window)",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": true,
+   "trace": "debug_traceTransaction(callTracer) ok; trace_transaction ok; trace_filter HTTP 408 'Request timeout on the free plan'",
+   "latencyMs": 78,
+   "burst429": "2/20",
+   "historical": true
+  },
+  {
+   "url": "https://mainnet.base.org",
+   "logs": false,
+   "logsMaxSpan": 0,
+   "logsError": "every eth_getLogs (10-block span, 3 attempts over ~40 min) HTTP 429 -32011 'request limit reached'; eth_blockNumber/eth_call unaffected",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": true,
+   "trace": "debug_traceTransaction / trace_transaction HTTP 401 -32611",
+   "latencyMs": 319,
+   "burst429": "0/20",
+   "historical": true
+  },
+  {
+   "url": "https://base-mainnet.public.blastapi.io",
+   "logs": false,
+   "logsMaxSpan": 10,
+   "logsError": "'You can make eth_getLogs requests with up to a 10 block range'",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": true,
+   "trace": "HTTP 401 'Only core evm requests are allowed'",
+   "latencyMs": 292,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://base-pokt.nodies.app",
+   "logs": false,
+   "logsMaxSpan": 10,
+   "logsError": "'Block range too large: maximum allowed is 50 blocks on your current plan' (10 blocks ok)",
+   "override": true,
+   "stateDiff": true,
+   "state": true,
+   "storage": true,
+   "archiveState": true,
+   "trace": "'Method not available on this plan'",
+   "latencyMs": 398,
+   "burst429": "0/20"
+  }
+ ],
+ "excluded": [
+  {
+   "url": "https://1rpc.io/base",
+   "reason": "first probe: logs ≤ 50 blocks, 3058 ms; ~30 min later every call HTTP 410 'This endpoint has been discontinued'"
+  },
+  {
+   "url": "https://base.meowrpc.com",
+   "reason": "'The method eth_call is not supported', 20/20 burst 429"
+  },
+  {
+   "url": "https://base.api.onfinality.io/public",
+   "reason": "19/20 burst 429, eth_call state override 429"
+  },
+  {
+   "url": "https://base-mainnet.gateway.tatum.io",
+   "reason": "'eth_call is available for paid plans only', logs ≤ 100 blocks, 20/20 burst 429"
+  },
+  {
+   "url": "https://api.zan.top/base-mainnet",
+   "reason": "eth_getLogs and eth_call 429, 6/20 burst 429"
+  },
+  {
+   "url": "https://base.llamarpc.com",
+   "reason": "HTTP 525"
+  },
+  {
+   "url": "https://developer-access-mainnet.base.org",
+   "reason": "fetch failed (no connection)"
+  },
+  {
+   "url": "https://base.blockpi.network/v1/rpc/public",
+   "reason": "HTTP 503"
+  },
+  {
+   "url": "https://rpc.ankr.com/base",
+   "reason": "'Unauthorized: You must authenticate your request with an API key'"
+  },
+  {
+   "url": "https://endpoints.omniatech.io/v1/base/mainnet/public",
+   "reason": "HTTP 521"
+  },
+  {
+   "url": "https://8453.rpc.thirdweb.com",
+   "reason": "HTTP 429 on eth_chainId"
+  },
+  {
+   "url": "https://base.rpc.subquery.network/public",
+   "reason": "fetch failed"
+  },
+  {
+   "url": "https://base.lava.build",
+   "reason": "HTTP 410"
+  },
+  {
+   "url": "https://rpc.notadegen.com/base",
+   "reason": "fetch failed"
+  },
+  {
+   "url": "https://base.therpc.io",
+   "reason": "fetch failed"
+  }
+ ],
+ "historicalNote": "historical = eth_call / eth_getTransactionCount at an old block (0xA00000, 0x1500000) answered, probed 2026-10-29: mainnet.base.org, Tenderly and dRPC serve archive state; publicnode needs a personal token for archive requests; bloXroute answers \"state is pruned\". Not probed: the rest."
+}

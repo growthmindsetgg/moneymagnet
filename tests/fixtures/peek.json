@@ -1,0 +1,607 @@
+{
+  "recordedAt": "2026-10-24T09:04:15.460Z",
+  "note": "§7 PEEK: pump.fun launch that never traded (0 buyers, curve 0% / 0 SOL, no pool) at ~15h. Expected F (dead launch) with coverage ≥ 90% and a numeric score.",
+  "snapshot": {
+    "chain": "solana",
+    "address": "A7Hm1SaHZZz8ZKFqZpsnZoGhri9f1iHEzYBPQGiPpump",
+    "name": "Peekhole",
+    "symbol": "PEEK",
+    "launchpad": "Pump.Fun",
+    "anchor": null,
+    "assetKind": null,
+    "tokenExists": true,
+    "priceUsd": 1.5007559079217148e-9,
+    "fdvUsd": 1.5007559079217148,
+    "liquidityUsd": 0,
+    "volume24hUsd": 0,
+    "poolCount": 1,
+    "mainPoolLiquidityUsd": 0,
+    "mainPoolSharePct": null,
+    "liqFdvPct": 0,
+    "liqChange24hPct": null,
+    "liqChange7dPct": null,
+    "liqChange24hWindow": null,
+    "liqChange7dWindow": null,
+    "liqHistoryPoints": 4,
+    "liquidityTotalUsd": 0,
+    "poolAddresses": [
+      "j881qos4lka8rkbuyqng2gxsw2xwtt94mjf79symnpog",
+      "8fgw4nwtcypd9m3alxfovnzugmnkg2ez87msa6xebvaa",
+      "4om2dpxd6ogsd3l1uoehbigbkt9kwcwd8gyltdkp3h1k"
+    ],
+    "createdAt": "2026-10-23T18:08:32.000Z",
+    "ageHours": 14.928311388888888,
+    "ageMinutes": 895.7,
+    "totalSupply": 1000000000,
+    "holderCount": 1,
+    "top10SharePct": 0,
+    "top1SharePct": 0,
+    "accumulatorCount": null,
+    "accumulatorSupplyPct": null,
+    "earlyCohortSize": null,
+    "earlyExitRatePct": null,
+    "earlyRetentionPct": null,
+    "deployerAddress": "G8YbUynM6LDYKCWZpNafNgTfEYC2FWEkW7Ju9fjNKfff",
+    "deployerHoldingPct": 0,
+    "deployerSoldPct": 0,
+    "deployerHasSold": false,
+    "insiderNetworks": null,
+    "holders": [],
+    "swapHolders": [],
+    "liquidityHolders": [
+      {
+        "address": "J881qos4Lka8rkbUyQNG2gxSW2XwTT94mJf79sYMNpoG",
+        "qty": 1000000000,
+        "pct": 100,
+        "buys": null,
+        "sells": null,
+        "isContract": null,
+        "kind": "liquidity"
+      }
+    ],
+    "liquidityHeldPct": 100,
+    "holderSource": "helius",
+    "staleFields": {},
+    "netFlowRatio24h": 0,
+    "netFlowUsd24h": null,
+    "netFlowRatio7d": null,
+    "flowConsistent": null,
+    "buyers24h": 0,
+    "sellers24h": 0,
+    "buyerSellerRatio": 0,
+    "singleTradeWalletSharePct": null,
+    "tradesPerWallet": 0,
+    "smartMoneyNetUsd": null,
+    "smartBuyers": null,
+    "volLiqRatio": 0,
+    "repeatedSizeSharePct": null,
+    "bundleSharePct": null,
+    "washFlag": null,
+    "honeypot": null,
+    "sellable": true,
+    "liquidityPulled": null,
+    "deadCurve": true,
+    "deadLaunch": true,
+    "launchBuyers": 0,
+    "zeroActivity": [
+      "Helius: 0 buyers",
+      "pump.fun curve: 0% / 0 SOL",
+      "GeckoTerminal: no pools",
+      "24h volume $0"
+    ],
+    "roundTripLossPct": 0,
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "verified": null,
+    "ownerRenounced": null,
+    "upgradeable": null,
+    "lpLockedPct": null,
+    "isLaunchpad": true,
+    "volMcRatio": 0,
+    "volMcBar": 1.2,
+    "volMcVsBar": 0,
+    "feesSol": null,
+    "feesPerMcap15k": null,
+    "snipeRatioPct": 0,
+    "feedWindow": null,
+    "bundleScore": null,
+    "organicScore": null,
+    "timingEntropy": null,
+    "devBuySol": 0,
+    "devBuySharePct": 0,
+    "freshWalletsTop20": 0,
+    "fundingClusterMax": 0,
+    "clusterSupplyPct": 0,
+    "bundlerMajority": null,
+    "makersCount": 0,
+    "makersHoldersRatio": 0,
+    "creatorPriorMints": 0,
+    "creatorRugRatePct": 0,
+    "creatorHasSocials": null,
+    "socialLinks": null,
+    "curveProgressPct": 0,
+    "realSolReserves": 0,
+    "curveCirculatingPct": 0,
+    "uniqueBuyers": 0,
+    "sells24h": 0,
+    "allBuyersExited": false,
+    "insiderSupplyPct": 0,
+    "first5mSharePct": null,
+    "launchPriceUsd": null,
+    "bundlersFlushed": null,
+    "launchRetraced30": null,
+    "launchWindow": null,
+    "identicalCandleSharePct": 0,
+    "identicalWindow": null,
+    "hugeCandlesOnly": null,
+    "staircase": null,
+    "staircaseWindow": null,
+    "trendScore": 0,
+    "trendWindow": null,
+    "brokeHigherLow": null,
+    "upOnlyChart": null,
+    "honeypotPattern": null,
+    "patterns": [],
+    "tmWinnerSimilarity": null,
+    "tmRugSimilarity": null,
+    "nullReasons": {
+      "creatorHasSocials": "metadata fetch failed: HTTP 429: This IPFS gateway is switching to a service worker gateway only. See h"
+    },
+    "provenance": {
+      "createdAt": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": "2026-10-23T18:08:35.000968198Z",
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        },
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": "2026-10-23T18:08:32.000Z",
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        },
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": "2026-10-23T18:08:32.000Z",
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "ageHours": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": 14.927478055555556,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        },
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 14.928311388888888,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        },
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 14.928311388888888,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "totalSupply": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": 1000000000,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        },
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 1000000000,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "holderCount": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": 1,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "deployerAddress": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": "G8YbUynM6LDYKCWZpNafNgTfEYC2FWEkW7Ju9fjNKfff",
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        },
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": "G8YbUynM6LDYKCWZpNafNgTfEYC2FWEkW7Ju9fjNKfff",
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "deployerHoldingPct": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "sellable": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": true,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "roundTripLossPct": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "mintAuthority": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        },
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        },
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "freezeAuthority": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        },
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        },
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "isLaunchpad": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": true,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        },
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": true,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "insiderSupplyPct": [
+        {
+          "source": "rugcheck",
+          "label": "RugCheck",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "top10SharePct": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "top1SharePct": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "deployerSoldPct": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "deployerHasSold": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "devBuySol": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "freshWalletsTop20": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "fundingClusterMax": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "clusterSupplyPct": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "makersCount": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "creatorPriorMints": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "creatorRugRatePct": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "uniqueBuyers": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "allBuyersExited": [
+        {
+          "source": "helius",
+          "label": "Helius",
+          "value": false,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "priceUsd": [
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 1.5007559079217148e-9,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "fdvUsd": [
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 1.5007559079217148,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "liquidityUsd": [
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "liquidityTotalUsd": [
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "curveProgressPct": [
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "realSolReserves": [
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "curveCirculatingPct": [
+        {
+          "source": "solana-rpc",
+          "label": "Solana RPC",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": true
+        }
+      ],
+      "volume24hUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "poolCount": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ],
+      "sells24h": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 0,
+          "fetchedAt": "2026-10-24T09:04:13.920Z",
+          "onchain": false
+        }
+      ]
+    },
+    "fakeSignals": [],
+    "links": [
+      {
+        "label": "RugCheck",
+        "url": "https://rugcheck.xyz/tokens/A7Hm1SaHZZz8ZKFqZpsnZoGhri9f1iHEzYBPQGiPpump"
+      },
+      {
+        "label": "pump.fun",
+        "url": "https://pump.fun/coin/A7Hm1SaHZZz8ZKFqZpsnZoGhri9f1iHEzYBPQGiPpump"
+      },
+      {
+        "label": "DexScreener",
+        "url": "https://dexscreener.com/solana/j881qos4lka8rkbuyqng2gxsw2xwtt94mjf79symnpog"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "rugcheck",
+      "label": "RugCheck",
+      "state": "ok",
+      "message": "score 1, 0 risks",
+      "ms": 1943,
+      "url": "https://rugcheck.xyz/tokens/A7Hm1SaHZZz8ZKFqZpsnZoGhri9f1iHEzYBPQGiPpump"
+    },
+    {
+      "id": "pumpfeed",
+      "label": "pump.fun intel feed",
+      "state": "failed",
+      "message": "fetch failed",
+      "ms": 10564
+    },
+    {
+      "id": "helius",
+      "label": "Helius",
+      "state": "ok",
+      "message": "1 curve trades: 0 buyers, 0 sellers, 0 still holding",
+      "ms": 5378
+    },
+    {
+      "id": "solana-rpc",
+      "label": "Solana RPC",
+      "state": "ok",
+      "message": "mint authority revoked, freeze revoked · bonding curve 0.0% · 0.000 SOL",
+      "ms": 316
+    },
+    {
+      "id": "geckoterminal",
+      "label": "GeckoTerminal",
+      "state": "partial",
+      "message": "No pools",
+      "ms": 140,
+      "url": "https://www.geckoterminal.com/solana/tokens/A7Hm1SaHZZz8ZKFqZpsnZoGhri9f1iHEzYBPQGiPpump"
+    },
+    {
+      "id": "dexscreener",
+      "label": "DexScreener",
+      "state": "ok",
+      "message": "1 pairs",
+      "ms": 206,
+      "url": "https://dexscreener.com/solana/j881qos4lka8rkbuyqng2gxsw2xwtt94mjf79symnpog"
+    }
+  ]
+}

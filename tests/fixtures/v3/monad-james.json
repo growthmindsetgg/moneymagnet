@@ -1,0 +1,843 @@
+{
+  "recordedAt": "2026-10-29T12:56:41.356Z",
+  "note": "JAMES — nad.fun V2 graduate (v2-style pair); one EOA holds ~61% (capped).",
+  "snapshot": {
+    "chain": "monad",
+    "address": "0x43cf5407bda1400498b8064d50a7e17528d87777",
+    "name": "The Busy Bull of Monad",
+    "symbol": "JAMES",
+    "launchpad": "nad.fun V2",
+    "anchor": null,
+    "assetKind": null,
+    "tokenExists": true,
+    "priceUsd": 0.00163,
+    "fdvUsd": 1657127.261,
+    "liquidityUsd": 82154.34,
+    "volume24hUsd": 25.315433664234718,
+    "poolCount": 1,
+    "mainPoolLiquidityUsd": 82154.34,
+    "mainPoolSharePct": 100,
+    "liqFdvPct": 4.957636141380212,
+    "liqChange24hPct": 1.2683860565726361,
+    "liqChange7dPct": 1.2683860565726361,
+    "liqChange24hWindow": "26m of history",
+    "liqChange7dWindow": "26m of history",
+    "liqHistoryPoints": 2,
+    "liquidityTotalUsd": 82330.56999999999,
+    "poolAddresses": [
+      "0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b",
+      "0x4b6ce40b0869ff8aa93432439dd0ef8f39657f37",
+      "0x9b747bcb4e6be2aa4b8c5fd3e1b1ea22d2a89481"
+    ],
+    "createdAt": "2026-07-05T19:03:26.000Z",
+    "ageHours": 2777.887598888889,
+    "ageMinutes": 166673.3,
+    "totalSupply": 1000000000,
+    "holderCount": 2420,
+    "top10SharePct": 64.23,
+    "top1SharePct": 61.0973,
+    "accumulatorCount": null,
+    "accumulatorSupplyPct": null,
+    "earlyCohortSize": null,
+    "earlyExitRatePct": null,
+    "earlyRetentionPct": null,
+    "deployerAddress": "0xaba951acef06a6cf2776609170e30a0ca9a1544e",
+    "deployerHoldingPct": 0,
+    "deployerSoldPct": 0,
+    "deployerHasSold": false,
+    "deployerDistributedPct": null,
+    "insiderNetworks": null,
+    "holders": [
+      {
+        "address": "0xf8baf2541defab76f2c344ff10cd6d4ef74d3432",
+        "qty": 610973330,
+        "pct": 61.0973,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x80427170a2e3aba2b3ee593c1a0a205e220b0b6d",
+        "qty": 14333333,
+        "pct": 1.4333,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xb48417c83203682d08a052b847243d66fcce027a",
+        "qty": 8999999.632445913,
+        "pct": 0.8999999999999999,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x62ddbc217e7ed9ccd0bd21d01b383ab204ddae99",
+        "qty": 7986919.742596899,
+        "pct": 0.7987,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      }
+    ],
+    "swapHolders": [],
+    "liquidityHolders": [
+      {
+        "address": "0x000000000000000000000000000000000000dead",
+        "qty": 80675268.72108854,
+        "pct": 8.067499999999999,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "liquidity",
+        "label": "locked (GoPlus)"
+      },
+      {
+        "address": "0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b",
+        "qty": 25205695.676322866,
+        "pct": 2.5206,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      },
+      {
+        "address": "0x167ee78660ddca546b07afa4928563e617675203",
+        "qty": 18659642.040460825,
+        "pct": 1.8659999999999999,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      },
+      {
+        "address": "0x76423fc192d23a57901d5976e7ebc6e5b3ec5421",
+        "qty": 18396236.04169349,
+        "pct": 1.8396,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      },
+      {
+        "address": "0xf12536c51b486dfe6cc67aabfaf389037827d178",
+        "qty": 15000000.53435612,
+        "pct": 1.5,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      },
+      {
+        "address": "0x6572baa9576d321430b48c8b7fb2095a3c18f239",
+        "qty": 15000000,
+        "pct": 1.5,
+        "buys": null,
+        "sells": null,
+        "isContract": true,
+        "kind": "liquidity"
+      }
+    ],
+    "liquidityHeldPct": 17.29,
+    "holderSource": "goplus",
+    "staleFields": {},
+    "netFlowRatio24h": 0.09477193688311457,
+    "netFlowUsd24h": 2.3991926813955264,
+    "netFlowRatio7d": null,
+    "flowConsistent": null,
+    "buyers24h": 21,
+    "sellers24h": 6,
+    "buyerSellerRatio": 3.5,
+    "singleTradeWalletSharePct": null,
+    "tradesPerWallet": 3.5454545454545454,
+    "smartMoneyNetUsd": null,
+    "smartBuyers": null,
+    "volLiqRatio": 0.00030814481212112127,
+    "repeatedSizeSharePct": null,
+    "bundleSharePct": null,
+    "washFlag": false,
+    "honeypot": false,
+    "sellable": true,
+    "liquidityPulled": false,
+    "deadCurve": null,
+    "deadLaunch": null,
+    "lastTradeHoursAgo": null,
+    "launchBuyers": 21,
+    "zeroActivity": [],
+    "roundTripLossPct": 0.59,
+    "mintAuthority": false,
+    "freezeAuthority": null,
+    "verified": true,
+    "ownerRenounced": true,
+    "upgradeable": false,
+    "lpLockedPct": 0,
+    "isLaunchpad": true,
+    "volMcRatio": 0.00001527669857350486,
+    "volMcBar": 0.8,
+    "volMcVsBar": 0.000019095873216881072,
+    "feesSol": null,
+    "feesPerMcap15k": null,
+    "snipeRatioPct": null,
+    "feedWindow": null,
+    "bundleScore": null,
+    "organicScore": null,
+    "timingEntropy": null,
+    "devBuySol": null,
+    "devBuySharePct": null,
+    "freshWalletsTop20": null,
+    "fundingClusterMax": null,
+    "clusterSupplyPct": null,
+    "bundlerMajority": null,
+    "makersCount": 27,
+    "makersHoldersRatio": 0.01115702479338843,
+    "creatorPriorMints": null,
+    "creatorRugRatePct": null,
+    "creatorHasSocials": null,
+    "socialLinks": "https://x.com/Shine0x/status/2073850506733375926?s=20 https://t.me/TheBusyBullOfMonad https://www.busybullmon.com/",
+    "curveProgressPct": null,
+    "realSolReserves": null,
+    "curveCirculatingPct": null,
+    "uniqueBuyers": null,
+    "sells24h": 10,
+    "buyTxs24h": 68,
+    "sellTxs24h": 10,
+    "buyersBasis": "unique wallets",
+    "allBuyersExited": null,
+    "insiderSupplyPct": null,
+    "first5mSharePct": null,
+    "launchPriceUsd": null,
+    "bundlersFlushed": null,
+    "launchRetraced30": null,
+    "launchWindow": null,
+    "identicalCandleSharePct": null,
+    "identicalWindow": null,
+    "hugeCandlesOnly": null,
+    "staircase": false,
+    "staircaseWindow": "60 × 5m candles, 2026-10-28T08:45Z → 2026-10-29T12:50Z",
+    "trendScore": 0,
+    "trendWindow": "168 × 1h candles, 2026-10-21T18:00Z → 2026-10-29T12:00Z",
+    "brokeHigherLow": false,
+    "upOnlyChart": false,
+    "honeypotPattern": false,
+    "patterns": [
+      {
+        "id": "staircase",
+        "result": false,
+        "detail": "Longest step–plateau run with no red candle: 1 steps (flag at 5).",
+        "timeframe": "5m",
+        "from": "2026-10-28T08:45:00.000Z",
+        "to": "2026-10-29T12:50:00.000Z",
+        "candles": 60
+      },
+      {
+        "id": "trend",
+        "result": 0,
+        "detail": "Swing highs 0.001725 → 0.001680 (LH), lows 0.001620 → 0.001566 (LL); last close 0.001657.",
+        "timeframe": "1h",
+        "from": "2026-10-21T18:00:00.000Z",
+        "to": "2026-10-29T12:00:00.000Z",
+        "candles": 168
+      },
+      {
+        "id": "up_only",
+        "result": false,
+        "detail": "Max drawdown from running peak 14.3%.",
+        "timeframe": "5m",
+        "from": "2026-10-23T05:50:00.000Z",
+        "to": "2026-10-29T12:50:00.000Z",
+        "candles": 288
+      }
+    ],
+    "tmWinnerSimilarity": null,
+    "tmRugSimilarity": null,
+    "nullReasons": {
+      "deployerAddress": "GoPlus returns no creator for chain 143",
+      "identicalCandleSharePct": "1m candles are only checked for launch-mode (< 72h) tokens",
+      "launchRetraced30": "token is ≥ 72h old — launch window not fetched",
+      "launchPriceUsd": "first daily candle not available from GeckoTerminal",
+      "hugeCandlesOnly": "GeckoTerminal candles carry no per-candle trade count (guide rule needs < 20 trades/candle)",
+      "buyers24h": "GeckoTerminal counts buyers per pool and the main pool has only 89% of 24h volume",
+      "sellers24h": "GeckoTerminal counts buyers per pool and the main pool has only 89% of 24h volume",
+      "devBuySharePct": "nad.fun: the dev's share of the first-10-minute buys needs the full launch trade list (not read within the 10 req/min budget)"
+    },
+    "provenance": {
+      "honeypot": [
+        {
+          "source": "monad-sim",
+          "label": "Monad sell simulation",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "sellable": [
+        {
+          "source": "monad-sim",
+          "label": "Monad sell simulation",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "liquidityPulled": [
+        {
+          "source": "monad-sim",
+          "label": "Monad sell simulation",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "roundTripLossPct": [
+        {
+          "source": "monad-sim",
+          "label": "Monad sell simulation",
+          "value": 0.59,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "totalSupply": [
+        {
+          "source": "monad-rpc",
+          "label": "Monad RPC",
+          "value": 1000000000,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": true
+        },
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 1000000000,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "deployerHoldingPct": [
+        {
+          "source": "monad-rpc",
+          "label": "Monad RPC",
+          "value": 0,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": true
+        }
+      ],
+      "ownerRenounced": [
+        {
+          "source": "monad-rpc",
+          "label": "Monad RPC",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": true
+        }
+      ],
+      "upgradeable": [
+        {
+          "source": "monad-rpc",
+          "label": "Monad RPC",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "volume24hUsd": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 25.315433664234718,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1212.79,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 1349.0725372149,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "createdAt": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": "2026-07-05T19:03:26.000Z",
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "ageHours": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 2777.886395833333,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "holderCount": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 2420,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 2420,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "deployerAddress": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": "0xaba951acef06a6cf2776609170e30a0ca9a1544e",
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "deployerSoldPct": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 0,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "deployerHasSold": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "netFlowRatio24h": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 0.09477193688311457,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "netFlowUsd24h": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 2.3991926813955264,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "buyers24h": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 21,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "sellers24h": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 6,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "buyerSellerRatio": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 3.5,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "isLaunchpad": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "makersCount": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 27,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "sells24h": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 10,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 26,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 10,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "buyTxs24h": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 68,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 100,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "sellTxs24h": [
+        {
+          "source": "nadfun",
+          "label": "nad.fun",
+          "value": 10,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 26,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "priceUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 0.00163,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 0.001657127261,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "fdvUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1499013,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 1657127.261,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "liquidityUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 82154.34,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 82156.8652,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "poolCount": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 1,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "mainPoolLiquidityUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 82154.34,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 82156.8652,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "mainPoolSharePct": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 100,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 100,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "liquidityTotalUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 82330.56999999999,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 87846.2038,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "tradesPerWallet": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 3.5454545454545454,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "staircase": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "trendScore": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 0,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "brokeHigherLow": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "upOnlyChart": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "top10SharePct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 64.23,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "top1SharePct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 61.0973,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "liquidityHeldPct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 17.29,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "mintAuthority": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "verified": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ],
+      "lpLockedPct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 0,
+          "fetchedAt": "2026-10-29T12:56:37.025Z",
+          "onchain": false
+        }
+      ]
+    },
+    "fakeSignals": [],
+    "links": [
+      {
+        "label": "DexScreener",
+        "url": "https://dexscreener.com/monad/0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b"
+      },
+      {
+        "label": "GeckoTerminal",
+        "url": "https://www.geckoterminal.com/monad/tokens/0x43cf5407bda1400498b8064d50a7e17528d87777"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "monad-sim",
+      "label": "Monad sell simulation",
+      "state": "ok",
+      "message": "sellable via pool 0x48c3bb34… (v2, fee 0.3%) · transfer probe from 0x804271…: ok · pool 0x48c3bb34… (v2, fee 0.3%): 0.59% loss (computed from reserves, 0.3% fee) · pool 0x2b7caabc… (v4, no hook, fee 65%): 88.00% round-trip loss (V4Quoter, buy then sell) · pool 0x3d3591e5… (v4, no hook, fee 4%): buy quote failed (NotEnoughLiquidity — the pool cannot absorb the trade) — no usable liquidity · pool 0x99143565… (v4, no hook, fee 30%): 53.15% round-trip loss (V4Quoter, buy then sell) · pool 0x8986c8fd… (v2): 3.17% round-trip loss (nad.fun V2 DEX router: quote 10 MON buy, then a real sell(…) in eth_c",
+      "ms": 4092
+    },
+    {
+      "id": "monad-rpc",
+      "label": "Monad RPC",
+      "state": "ok",
+      "message": "supply 1,000,000,000 · EIP-1167 clone (immutable implementation) · no owner() function",
+      "ms": 941
+    },
+    {
+      "id": "nadfun",
+      "label": "nad.fun",
+      "state": "ok",
+      "message": "V2 V2_DEX (graduated) · 2420 holders · 24h: 21 buyers / 6 sellers · creator sold 0.0% of what they bought (swaps)",
+      "ms": 471,
+      "url": "https://nad.fun/tokens/0x43cf5407bda1400498b8064d50a7e17528d87777"
+    },
+    {
+      "id": "dexscreener",
+      "label": "DexScreener",
+      "state": "ok",
+      "message": "3 pairs",
+      "ms": 448,
+      "url": "https://dexscreener.com/monad/0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b"
+    },
+    {
+      "id": "geckoterminal",
+      "label": "GeckoTerminal",
+      "state": "ok",
+      "message": "20 pools + OHLCV",
+      "ms": 1320,
+      "url": "https://www.geckoterminal.com/monad/tokens/0x43cf5407bda1400498b8064d50a7e17528d87777"
+    },
+    {
+      "id": "goplus",
+      "label": "GoPlus",
+      "state": "ok",
+      "message": "2420 holders · honeypot: no (GoPlus) · sell tax 0%",
+      "ms": 169,
+      "url": "https://gopluslabs.io/token-security/143/0x43cf5407bda1400498b8064d50a7e17528d87777"
+    }
+  ]
+}

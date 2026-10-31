@@ -1,0 +1,128 @@
+{
+ "note": "Monad mainnet (143) fixture candidates picked 2026-10-29 ~12:10Z. Values are as read at pick time from the named source (DexScreener /tokens/v1/monad, nad.fun api.nad.fun/agent/*, GoPlus token_security/143, on-chain). FDV for nad.fun curve tokens is derived: nad.fun price_usd × 1e9 total supply.",
+ "pickedAt": "2026-10-29T12:10:00Z",
+ "fixtures": [
+  {
+   "kind": "established-meme",
+   "ca": "0x350035555e10d9afaf1566aaebfced5ba6c27777",
+   "symbol": "CHOG",
+   "why": "Oldest large nad.fun meme (V1 curve, graduated to the nad.fun v3 DEX). Real liquidity, ~34k holders, multi-DEX (nad-fun 1% v3, Uniswap v4 1%/5%, PancakeSwap v3, Uniswap v2, Atlantis …). EIP-1167 clone of nad.fun V1 token impl 0x7f64…fae8.",
+   "fdvUsd": 1283750,
+   "liquidityUsd": 84000,
+   "createdAt": "2025-11-25T23:20:03Z",
+   "ageAtPick": "≈338 d",
+   "holders": 33945,
+   "sources": "DexScreener (fdv, liquidity), nad.fun market (holder_count), CURVE.createdAt(CHOG)=block 37,998,426 → timestamp",
+   "dexscreener": "https://dexscreener.com/monad/0x116e7d070f1888b81e1e0324f56d6746b2d7d8f1"
+  },
+  {
+   "kind": "established-meme",
+   "ca": "0x43cf5407bda1400498b8064d50a7e17528d87777",
+   "symbol": "JAMES",
+   "why": "nad.fun V2 launch (market_type V2_DEX, v2-style pair from factory 0xa25b…1001). Exercises the V2 router sell path. Different clone impl (0x4f44…6fbd) and storage layout than V1 tokens.",
+   "fdvUsd": 1479625,
+   "liquidityUsd": 81123,
+   "createdAt": "2026-07-05T19:03:26Z",
+   "ageAtPick": "≈116 d",
+   "holders": 2420,
+   "sources": "DexScreener (fdv, liquidity), GoPlus holder_count, nad.fun token created_at; creation tx 0xe71f51974a8eaae76949e12a57cb258f8aa59843e955b1af109df318e102f4a1 (block 85,819,844)",
+   "dexscreener": "https://dexscreener.com/monad/0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b"
+  },
+  {
+   "kind": "launch",
+   "ca": "0x4c995d07af7ee32a08fc7094f532a91a44567777",
+   "symbol": "Vibe",
+   "why": "Busiest launch of the last 24h: nad.fun V2 curve, 378 buys / 99 sells and 172 / 66 unique buy/sell makers in 1D. Not on DexScreener or GeckoTerminal (both return nothing / 404) — tests the nad.fun-API + on-chain-only path.",
+   "fdvUsd": 1421,
+   "fdvBasis": "derived: price_usd 1.4208e-6 × 1e9 supply",
+   "liquidityUsd": null,
+   "createdAt": "2026-10-28T17:43:17Z",
+   "ageAtPick": "≈18.5 h",
+   "holders": 108,
+   "volume1dMon": 13306,
+   "sources": "nad.fun token/market/metrics, V2 curve getCurve, creation tx 0xa1cec95beeaec0e8e7e5c9683fac79c045a355d3ddc3d689001e59abc620b94d, GoPlus holder_count",
+   "dexscreener": null,
+   "dexscreenerNote": "no pairs: DexScreener /tokens/v1/monad returned [] at pick time",
+   "nadfun": "https://nad.fun/tokens/0x4c995d07af7ee32a08fc7094f532a91a44567777",
+   "liquidityNote": "null: nad.fun V2 getCurve has no published ABI; the reserve fields could not be identified with certainty (PERPL: 33 MON creation value but word3−word7 = 1,438 MON), so curve liquidity is not stated"
+  },
+  {
+   "kind": "launch",
+   "ca": "0xb47ffe20d02a827efcc9647d7db9e1a1ef287777",
+   "symbol": "PERPL",
+   "why": "Youngest traded launch (nad.fun V2 curve): 5 buys from 5 makers in 1D, no sells. Thin launch for the too-early / few-buyers rules.",
+   "fdvUsd": 1419,
+   "fdvBasis": "derived: nad.fun price_usd 1.4194e-6 × 1e9 supply",
+   "liquidityUsd": null,
+   "createdAt": "2026-10-29T09:10:30Z",
+   "ageAtPick": "≈3 h",
+   "holders": 5,
+   "sources": "nad.fun token/market/metrics, V2 curve getCurve, creation tx 0xb8deda76ed501ead64e105141be128afc7f0168d5f1d68f4729594cc6ea24f8f",
+   "dexscreener": null,
+   "dexscreenerNote": "no pairs (V2 curve tokens are not indexed by DexScreener)",
+   "nadfun": "https://nad.fun/tokens/0xb47ffe20d02a827efcc9647d7db9e1a1ef287777",
+   "liquidityNote": "null: nad.fun V2 getCurve has no published ABI; the reserve fields could not be identified with certainty (PERPL: 33 MON creation value but word3−word7 = 1,438 MON), so curve liquidity is not stated"
+  },
+  {
+   "kind": "dead",
+   "ca": "0x47c6ac22d1fbb5747b711b7d6602090c8dd37777",
+   "symbol": "NAD",
+   "why": "Graduated nad.fun V1 token whose DEX pool holds 30.9 MON (≈$0.64) against 206.9M tokens; price 1e-10 MON; no trades in 6h. Dead / liquidity-drained.",
+   "fdvUsd": null,
+   "fdvNote": "DexScreener returns no fdv; nad.fun price_usd 2.06e-12",
+   "liquidityUsd": 0.66,
+   "createdAt": "2025-11-24T15:17:18Z",
+   "ageAtPick": "≈339 d",
+   "sources": "DexScreener pair 0x0b3c…a17a, nad.fun market (reserve_native)",
+   "dexscreener": "https://dexscreener.com/monad/0x0b3c185c841dc4f6297c56ccba98bb88886ea17a"
+  },
+  {
+   "kind": "blue-chip-reject",
+   "ca": "0x3bd359c1119da7da1d913d1c4d2b7c461115433a",
+   "symbol": "WMON",
+   "why": "Wrapped native MON (canonical, docs.monad.xyz). Must be refused as not-a-meme.",
+   "fdvUsd": 7201956,
+   "fdvNote": "DexScreener fdv of the WMON token contract supply only, not MON market cap",
+   "liquidityUsd": 1218458,
+   "dexscreener": "https://dexscreener.com/monad/0x659bd0bc4167ba25c62e05656f78043e7ed4a9da"
+  },
+  {
+   "kind": "blue-chip-reject",
+   "ca": "0x754704bc059f8c67012fed69bc8a327a5aafb603",
+   "symbol": "USDC",
+   "why": "Stablecoin (quote of every Kuru market). Must be refused as not-a-meme.",
+   "dexscreener": "https://dexscreener.com/monad/0x81ce379fae2269b870b7c8f4af1e89bf5c589ea0"
+  }
+ ],
+ "chainPicker": {
+  "dualChainWithPairs": {
+   "ca": "0x0555e30da8f98308edb960aa94c0db47230d2b9c",
+   "symbol": "WBTC",
+   "why": "Same address is a contract on Monad (13,680 B) and Base (13,649 B); DexScreener lists pairs on both (monad: 1 pair $35.4k; base: 10 pairs $811k, top uniswap $268k). No code on Robinhood Chain. Blue-chip, so it also tests the not-a-meme refusal after the chain is picked.",
+   "monad": "https://dexscreener.com/monad/0x527211c75cfd1771d653b4f3fd8584beba8bb9f8",
+   "base": "https://dexscreener.com/base/0xd960b78f53e8a346c577f2c7b3f0a2394e73afb9"
+  },
+  "collisionNoPairs": {
+   "ca": "0x402807304ef839abb6511572ec01699ff8945159",
+   "why": "Monad: OCTOMON meme (11,714 B, 8 uniswap pairs, all < $310 liquidity). Robinhood Chain: an unrelated contract 'TTokenReflect' (13,241 B, totalSupply 0, no DexScreener pairs). Tests that the picker prefers the chain with pairs."
+  },
+  "otherSameAddressMonadBase": [
+   {
+    "ca": "0x00000000efe302beaa2b3e6e1b18d08d69a9012a",
+    "symbol": "AUSD",
+    "note": "code on Monad and Base; DexScreener pairs on monad/ethereum/avalanche/mantle, none on base"
+   },
+   {
+    "ca": "0x1111b3ded9f1fe1801ad4ebef8e2788183a24111",
+    "symbol": "EURW",
+    "note": "109-byte proxy on both; pairs only on monad"
+   },
+   {
+    "ca": "0xfc421ad3c883bf9e7c4f42de845c4e4405799e73",
+    "symbol": "GHO",
+    "note": "different code size on Base (168 B vs 1,126 B); DexScreener pairs only on ink"
+   }
+  ],
+  "method": "49 token addresses from the GeckoTerminal top-20 Monad pools and DexScreener Monad search results; eth_getCode on rpc.monad.xyz, mainnet.base.org, rpc.mainnet.chain.robinhood.com; DexScreener /latest/dex/tokens/<ca> for cross-chain pairs."
+ }
+}

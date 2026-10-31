@@ -1,0 +1,145 @@
+{
+ "chain": "solana",
+ "address": "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
+ "symbol": "CHILLGUY",
+ "name": "Just a chill guy",
+ "createdAt": "2024-10-06T00:31:12.000Z",
+ "creationTx": "4TVAmKPPHWCPCykEbXNUDuVJ8fUL8rh3hyCs8TF2sMwf3RHHnfRrJ7nY8yFQvrxpGSRt1ukq7r8v7iJLGQFWQeo2",
+ "creator": "DTQQf6xhbRFqbSUzHsQ4e1PJroCR3dVKvUnt7sj11HJc",
+ "launchpad": "pump.fun",
+ "methods": {
+  "holders": "Helius mint history (oldest first): owner balances from token-balance deltas; off-curve owners (pools, curves) excluded",
+  "top10SharePct": "same balances, top 10 wallets / supply (Helius getAsset)",
+  "earlyRetentionPct": "first 20 buyers (fee payer gaining tokens against a pool) still holding",
+  "buyers": "fee payers buying against a pool/curve",
+  "sellers": "fee payers selling to a pool/curve",
+  "buyerSellerRatio": "(buyers + 1) / (sellers + 1)",
+  "devBuySharePct": "creator (fee payer of the creation tx) share of tokens bought",
+  "devSoldPct": "creator tokens sold / tokens received",
+  "freshWalletSharePct": "top-10 wallets whose first-ever tx (Helius, oldest first) is < 24h before the bucket edge",
+  "fundingClusterMax": "largest group of top-10 wallets sharing the sender of their first SOL",
+  "priceUsd": "5-minute VWAP of swap execution prices (SOL paid / tokens, ex token-account rent) × Coinbase SOL/USD hourly close",
+  "mcapUsd": "price × current supply",
+  "liquidityUsd": "pump.fun curve SOL reserve × SOL/USD (until graduation)",
+  "volume24hUsd": "SOL value of swaps in the trailing 24h × SOL/USD",
+  "volMc": "trailing-24h volume / market cap",
+  "drawdownPct": "last 5-minute VWAP vs the highest 5-minute VWAP so far",
+  "peakMultiple": "highest 5-minute VWAP / first 5-minute VWAP"
+ },
+ "buckets": [
+  {
+   "bucket": 1,
+   "at": "2024-10-06T01:31:12.000Z",
+   "fields": {
+    "holders": 0,
+    "top10SharePct": 0,
+    "earlyRetentionPct": 0,
+    "buyers": 3,
+    "sellers": 3,
+    "buyerSellerRatio": 1,
+    "devBuySharePct": 75.9116,
+    "devSoldPct": 100,
+    "freshWalletSharePct": null,
+    "fundingClusterMax": null,
+    "priceUsd": 0.000004057167904879865,
+    "mcapUsd": 4056.91,
+    "liquidityUsd": 0.18,
+    "volume24hUsd": 235.31,
+    "volMc": 0.058,
+    "drawdownPct": 6.0722,
+    "peakMultiple": 1
+   },
+   "nulls": {
+    "fundingClusterMax": "no wallet holders at this age",
+    "freshWalletSharePct": "no wallet holders at this age"
+   }
+  },
+  {
+   "bucket": 6,
+   "at": "2024-10-06T06:31:12.000Z",
+   "fields": {
+    "holders": 0,
+    "top10SharePct": 0,
+    "earlyRetentionPct": 0,
+    "buyers": 3,
+    "sellers": 3,
+    "buyerSellerRatio": 1,
+    "devBuySharePct": 75.9116,
+    "devSoldPct": 100,
+    "freshWalletSharePct": null,
+    "fundingClusterMax": null,
+    "priceUsd": 0.000004057167904879865,
+    "mcapUsd": 4056.91,
+    "liquidityUsd": 0.18,
+    "volume24hUsd": 235.31,
+    "volMc": 0.058,
+    "drawdownPct": 6.0722,
+    "peakMultiple": 1
+   },
+   "nulls": {
+    "fundingClusterMax": "no wallet holders at this age",
+    "freshWalletSharePct": "no wallet holders at this age"
+   }
+  },
+  {
+   "bucket": 24,
+   "at": "2024-10-07T00:31:12.000Z",
+   "fields": {
+    "holders": 0,
+    "top10SharePct": 0,
+    "earlyRetentionPct": 0,
+    "buyers": 3,
+    "sellers": 3,
+    "buyerSellerRatio": 1,
+    "devBuySharePct": 75.9116,
+    "devSoldPct": 100,
+    "freshWalletSharePct": null,
+    "fundingClusterMax": null,
+    "priceUsd": 0.000004057167904879865,
+    "mcapUsd": 4056.91,
+    "liquidityUsd": 0.18,
+    "volume24hUsd": 235.31,
+    "volMc": 0.058,
+    "drawdownPct": 6.0722,
+    "peakMultiple": 1
+   },
+   "nulls": {
+    "fundingClusterMax": "no wallet holders at this age",
+    "freshWalletSharePct": "no wallet holders at this age"
+   }
+  },
+  {
+   "bucket": 72,
+   "at": "2024-10-09T00:31:12.000Z",
+   "fields": {
+    "holders": 0,
+    "top10SharePct": 0,
+    "earlyRetentionPct": 0,
+    "buyers": 3,
+    "sellers": 3,
+    "buyerSellerRatio": 1,
+    "devBuySharePct": 75.9116,
+    "devSoldPct": 100,
+    "freshWalletSharePct": null,
+    "fundingClusterMax": null,
+    "priceUsd": 0.000004057167904879865,
+    "mcapUsd": 4056.91,
+    "liquidityUsd": 0.18,
+    "volume24hUsd": 0,
+    "volMc": 0,
+    "drawdownPct": 6.0722,
+    "peakMultiple": 1
+   },
+   "nulls": {
+    "fundingClusterMax": "no wallet holders at this age",
+    "freshWalletSharePct": "no wallet holders at this age"
+   }
+  }
+ ],
+ "notes": [],
+ "builtAt": "2026-10-24T06:01:55.687Z",
+ "buildMs": 1678,
+ "kind": "winner",
+ "source": "named meme",
+ "peakMcapUsd": null
+}

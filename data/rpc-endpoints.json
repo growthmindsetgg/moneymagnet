@@ -1,0 +1,112 @@
+{
+ "note": "Public Robinhood Chain (4663) RPC endpoints, probed 2026-10-24T09:21:22.392Z (scripts/probe-rpcs.mjs). Rotated on 429/5xx with a per-endpoint cooldown; ROBINHOOD_RPC_URL goes first when set. 'logs' = supports eth_getLogs; 'override' = supports eth_call state overrides (needed by the sell simulation).",
+ "probedAt": "2026-10-24T09:21:49.958Z",
+ "endpoints": [
+  {
+   "url": "https://rpc.mainnet.chain.robinhood.com",
+   "logs": "full",
+   "override": true,
+   "storage": true,
+   "latencyMs": 213,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://robinhood-rpc.publicnode.com",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 284,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://robinhood.drpc.org",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 74,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://robinhood.rpc.blxrbdn.com",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 201,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://robinhood.api.pocket.network",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 642,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://rpc-robinhood.blockmachine.io",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 420,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://rpc-robinhood.globalstake.io",
+   "logs": "full",
+   "override": true,
+   "storage": true,
+   "latencyMs": 275,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://robinhood.daybreak-rpc.network",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 181,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://4663.rpc.thirdweb.com",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 807,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 798,
+   "burst429": "0/20"
+  },
+  {
+   "url": "https://api.blockvectra.com/v1/robinhood_mainnet/public",
+   "logs": false,
+   "override": true,
+   "storage": true,
+   "latencyMs": 412,
+   "burst429": "4/20"
+  }
+ ],
+ "excluded": [
+  {
+   "url": "https://lb.routeme.sh/rpc/evm/4663",
+   "reason": "19/20 requests rate-limited (429)"
+  },
+  {
+   "url": "https://robinhood-mainnet.gateway.tatum.io",
+   "reason": "20/20 rate-limited, no state override, logs ≤ 100 blocks"
+  },
+  {
+   "url": "https://rpc.ordofi.network",
+   "reason": "'network is busy', 11/20 failed"
+  },
+  {
+   "url": "https://rpc.nodeflare.app/robinhood/public",
+   "reason": "HTTP 403"
+  }
+ ]
+}

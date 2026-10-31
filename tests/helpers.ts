@@ -1,0 +1,108 @@
+import { emptySnapshot } from "@/lib/snapshot";
+import type { Chain, TokenSnapshot } from "@/lib/types";
+
+/** An established (≥ 72h) token that clears every factor, rule and S requirement. */
+export function perfectSnapshot(chain: Chain = "robinhood", overrides: Partial<TokenSnapshot> = {}): TokenSnapshot {
+  return {
+    ...emptySnapshot(chain, chain === "robinhood" ? "0x" + "a".repeat(40) : "So11111111111111111111111111111111111111112"),
+    name: "Test",
+    symbol: "TEST",
+    launchpad: "Pons",
+    isLaunchpad: true,
+    priceUsd: 0.01,
+    launchPriceUsd: 0.002,
+    fdvUsd: 1_000_000,
+    liquidityUsd: 150_000,
+    volume24hUsd: 1_200_000,
+    volMcRatio: 1.2,
+    volMcBar: 0.8,
+    volMcVsBar: 1.5,
+    poolCount: 2,
+    mainPoolLiquidityUsd: 120_000,
+    mainPoolSharePct: 80,
+    liqFdvPct: 15,
+    liqChange24hPct: 2,
+    liqChange7dPct: 10,
+    liqHistoryPoints: 10,
+    ageHours: 24 * 40,
+    holderCount: 5000,
+    top10SharePct: 12,
+    top1SharePct: 3,
+    accumulatorCount: 6,
+    accumulatorSupplyPct: 8,
+    earlyRetentionPct: 80,
+    earlyExitRatePct: 20,
+    bundlersFlushed: true,
+    deployerHoldingPct: 1,
+    deployerSoldPct: 0,
+    netFlowRatio24h: 0.2,
+    netFlowRatio7d: 0.1,
+    flowConsistent: true,
+    buyers24h: 400,
+    sellers24h: 300,
+    buyerSellerRatio: 1.4,
+    sells24h: 300,
+    singleTradeWalletSharePct: 30,
+    tradesPerWallet: 3,
+    smartMoneyNetUsd: 10_000,
+    washFlag: false,
+    honeypot: false,
+    sellable: true,
+    roundTripLossPct: 5,
+    mintAuthority: chain === "solana" ? false : null,
+    freezeAuthority: chain === "solana" ? false : null,
+    ownerRenounced: chain === "robinhood" ? true : null,
+    upgradeable: chain === "robinhood" ? false : null,
+    lpLockedPct: 100,
+    trendScore: 1,
+    brokeHigherLow: false,
+    ...overrides,
+  };
+}
+
+/** A < 72h token that clears every launch-mode factor and guide rule. */
+export function perfectLaunch(chain: Chain = "solana", overrides: Partial<TokenSnapshot> = {}): TokenSnapshot {
+  return perfectSnapshot(chain, {
+    ageHours: 30,
+    volMcRatio: 1.5,
+    volMcBar: 1.0,
+    volMcVsBar: 1.5,
+    feesSol: 3,
+    feesPerMcap15k: 1,
+    devBuySol: 0.1,
+    devBuySharePct: 1,
+    snipeRatioPct: 2,
+    bundleScore: 10,
+    organicScore: 80,
+    timingEntropy: 0.9,
+    launchRetraced30: true,
+    identicalCandleSharePct: 10,
+    hugeCandlesOnly: false,
+    staircase: false,
+    curveProgressPct: 70,
+    realSolReserves: 60,
+    first5mSharePct: 3,
+    freshWalletsTop20: 0,
+    fundingClusterMax: 1,
+    clusterSupplyPct: 0,
+    bundlerMajority: false,
+    insiderSupplyPct: 1,
+    makersCount: 600,
+    makersHoldersRatio: 0.8,
+    creatorPriorMints: 3,
+    creatorRugRatePct: 0,
+    creatorHasSocials: true,
+    socialLinks: "twitter: x.com/test",
+    uniqueBuyers: 500,
+    allBuyersExited: false,
+    upOnlyChart: false,
+    honeypotPattern: false,
+    ...overrides,
+  });
+}
+
+export function strip(s: TokenSnapshot, metrics: (keyof TokenSnapshot)[]): TokenSnapshot {
+  const out = { ...s } as Record<string, unknown>;
+  for (const m of metrics) out[m] = null;
+  return out as unknown as TokenSnapshot;
+}

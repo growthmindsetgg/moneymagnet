@@ -1,0 +1,557 @@
+@import "tailwindcss";
+
+/* MoneyMagnet — editorial / brutalist-posh. Paper, ink, one neon accent; only tier letters carry other colour. */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-neon: var(--neon);
+  --color-neon-ink: var(--neon-ink);
+  --color-muted: var(--muted);
+  --color-tier-s: var(--neon);
+  --color-tier-a: var(--tier-a);
+  --color-tier-b: var(--ink);
+  --color-tier-c: var(--muted);
+  --color-tier-d: var(--tier-d);
+  --color-tier-f: var(--tier-f);
+  --color-tier-u: var(--muted);
+}
+
+:root {
+  --paper: #f4f4f2;
+  --ink: #0a0a0a;
+  --neon: #39ff14;
+  --neon-ink: #0a0a0a;
+  --muted: #6b6b6b;
+  --rule: 1px solid var(--ink);
+  /* Tier text colours (AA on paper: A 4.6:1, D 4.6:1, F 6.0:1, muted 4.9:1). */
+  --tier-a: #15803d;
+  --tier-d: #b45309;
+  --tier-f: #b91c1c;
+  /* Severity (four states): warn outline/fill and warn text, bad fill and the text on it. */
+  --warn: #f59e0b;
+  --warn-text: #b45309;
+  --bad: #dc2626;
+  --bad-ink: #ffffff;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: light;
+}
+
+/* Dark: tokens flip, neon stays. Tier/muted text lifts so small text keeps AA on #0B0B0B. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b0b0b;
+    --ink: #f4f4f2;
+    --neon: #2eff0e;
+    --muted: #9a9a9a;
+    --tier-a: #4ade80;
+    --tier-d: #f59e0b;
+    --tier-f: #f87171;
+    --warn: #fbbf24;
+    --warn-text: #fbbf24;
+    --bad: #ef4444;
+    --bad-ink: #0a0a0a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b0b0b;
+  --ink: #f4f4f2;
+  --neon: #2eff0e;
+  --muted: #9a9a9a;
+  --tier-a: #4ade80;
+  --tier-d: #f59e0b;
+  --tier-f: #f87171;
+  --warn: #fbbf24;
+  --warn-text: #fbbf24;
+  --bad: #ef4444;
+  --bad-ink: #0a0a0a;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 640px) {
+  body {
+    font-size: 15px;
+  }
+}
+
+::selection {
+  background: var(--neon);
+  color: var(--neon-ink);
+}
+
+/* Focus: 2px neon ring with a 1px ink edge, so it reads on paper (neon alone is < 3:1 on #F4F4F2). */
+:focus-visible {
+  outline: 2px solid var(--neon);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--ink);
+}
+
+/* Display type: heavy condensed grotesk, uppercase, italic by skew (Anton has no italic). */
+.mm-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+  transform: skewX(-8deg);
+  transform-origin: left bottom;
+}
+.mm-display-sm {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.mm-box {
+  border: var(--rule);
+}
+.mm-rule-t {
+  border-top: var(--rule);
+}
+.mm-rule-b {
+  border-bottom: var(--rule);
+}
+
+/* Buttons, pills and chips: 1px ink outline; hover fills neon with ink text. */
+.mm-btn,
+.mm-pill {
+  border: var(--rule);
+  background: transparent;
+  color: var(--ink);
+  transition:
+    background-color 150ms var(--ease),
+    color 150ms var(--ease);
+}
+.mm-pill {
+  border-radius: 999px;
+}
+.mm-btn:hover:not(:disabled),
+.mm-pill:is(a, button):hover {
+  background: var(--neon);
+  color: var(--neon-ink);
+  border-color: var(--neon-ink);
+}
+.mm-btn:disabled {
+  opacity: 0.6;
+}
+.mm-btn-neon {
+  border: 1px solid var(--neon-ink);
+  background: var(--neon);
+  color: var(--neon-ink);
+  transition:
+    background-color 150ms var(--ease),
+    color 150ms var(--ease);
+}
+.mm-btn-neon:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.mm-btn-neon:disabled {
+  opacity: 0.7;
+}
+
+/* Chamfered ticket tag: an ink polygon with a paper polygon 1px inside it. */
+.mm-tag {
+  --cut: 9px;
+  display: inline-block;
+  padding: 1px;
+  background: var(--ink);
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%);
+}
+.mm-tag > span {
+  display: block;
+  padding: 0.2rem calc(var(--cut) + 0.35rem);
+  background: var(--paper);
+  color: var(--ink);
+  clip-path: polygon(calc(var(--cut) - 0.5px) 0, calc(100% - var(--cut) + 0.5px) 0, 100% 50%, calc(100% - var(--cut) + 0.5px) 100%, calc(var(--cut) - 0.5px) 100%, 0 50%);
+  transition:
+    background-color 150ms var(--ease),
+    color 150ms var(--ease);
+  white-space: nowrap;
+}
+.mm-tag:is(a, button):hover > span,
+.mm-tag[data-on="true"] > span {
+  background: var(--neon);
+  color: var(--neon-ink);
+}
+.mm-tag:is(a, button):hover {
+  background: var(--neon-ink);
+}
+
+/* Neon underline sweep on hover for text links (a solid neon bar, sized 0 → 100%). */
+.mm-link {
+  background-image: linear-gradient(var(--neon), var(--neon));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 3px;
+  transition: background-size 160ms var(--ease);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.mm-link:hover {
+  background-size: 100% 3px;
+}
+
+/* Expandable rows: no default marker; a mono +/− glyph instead. */
+summary {
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+.mm-plus::before {
+  content: "+";
+  display: inline-block;
+  width: 1ch;
+}
+details[open] > summary .mm-plus::before {
+  content: "−";
+}
+
+/* Skeleton: outlines only, a slow neon sweep. */
+.mm-skel {
+  border: var(--rule);
+  background-image: linear-gradient(color-mix(in srgb, var(--neon) 25%, transparent), color-mix(in srgb, var(--neon) 25%, transparent));
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: mm-sweep 1.4s var(--ease) infinite;
+}
+@keyframes mm-sweep {
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
+}
+
+/* Tier roll: the aria-hidden reel climbs F → … → final; the real letter fades in at the end. */
+.mm-reel {
+  animation: mm-reel 620ms var(--ease) both;
+}
+@keyframes mm-reel {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--reel-to));
+  }
+}
+.mm-reel-final {
+  animation: mm-show 1ms linear 620ms both;
+}
+.mm-reel-wrap {
+  animation: mm-hide 1ms linear 620ms both;
+}
+@keyframes mm-show {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes mm-hide {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Score count-up: an aria-hidden integer counter climbs to the score; the real value replaces it. */
+@property --mm-n {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+.mm-count {
+  animation:
+    mm-count 620ms var(--ease) both,
+    mm-hide 1ms linear 620ms both;
+  counter-reset: mm var(--mm-n);
+}
+.mm-count::after {
+  content: counter(mm);
+}
+@keyframes mm-count {
+  from {
+    --mm-n: 0;
+  }
+  to {
+    --mm-n: var(--mm-to);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+  .mm-reel-wrap {
+    display: none;
+  }
+  .mm-reel-final {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Outlined checkbox: ink square, neon fill with an ink tick when checked. */
+.mm-check {
+  appearance: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: var(--rule);
+  background: transparent;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+}
+.mm-check::after {
+  content: "";
+  width: 0.55rem;
+  height: 0.3rem;
+  border-left: 2px solid var(--neon-ink);
+  border-bottom: 2px solid var(--neon-ink);
+  transform: translateY(-1px) rotate(-45deg);
+  opacity: 0;
+}
+.mm-check:checked {
+  background: var(--neon);
+  border-color: var(--neon-ink);
+}
+.mm-check:checked::after {
+  opacity: 1;
+}
+.mm-check:disabled {
+  opacity: 0.5;
+}
+
+/* The mobile sticky result bar never covers the last line: reserve its height while it is shown. */
+@media (max-width: 639px) {
+  body:has([data-testid="sticky-bar"]) {
+    padding-bottom: 3.75rem;
+  }
+}
+
+/* ── Severity: four states, never more (components/severity.ts) ──────────────────────────────
+   good: neon fill, ink text · ok: ink outline · warn: orange outline + orange text · bad: red fill, white text.
+   --warn (#F59E0B) is the outline / fill colour. As text on light paper it is only ~2:1, so warn TEXT uses
+   --warn-text (#B45309, 5:1) in light mode; in dark mode both are #F59E0B (8.6:1 on #0B0B0B). */
+.sev-good,
+.sev-ok,
+.sev-warn,
+.sev-bad,
+.sev-ink,
+.sev-orange,
+.sev-unrated {
+  border-width: 1px;
+  border-style: solid;
+}
+.sev-good {
+  background: var(--neon);
+  color: var(--neon-ink);
+  border-color: var(--neon-ink);
+}
+.sev-ok {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.sev-warn {
+  background: transparent;
+  color: var(--warn-text);
+  border-color: var(--warn);
+}
+.sev-bad {
+  background: var(--bad);
+  color: var(--bad-ink);
+  border-color: var(--bad);
+}
+/* Tier-only looks on the same scale: B = ink block, D = orange block, U = grey dashed (unrated). */
+.sev-ink {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.sev-orange {
+  background: var(--warn);
+  color: #0a0a0a;
+  border-color: var(--warn);
+}
+.sev-unrated {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--muted);
+  border-style: dashed;
+}
+.sev-text-good {
+  color: var(--ink);
+}
+.sev-text-warn {
+  color: var(--warn-text);
+}
+.sev-text-bad {
+  color: var(--bad-text);
+}
+/* Score-bar fills and factor-row left rules. */
+.sev-fill-good {
+  background: var(--neon);
+}
+.sev-fill-ok {
+  background: var(--ink);
+}
+.sev-fill-warn {
+  background: var(--warn);
+}
+.sev-fill-bad {
+  background: var(--bad);
+}
+.sev-rule-good {
+  border-left: 3px solid var(--neon);
+}
+.sev-rule-ok {
+  border-left: 3px solid var(--ink);
+}
+.sev-rule-warn {
+  border-left: 3px solid var(--warn);
+}
+.sev-rule-bad {
+  border-left: 3px solid var(--bad);
+}
+
+/* Hero tier letter: a fixed-ratio block sized by clamp(); the skew sits on the inner glyph, whose
+   inline padding absorbs the slant, and nothing clips sideways. Only the roll-up reel clips, vertically. */
+.mm-tier {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 0.8em;
+  height: 1.08em;
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 22vw, 18rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+.mm-tier-glyph {
+  display: inline-block;
+  padding-inline: 0.08em;
+  transform: skewX(-8deg);
+  overflow: visible;
+}
+.mm-tier-reel-wrap {
+  position: absolute;
+  inset: 0;
+  overflow-x: visible;
+  overflow-y: clip;
+}
+.mm-tier-reel > span {
+  display: grid;
+  place-items: center;
+  height: 1.08em;
+}
+/* "NN.N/100": one mono line that never wraps, with its own clamp. */
+.mm-score {
+  font-size: clamp(2rem, 10vw, 3.5rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Home headline: 4 lines below 1200px; from 1200px 2 lines sized so the longer one spans ~75% of the
+   container (tighter tracking). Values measured on Anton (see e2e/home.spec.ts). */
+.mm-headline {
+  font-size: 13vw;
+  line-height: 0.9;
+}
+@media (min-width: 640px) {
+  .mm-headline {
+    font-size: 11vw;
+  }
+}
+@media (min-width: 1200px) {
+  .mm-headline {
+    font-size: 8.65vw;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ── Round 3: verdict vs research view ──────────────────────────────────────────────────────── */
+/* html[data-view] is set before paint (THEME_INIT); the research-only parts never flash. */
+html:not([data-view="research"]) .mm-research {
+  display: none !important;
+}
+
+/* Factor colour dot: the only colour on a factor line. Null (no data / n/a) is a grey dashed ring. */
+.mm-dot {
+  display: inline-block;
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+.mm-dot-none {
+  border: 1px dashed var(--muted);
+}
+/* Neutral chips: "≠ sources differ" and "stale 12m" never colour a factor. */
+.sev-muted {
+  border: 1px solid var(--muted);
+  color: var(--muted);
+  background: transparent;
+}
+
+/* Factor grid: the point groups (3) in the verdict view, + the Verification column in research. */
+.mm-grid {
+  display: grid;
+  align-items: start;
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .mm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1280px) {
+  .mm-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  html[data-view="research"] .mm-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Verdict view: long source messages (e.g. every pool the sell simulation tried) clamp to two lines;
+   the research view shows them in full. */
+html:not([data-view="research"]) .mm-clamp-verdict {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}

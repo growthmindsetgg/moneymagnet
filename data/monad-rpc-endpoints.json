@@ -1,0 +1,28 @@
+{
+ "note": "Public Monad mainnet (chain id 143, eth_chainId 0x8f) RPC endpoints, probed 2026-10-29T11:53Z with the checks of scripts/probe-rpcs.mjs plus a getLogs span ladder (100/1k/10k/100k blocks on USDC Transfer logs), eth_getBlockByNumber timing over 1,000 blocks (0.302 s/block on every endpoint) and a historical eth_getCode at block 37,998,425. 'logs' = serves eth_getLogs over a 10,000-block range (the widest any public endpoint allows; no endpoint serves 'full' ranges, so callers must chunk by logsMaxSpan). 'override' = eth_call with a code state override returned the injected value. 'historical' = eth_getCode at an old block answered (archive state; null = not tested).'burst429' = rate-limited replies to 20 concurrent eth_blockNumber. 'documentedLimit' is from docs.monad.xyz/getting-started/network-information (where listed). MONAD_RPC_URL goes first when set.",
+ "probedAt": "2026-10-29T11:53:28.030Z",
+ "endpoints": [
+  { "url": "https://rpc2.monad.xyz", "logs": true, "logsMaxSpan": 10000, "override": true, "storage": true, "historical": true, "latencyMs": 83, "burst429": "0/20", "provider": "Goldsky Edge", "documentedLimit": "300 req / 10 s, batch 10" },
+  { "url": "https://infra.originstake.com/monad/evm", "logs": true, "logsMaxSpan": 10000, "override": true, "storage": true, "historical": true, "latencyMs": 224, "burst429": "0/20", "provider": "Originstake", "documentedLimit": null },
+  { "url": "https://rpc.monad.xyz", "logs": false, "logsMaxSpan": 100, "override": true, "storage": true, "historical": false, "latencyMs": 58, "burst429": "0/20", "provider": "QuickNode", "documentedLimit": "25 rps, batch 100" },
+  { "url": "https://rpc3.monad.xyz", "logs": false, "logsMaxSpan": 100, "override": true, "storage": true, "historical": false, "latencyMs": 95, "burst429": "0/20", "provider": "Ankr", "documentedLimit": "300 req / 10 s, batch 10" },
+  { "url": "https://rpc.ankr.com/monad_mainnet", "logs": false, "logsMaxSpan": 100, "override": true, "storage": true, "historical": false, "latencyMs": 97, "burst429": "0/20", "provider": "Ankr", "documentedLimit": null },
+  { "url": "https://rpc4.monad.xyz", "logs": false, "logsMaxSpan": 1000, "override": true, "storage": true, "historical": null, "latencyMs": 304, "burst429": "0/20", "burstNote": "7/20 answered 'Internal error'", "provider": "unlisted in Monad docs", "documentedLimit": null },
+  { "url": "https://monad-mainnet-rpc.spidernode.net", "logs": false, "logsMaxSpan": 1000, "override": true, "storage": true, "historical": null, "latencyMs": 286, "burst429": "0/20", "provider": "Spidernode", "documentedLimit": null },
+  { "url": "https://monad-rpc.huginn.tech", "logs": false, "logsMaxSpan": 1000, "override": true, "storage": true, "historical": null, "latencyMs": 237, "burst429": "0/20", "provider": "Huginn", "documentedLimit": null },
+  { "url": "https://gm.monad.at.htw.tech", "logs": false, "logsMaxSpan": 1000, "override": true, "storage": true, "historical": null, "latencyMs": 237, "burst429": "0/20", "provider": "HTW", "documentedLimit": null },
+  { "url": "https://monad-mainnet.rpc.sentio.xyz", "logs": false, "logsMaxSpan": 1000, "override": true, "storage": true, "historical": null, "latencyMs": 331, "burst429": "0/20", "provider": "Sentio", "documentedLimit": "public eth_getLogs limited to 1000 blocks (error text)" },
+  { "url": "https://rpc-mainnet.monadinfra.com", "logs": false, "logsMaxSpan": 100, "override": true, "storage": true, "historical": true, "latencyMs": 75, "burst429": "10/20", "provider": "Monad Foundation (MF)", "documentedLimit": "20 rps, batch 1" },
+  { "url": "https://rpc1.monad.xyz", "logs": false, "logsMaxSpan": 100, "override": true, "storage": true, "historical": null, "latencyMs": 82, "burst429": "9/20", "provider": "Alchemy", "documentedLimit": "15 rps, batch 100" },
+  { "url": "https://143.rpc.thirdweb.com", "logs": false, "logsMaxSpan": 1000, "override": true, "storage": true, "historical": null, "latencyMs": 13, "burst429": "16/20", "provider": "thirdweb", "documentedLimit": null }
+ ],
+ "excluded": [
+  { "url": "https://monad-mainnet.drpc.org", "reason": "eth_getLogs answered 'unsupported block number' (100 blocks) and 'ranges over 10000 blocks are not supported on free plan'; state-override eth_call answered 'user-specified gas exceeds provider limit'" },
+  { "url": "https://monad-rpc.publicnode.com", "reason": "no JSON-RPC answer to eth_chainId" },
+  { "url": "https://monad.rpc.blxrbdn.com", "reason": "fetch failed (connection error)" },
+  { "url": "https://lb.routeme.sh/rpc/evm/143", "reason": "eth_chainId answered 'public rate limit exceeded' (-32029)" },
+  { "url": "https://monad-mainnet.api.onfinality.io/public", "reason": "20/20 burst calls and eth_blockNumber answered 'Too Many Requests' (-32029)" },
+  { "url": "https://monad-mainnet.gateway.tatum.io", "reason": "429 'limit of 5 requests per minute'; eth_getLogs over 100 blocks refused" },
+  { "url": "https://rpc.swiftnodes.io/rpc/monad", "reason": "'2 requests per second on the Demo plan' (18/20 burst 429); free plan refuses eth_getLogs ranges" }
+ ]
+}

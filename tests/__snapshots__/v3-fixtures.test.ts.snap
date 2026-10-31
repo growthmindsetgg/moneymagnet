@@ -1,0 +1,1099 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`v3 Base / Monad recorded fixtures > base-99 (launch) scores in A/B/C/D/F/U 1`] = `
+{
+  "coveragePct": 91,
+  "factors": [
+    [
+      "vol_mc",
+      0,
+      "live",
+    ],
+    [
+      "launch_retrace",
+      0,
+      "live",
+    ],
+    [
+      "chart_identical",
+      10,
+      "live",
+    ],
+    [
+      "chart_staircase",
+      8,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "top_holder",
+      16,
+      "live",
+    ],
+    [
+      "top10_share",
+      14,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      7,
+      "live",
+    ],
+    [
+      "sell_count",
+      2,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "null",
+    ],
+    [
+      "round_trip_loss",
+      10,
+      "live",
+    ],
+  ],
+  "fired": [
+    "vol_mc_bundle",
+    "supply_controlled",
+  ],
+  "mode": "launch",
+  "rawScore": 75.1,
+  "score": 45.1,
+  "tier": "C",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > base-adfo (launch) scores in A/B/C/D/F/U 1`] = `
+{
+  "coveragePct": 73,
+  "factors": [
+    [
+      "vol_mc",
+      0,
+      "live",
+    ],
+    [
+      "launch_retrace",
+      0,
+      "live",
+    ],
+    [
+      "chart_identical",
+      0,
+      "null",
+    ],
+    [
+      "chart_staircase",
+      0,
+      "null",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "top_holder",
+      16,
+      "live",
+    ],
+    [
+      "top10_share",
+      14,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      5.6,
+      "live",
+    ],
+    [
+      "sell_count",
+      4,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "null",
+    ],
+    [
+      "round_trip_loss",
+      10,
+      "live",
+    ],
+  ],
+  "fired": [
+    "vol_mc_bundle",
+    "supply_controlled",
+  ],
+  "mode": "launch",
+  "rawScore": 58,
+  "score": 28,
+  "tier": "D",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > base-brett (established) scores in A/B/C 1`] = `
+{
+  "coveragePct": 100,
+  "factors": [
+    [
+      "top10_share",
+      6.05,
+      "live",
+    ],
+    [
+      "top_holder",
+      2,
+      "live",
+    ],
+    [
+      "deployer_holding",
+      9,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      4.95,
+      "live",
+    ],
+    [
+      "trades_per_wallet",
+      3.6,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      13,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "verified",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "null",
+    ],
+    [
+      "liq_fdv",
+      5.85,
+      "live",
+    ],
+    [
+      "main_pool_share",
+      4.5,
+      "live",
+    ],
+    [
+      "liq_change_24h",
+      5,
+      "live",
+    ],
+    [
+      "liq_change_7d",
+      8,
+      "live",
+    ],
+    [
+      "pool_count",
+      3,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "live",
+    ],
+  ],
+  "fired": [
+    "track_record_30d",
+  ],
+  "mode": "established",
+  "rawScore": 65,
+  "score": 68,
+  "tier": "B",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > base-rug (rug) scores in F 1`] = `
+{
+  "coveragePct": 53,
+  "factors": [
+    [
+      "vol_mc",
+      12,
+      "live",
+    ],
+    [
+      "launch_retrace",
+      0,
+      "null",
+    ],
+    [
+      "chart_identical",
+      0,
+      "null",
+    ],
+    [
+      "chart_staircase",
+      0,
+      "null",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "top_holder",
+      0,
+      "live",
+    ],
+    [
+      "top10_share",
+      0,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      5.6,
+      "live",
+    ],
+    [
+      "sell_count",
+      4,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "null",
+    ],
+    [
+      "round_trip_loss",
+      0,
+      "null",
+    ],
+  ],
+  "fired": [
+    "liquidity_pulled",
+    "top_holder_bundle",
+    "top_holder_20",
+    "top_holder_35",
+  ],
+  "mode": "launch",
+  "rawScore": 66.2,
+  "score": 0,
+  "tier": "F",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in A/B/C 1`] = `
+{
+  "coveragePct": 100,
+  "factors": [
+    [
+      "top10_share",
+      6.05,
+      "live",
+    ],
+    [
+      "top_holder",
+      2,
+      "live",
+    ],
+    [
+      "deployer_holding",
+      9,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      2.7,
+      "live",
+    ],
+    [
+      "trades_per_wallet",
+      6,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      13,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "verified",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "n/a",
+    ],
+    [
+      "launchpad",
+      0,
+      "null",
+    ],
+    [
+      "liq_fdv",
+      5.85,
+      "live",
+    ],
+    [
+      "main_pool_share",
+      6,
+      "live",
+    ],
+    [
+      "liq_change_24h",
+      5,
+      "live",
+    ],
+    [
+      "liq_change_7d",
+      8,
+      "live",
+    ],
+    [
+      "pool_count",
+      2.1,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "live",
+    ],
+  ],
+  "fired": [
+    "track_record_30d",
+  ],
+  "mode": "established",
+  "rawScore": 65.7,
+  "score": 68.7,
+  "tier": "B",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in A/B/C 1`] = `
+{
+  "coveragePct": 100,
+  "factors": [
+    [
+      "top10_share",
+      5.5,
+      "live",
+    ],
+    [
+      "top_holder",
+      4.5,
+      "live",
+    ],
+    [
+      "deployer_holding",
+      5,
+      "live",
+    ],
+    [
+      "deployer_sold",
+      10,
+      "live",
+    ],
+    [
+      "net_flow_24h",
+      4.95,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      4.4,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      9,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "verified",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "liq_fdv",
+      9,
+      "live",
+    ],
+    [
+      "main_pool_share",
+      6,
+      "live",
+    ],
+    [
+      "liq_change_24h",
+      5,
+      "live",
+    ],
+    [
+      "liq_change_7d",
+      7,
+      "live",
+    ],
+    [
+      "pool_count",
+      3,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "live",
+    ],
+  ],
+  "fired": [
+    "track_record_30d",
+  ],
+  "mode": "established",
+  "rawScore": 73.3,
+  "score": 76.3,
+  "tier": "A",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in B/C/D 1`] = `
+{
+  "coveragePct": 100,
+  "factors": [
+    [
+      "top10_share",
+      0,
+      "live",
+    ],
+    [
+      "top_holder",
+      0,
+      "live",
+    ],
+    [
+      "deployer_holding",
+      5,
+      "live",
+    ],
+    [
+      "deployer_sold",
+      10,
+      "live",
+    ],
+    [
+      "net_flow_24h",
+      7.2,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      8,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      9,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "verified",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "liq_fdv",
+      5.4,
+      "live",
+    ],
+    [
+      "main_pool_share",
+      6,
+      "live",
+    ],
+    [
+      "liq_change_24h",
+      5,
+      "live",
+    ],
+    [
+      "liq_change_7d",
+      7,
+      "live",
+    ],
+    [
+      "pool_count",
+      3,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "live",
+    ],
+  ],
+  "fired": [
+    "top_holder_20",
+    "top_holder_35",
+    "track_record_30d",
+  ],
+  "mode": "established",
+  "rawScore": 65.6,
+  "score": 39.9,
+  "tier": "D",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
+{
+  "coveragePct": 91,
+  "factors": [
+    [
+      "top10_share",
+      8,
+      "live",
+    ],
+    [
+      "top_holder",
+      4.5,
+      "live",
+    ],
+    [
+      "deployer_holding",
+      5,
+      "live",
+    ],
+    [
+      "deployer_sold",
+      0,
+      "live",
+    ],
+    [
+      "net_flow_24h",
+      4.95,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      0.8,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      0,
+      "null",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "verified",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "liq_fdv",
+      0,
+      "live",
+    ],
+    [
+      "main_pool_share",
+      6,
+      "live",
+    ],
+    [
+      "liq_change_24h",
+      5,
+      "live",
+    ],
+    [
+      "liq_change_7d",
+      7,
+      "live",
+    ],
+    [
+      "pool_count",
+      0,
+      "live",
+    ],
+    [
+      "trend",
+      7,
+      "live",
+    ],
+  ],
+  "fired": [
+    "liquidity_pulled",
+    "dev_sold",
+    "broke_hl",
+    "wash",
+    "dead_launch",
+    "track_record_30d",
+    "micro_cap",
+  ],
+  "mode": "established",
+  "rawScore": 51.3,
+  "score": 0,
+  "tier": "F",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > monad-perpl (launch) scores in A/B/C/D/F/U 1`] = `
+{
+  "coveragePct": 55,
+  "factors": [
+    [
+      "vol_mc",
+      0,
+      "live",
+    ],
+    [
+      "launch_retrace",
+      0,
+      "null",
+    ],
+    [
+      "chart_identical",
+      0,
+      "null",
+    ],
+    [
+      "chart_staircase",
+      0,
+      "null",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "null",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "top_holder",
+      10,
+      "live",
+    ],
+    [
+      "top10_share",
+      8,
+      "live",
+    ],
+    [
+      "holders_vs_makers",
+      0,
+      "null",
+    ],
+    [
+      "deployer_sold",
+      8,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      0,
+      "null",
+    ],
+    [
+      "unique_buyers",
+      0,
+      "live",
+    ],
+    [
+      "net_flow_24h",
+      5,
+      "live",
+    ],
+    [
+      "sell_count",
+      0,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "null",
+    ],
+    [
+      "round_trip_loss",
+      5,
+      "live",
+    ],
+  ],
+  "fired": [
+    "vol_mc_bundle",
+    "micro_cap",
+    "dust",
+  ],
+  "mode": "launch",
+  "rawScore": 48.5,
+  "score": 24.9,
+  "tier": "F",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > monad-vibe (launch) scores in A/B/C/D/F/U 1`] = `
+{
+  "coveragePct": 95,
+  "factors": [
+    [
+      "vol_mc",
+      0,
+      "live",
+    ],
+    [
+      "launch_retrace",
+      10,
+      "live",
+    ],
+    [
+      "chart_identical",
+      10,
+      "live",
+    ],
+    [
+      "chart_staircase",
+      8,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "null",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "launchpad",
+      0,
+      "live",
+    ],
+    [
+      "top_holder",
+      10,
+      "live",
+    ],
+    [
+      "top10_share",
+      8,
+      "live",
+    ],
+    [
+      "holders_vs_makers",
+      3,
+      "live",
+    ],
+    [
+      "deployer_sold",
+      0,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      6,
+      "live",
+    ],
+    [
+      "unique_buyers",
+      4,
+      "live",
+    ],
+    [
+      "net_flow_24h",
+      3,
+      "live",
+    ],
+    [
+      "sell_count",
+      3,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "null",
+    ],
+    [
+      "round_trip_loss",
+      5,
+      "live",
+    ],
+  ],
+  "fired": [
+    "dev_sold",
+    "vol_mc_bundle",
+    "micro_cap",
+    "dust",
+  ],
+  "mode": "launch",
+  "rawScore": 74.6,
+  "score": 24.9,
+  "tier": "F",
+}
+`;
