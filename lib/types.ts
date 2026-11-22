@@ -84,6 +84,19 @@ export interface TokenSnapshot {
   priceChange24hPct: number | null;
   /** What span priceChange24hPct covers: "24h", or "since launch (Xh)" for a pair younger than 24h. */
   priceChangeWindow: string | null;
+  /** 7d price change of the main pool from GeckoTerminal daily closes (lib/cohort.ts priceChange7d). */
+  priceChange7dPct?: number | null;
+  /** The daily closes the 7d change compares, e.g. "daily close 2026-11-15 → latest". */
+  priceChange7dWindow?: string | null;
+  /** Median 7d price change of the peer cohort (same DEX / launchpad on the same chain), this token excluded. */
+  cohortMedian7dPct?: number | null;
+  /** Peers behind cohortMedian7dPct. */
+  cohortSize?: number | null;
+  /** Who the peers are, e.g. "pumpswap peers on Solana". */
+  cohortLabel?: string | null;
+  /** Relative strength, derived: min(7d change, 7d change − cohort median), in percentage points. > 0 only when the
+   *  token rose AND beat the cohort median. */
+  relStrength7dPp?: number | null;
   /** Number of stored liquidity observations for this token. */
   liqHistoryPoints: number | null;
   /** Sum of reserves across every known pool — the series stored for liquidity history. */

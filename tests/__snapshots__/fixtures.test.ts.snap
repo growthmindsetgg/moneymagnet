@@ -2,7 +2,7 @@
 
 exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
 {
-  "coveragePct": 74,
+  "coveragePct": 71,
   "factors": [
     [
       "top10_share",
@@ -90,7 +90,7 @@ exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
     ],
     [
       "liq_fdv",
-      6.75,
+      7,
       "none",
       "live",
     ],
@@ -123,6 +123,12 @@ exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
       2,
       "none",
       "live",
+    ],
+    [
+      "rel_strength_7d",
+      0,
+      "none",
+      "null",
     ],
   ],
   "fired": [
@@ -179,15 +185,15 @@ exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
     ],
   ],
   "mode": "established",
-  "rawScore": 63.5,
-  "score": 66.5,
+  "rawScore": 65.6,
+  "score": 68.6,
   "tier": "B",
 }
 `;
 
 exports[`recorded fixture snapshots > microduck scores in S/A 1`] = `
 {
-  "coveragePct": 100,
+  "coveragePct": 98,
   "factors": [
     [
       "top10_share",
@@ -317,7 +323,7 @@ exports[`recorded fixture snapshots > microduck scores in S/A 1`] = `
     ],
     [
       "liq_fdv",
-      6.75,
+      5.25,
       "none",
       "live",
     ],
@@ -350,6 +356,12 @@ exports[`recorded fixture snapshots > microduck scores in S/A 1`] = `
       2,
       "none",
       "live",
+    ],
+    [
+      "rel_strength_7d",
+      0,
+      "none",
+      "null",
     ],
   ],
   "fired": [
@@ -406,8 +418,8 @@ exports[`recorded fixture snapshots > microduck scores in S/A 1`] = `
     ],
   ],
   "mode": "established",
-  "rawScore": 77.9,
-  "score": 80.9,
+  "rawScore": 78,
+  "score": 81,
   "tier": "A",
 }
 `;

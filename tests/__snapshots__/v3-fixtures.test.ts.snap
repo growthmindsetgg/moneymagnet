@@ -194,7 +194,7 @@ exports[`v3 Base / Monad recorded fixtures > base-adfo (launch) scores in A/B/C/
 
 exports[`v3 Base / Monad recorded fixtures > base-brett (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 100,
+  "coveragePct": 98,
   "factors": [
     [
       "top10_share",
@@ -263,7 +263,7 @@ exports[`v3 Base / Monad recorded fixtures > base-brett (established) scores in 
     ],
     [
       "liq_fdv",
-      5.85,
+      8.25,
       "live",
     ],
     [
@@ -291,14 +291,19 @@ exports[`v3 Base / Monad recorded fixtures > base-brett (established) scores in 
       0,
       "live",
     ],
+    [
+      "rel_strength_7d",
+      0,
+      "null",
+    ],
   ],
   "fired": [
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 65,
-  "score": 68,
-  "tier": "B",
+  "rawScore": 68.8,
+  "score": 71.8,
+  "tier": "A",
 }
 `;
 
@@ -403,7 +408,7 @@ exports[`v3 Base / Monad recorded fixtures > base-rug (rug) scores in F 1`] = `
 
 exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 100,
+  "coveragePct": 98,
   "factors": [
     [
       "top10_share",
@@ -472,7 +477,7 @@ exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in 
     ],
     [
       "liq_fdv",
-      5.85,
+      8.25,
       "live",
     ],
     [
@@ -500,20 +505,25 @@ exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in 
       0,
       "live",
     ],
+    [
+      "rel_strength_7d",
+      0,
+      "null",
+    ],
   ],
   "fired": [
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 65.7,
-  "score": 68.7,
-  "tier": "B",
+  "rawScore": 69.6,
+  "score": 72.6,
+  "tier": "A",
 }
 `;
 
 exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores in B/C/D 1`] = `
 {
-  "coveragePct": 87,
+  "coveragePct": 85,
   "factors": [
     [
       "top10_share",
@@ -577,7 +587,7 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores i
     ],
     [
       "liq_fdv",
-      13,
+      11,
       "live",
     ],
     [
@@ -605,13 +615,18 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores i
       0,
       "live",
     ],
+    [
+      "rel_strength_7d",
+      0,
+      "null",
+    ],
   ],
   "fired": [
     "top_holder_20",
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 65.9,
+  "rawScore": 65.1,
   "score": 54.9,
   "tier": "C",
 }
@@ -619,7 +634,7 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores i
 
 exports[`v3 Base / Monad recorded fixtures > ethereum-pepe (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 87,
+  "coveragePct": 85,
   "factors": [
     [
       "top10_share",
@@ -683,7 +698,7 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-pepe (established) scores 
     ],
     [
       "liq_fdv",
-      2.6,
+      4.95,
       "live",
     ],
     [
@@ -711,13 +726,18 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-pepe (established) scores 
       3.5,
       "stale",
     ],
+    [
+      "rel_strength_7d",
+      0,
+      "null",
+    ],
   ],
   "fired": [
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 61.6,
-  "score": 64.6,
+  "rawScore": 66.7,
+  "score": 69.7,
   "tier": "B",
 }
 `;
@@ -815,7 +835,7 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-pipi (launch) scores in A/
 
 exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 100,
+  "coveragePct": 98,
   "factors": [
     [
       "top10_share",
@@ -889,7 +909,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in 
     ],
     [
       "liq_fdv",
-      9,
+      7.5,
       "live",
     ],
     [
@@ -917,6 +937,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in 
       0,
       "live",
     ],
+    [
+      "rel_strength_7d",
+      0,
+      "null",
+    ],
   ],
   "fired": [
     "track_record_30d",
@@ -930,7 +955,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in 
 
 exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in B/C/D 1`] = `
 {
-  "coveragePct": 100,
+  "coveragePct": 98,
   "factors": [
     [
       "top10_share",
@@ -1004,7 +1029,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
     ],
     [
       "liq_fdv",
-      5.4,
+      4.5,
       "live",
     ],
     [
@@ -1032,6 +1057,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
       0,
       "live",
     ],
+    [
+      "rel_strength_7d",
+      0,
+      "null",
+    ],
   ],
   "fired": [
     "top_holder_20",
@@ -1040,7 +1070,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 65.6,
+  "rawScore": 66,
   "score": 39.9,
   "tier": "D",
 }
@@ -1048,7 +1078,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
 
 exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
 {
-  "coveragePct": 91,
+  "coveragePct": 89,
   "factors": [
     [
       "top10_share",
@@ -1150,6 +1180,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
       7,
       "live",
     ],
+    [
+      "rel_strength_7d",
+      0,
+      "null",
+    ],
   ],
   "fired": [
     "liquidity_pulled",
@@ -1161,7 +1196,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
     "micro_cap",
   ],
   "mode": "established",
-  "rawScore": 51.3,
+  "rawScore": 52.6,
   "score": 0,
   "tier": "F",
 }

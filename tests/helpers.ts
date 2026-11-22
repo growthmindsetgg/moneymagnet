@@ -58,6 +58,13 @@ export function perfectSnapshot(chain: Chain = "robinhood", overrides: Partial<T
     lpLockedPct: 100,
     trendScore: 1,
     brokeHigherLow: false,
+    // Relative strength 7d (2026-11-22): rose 25% while the peer median rose 5% ⇒ min(25, 20) = +20 pp.
+    priceChange7dPct: 25,
+    priceChange7dWindow: "daily close 2026-11-15 → latest 2026-11-22",
+    cohortMedian7dPct: 5,
+    cohortSize: 8,
+    cohortLabel: "test-dex peers on Robinhood Chain",
+    relStrength7dPp: 20,
     ...overrides,
   };
 }

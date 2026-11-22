@@ -3,6 +3,7 @@ import { fetchJson, num } from "./http";
 import { isOutage, withRetry } from "./retry";
 import { poolMetrics, pumpMarket, type PoolRow } from "./pools";
 import { identicalCandles, launchRetrace, sortCandles, staircase, trend, upOnly } from "../patterns";
+import { priceChange7d } from "../cohort";
 
 interface GtPool {
   id: string;
@@ -98,7 +99,7 @@ export async function geckoterminal(chain: Chain, address: string): Promise<Adap
   const ohlcvNote = await chartPatterns(net, main.attributes.address, main.attributes.pool_created_at, data, raw).catch((e: Error) => {
     const reason = `GeckoTerminal OHLCV failed: ${/\b429\b/.test(e.message) ? "rate limited (HTTP 429)" : e.message.slice(0, 80)}`;
     data.nullReasons = Object.fromEntries(
-      ["identicalCandleSharePct", "staircase", "trendScore", "brokeHigherLow", "upOnlyChart", "launchRetraced30", "launchPriceUsd", "hugeCandlesOnly"].map((m) => [m, reason]),
+      ["identicalCandleSharePct", "staircase", "trendScore", "brokeHigherLow", "upOnlyChart", "launchRetraced30", "launchPriceUsd", "hugeCandlesOnly", "priceChange7dPct"].map((m) => [m, reason]),
     );
     // An outage (429 / 5xx / timeout), not an answer: the last good candles' readings stand in, labelled stale.
     if (isOutage(e)) failedFields = [...OHLCV_FIELDS];
@@ -139,6 +140,8 @@ export const OHLCV_FIELDS = [
   "launchRetraced30",
   "launchWindow",
   "launchPriceUsd",
+  "priceChange7dPct",
+  "priceChange7dWindow",
   "patterns",
 ] as const;
 
@@ -207,6 +210,11 @@ async function chartPatterns(net: string, pool: string, createdAt: string | null
 
   // Daily candles of the main pool, kept for Holder Strength (drawdowns and dips over the token's life).
   raw.dayCandles = d1.map((c) => ({ t: c.t, o: c.o, h: c.h, l: c.l, c: c.c }));
+  // 7d price change of the main pool (relative strength vs the peer cohort reads it with the same rule as the peers').
+  const ch7 = priceChange7d(d1);
+  data.priceChange7dPct = ch7.pct;
+  data.priceChange7dWindow = ch7.window;
+  if (ch7.pct == null) nullReasons.priceChange7dPct = `GeckoTerminal ${ch7.reason}`;
   // Launch price = open of the first daily candle of the main pool.
   if (d1.length && launchTs && d1[0].t <= launchTs + 86_400) data.launchPriceUsd = d1[0].o;
   else nullReasons.launchPriceUsd = "first daily candle not available from GeckoTerminal";

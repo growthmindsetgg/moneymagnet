@@ -14,7 +14,7 @@ export type ValueCondition = Partial<Record<Op, number | boolean>> & {
 /** Conditions over several snapshot metrics, e.g. { "ageHours": { "lt": 24 } }. */
 export type MetricCondition = Record<string, ValueCondition>;
 
-export type Format = "pct" | "signedPct" | "signedRatioPct" | "ratio" | "num" | "int" | "usd" | "usdAbs" | "bool" | "age";
+export type Format = "pct" | "signedPct" | "signedPp" | "signedRatioPct" | "ratio" | "num" | "int" | "usd" | "usdAbs" | "bool" | "age";
 
 export type Mode = "launch" | "established";
 export type RatedTier = Exclude<Tier, "U">;
@@ -60,6 +60,29 @@ export interface FactorDef {
   minSample?: { metric: keyof TokenSnapshot; gte: number; label: string };
   /** Shown when weight is 0 (factor kept in the file but not scored). */
   disabledReason?: string;
+  /**
+   * Scores the metric against a FIXED reference picked by another metric's band (e.g. liquidity / market cap
+   * against the reference ratio of the token's market-cap band). The thresholds then apply to metric ÷ reference,
+   * so 1.0 means "exactly the reference". The reference never depends on other tokens.
+   */
+  reference?: ReferenceDef;
+}
+
+export interface ReferenceBand extends ValueCondition {
+  /** The reference value, in the factor metric's own unit. */
+  value: number;
+  /** Shown in the evidence, e.g. "$1M–10M". */
+  label: string;
+}
+
+export interface ReferenceDef {
+  /** The snapshot metric whose value picks the band (e.g. fdvUsd). */
+  metric: keyof TokenSnapshot;
+  /** What that metric is, for the evidence and the null reason (e.g. "market cap (FDV)"). */
+  label: string;
+  /** Checked top-down, first match wins (like thresholds). */
+  bands: ReferenceBand[];
+  note?: string;
 }
 
 export interface GroupDef {
@@ -139,6 +162,8 @@ export interface ScoringConfig {
   /** Conviction-vs-churn read-out (presentation only, no score effect). */
   /** Metrics set to 0 (minimum points) when activity is genuinely zero — see applyZeroActivity. */
   zeroActivity?: { note?: string; metrics: string[] };
+  /** Display formats for metrics that evidence templates quote but no factor scores directly. */
+  metricFormats?: { note?: string } & Record<string, Format | string>;
   summary: { note?: string; minSignals: number; leanBy: number; signals: { id: string; side: "conviction" | "churn"; when: MetricCondition; text: string }[] };
 }
 
@@ -168,6 +193,11 @@ export function validateConfig(cfg: ScoringConfig): ScoringConfig {
         if (!Array.isArray(f.data)) errors.push(`${mode}/${f.id}: data must list adapter ids`);
         for (const t of f.thresholds ?? []) if (t.points < 0 || t.points > 1) errors.push(`${mode}/${f.id}: threshold points must be 0..1`);
         if (f.gate && !f.gatePass) errors.push(`${mode}/${f.id}: gate needs gatePass`);
+        if (f.reference) {
+          if (!f.reference.metric) errors.push(`${mode}/${f.id}: reference needs a metric`);
+          if (!f.reference.bands?.length) errors.push(`${mode}/${f.id}: reference needs bands`);
+          for (const b of f.reference.bands ?? []) if (!(typeof b.value === "number" && b.value > 0)) errors.push(`${mode}/${f.id}: reference band "${b.label}" needs a positive value`);
+        }
       }
     }
     if (Math.abs(total - 100) > 1e-9) errors.push(`${mode}: group weights sum to ${total}, expected 100`);

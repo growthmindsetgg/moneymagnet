@@ -26,6 +26,12 @@ export function emptySnapshot(chain: Chain, address: string): TokenSnapshot {
     liqChange7dWindow: null,
     priceChange24hPct: null,
     priceChangeWindow: null,
+    priceChange7dPct: null,
+    priceChange7dWindow: null,
+    cohortMedian7dPct: null,
+    cohortSize: null,
+    cohortLabel: null,
+    relStrength7dPp: null,
     liqHistoryPoints: null,
     liquidityTotalUsd: null,
     poolAddresses: [],
@@ -378,6 +384,21 @@ export function deriveMetrics(s: TokenSnapshot): TokenSnapshot {
   // The 24h price change covers the pair's whole life when it is younger than 24h: say so on the evidence line.
   if (d.priceChange24hPct != null && d.priceChangeWindow == null) {
     d.priceChangeWindow = d.ageHours == null ? "24h (since launch if the pair is younger)" : d.ageHours < 24 ? `since launch (${formatAge(d.ageHours)})` : "24h";
+  }
+
+  // Relative strength (7d vs the peer cohort's median): min(change, change − median) is > 0 only when the token rose
+  // AND beat the median. Derived from two measured inputs; either missing leaves it null with that input's reason.
+  if (d.relStrength7dPp == null) {
+    if (d.priceChange7dPct != null && d.cohortMedian7dPct != null) {
+      d.relStrength7dPp = Math.min(d.priceChange7dPct, d.priceChange7dPct - d.cohortMedian7dPct);
+      inherit("relStrength7dPp", ["priceChange7dPct", "cohortMedian7dPct"]);
+    } else if (!d.nullReasons.relStrength7dPp) {
+      const why =
+        d.priceChange7dPct == null
+          ? `the token's own 7d price change is unknown (${d.nullReasons.priceChange7dPct ?? "no daily candles from GeckoTerminal"})`
+          : `the peer cohort's 7d median is unknown (${d.nullReasons.cohortMedian7dPct ?? "peer cohort not read"})`;
+      d.nullReasons = { ...d.nullReasons, relStrength7dPp: why };
+    }
   }
 
   if (d.flowConsistent == null && d.netFlowRatio24h != null && d.netFlowRatio7d != null) {

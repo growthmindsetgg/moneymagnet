@@ -433,7 +433,8 @@ describe("missing-data neutrality", () => {
   });
 
   it("a group with no data is excluded and the rest is renormalized", () => {
-    const s = strip(perfectSnapshot(), ["liqFdvPct", "mainPoolSharePct", "liqChange24hPct", "liqChange7dPct", "ageHours", "poolCount", "trendScore"]);
+    // relStrength7dPp: relative strength 7d joined the liquidity group on 2026-11-22.
+    const s = strip(perfectSnapshot(), ["liqFdvPct", "mainPoolSharePct", "liqChange24hPct", "liqChange7dPct", "ageHours", "poolCount", "trendScore", "relStrength7dPp"]);
     const r = scoreSnapshot({ ...s, ageHours: null });
     expect(r.groups.find((g) => g.id === "liquidity")!.hasData).toBe(false);
     expect(r.rawScore).toBe(100);
