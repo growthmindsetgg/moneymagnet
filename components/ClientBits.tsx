@@ -29,7 +29,8 @@ export function CopyLink() {
   const [done, copy] = useCopied();
   return (
     <button type="button" onClick={() => copy(window.location.href)} className="mm-btn px-3 py-1.5 text-xs uppercase tracking-wider">
-      {done ? "Copied ✓" : "Copy link"}
+      {/* aria-live: the label change ("Copied ✓") is announced to screen readers too. */}
+      <span aria-live="polite">{done ? "Copied ✓" : "Copy link"}</span>
     </button>
   );
 }
@@ -42,7 +43,7 @@ export function CopyAddress({ address }: { address: string }) {
       <code className="min-w-0 break-all font-mono text-xs leading-6 sm:text-sm" data-testid="contract-address">
         {address}
       </code>
-      <button type="button" onClick={() => copy(address)} className="mm-btn inline-flex h-6 w-6 shrink-0 items-center justify-center" aria-label={done ? "Address copied" : "Copy contract address"} title="Copy address">
+      <button type="button" onClick={() => copy(address)} className="mm-btn -my-1 inline-flex h-8 w-8 shrink-0 items-center justify-center" aria-label={done ? "Address copied" : "Copy contract address"} title="Copy address">
         {done ? (
           <span aria-hidden="true">✓</span>
         ) : (

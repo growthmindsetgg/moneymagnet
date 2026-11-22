@@ -8,7 +8,8 @@ import LiveReport from "@/components/LiveReport";
 import ChainPicker from "@/components/ChainPicker";
 import { failureCause } from "@/components/failure";
 import { analyzeCached, InvalidAddressError, NotAMemeError, peekReport, type AnalyzeOptions } from "@/lib/analyze";
-import { addressKind, detectChain, isEvmChain, normalizeAddress } from "@/lib/chain";
+import { addressKind, CHAIN_LABEL, detectChain, isEvmChain, normalizeAddress } from "@/lib/chain";
+import type { Chain } from "@/lib/types";
 import { resolveEvmChain } from "@/lib/resolveChain";
 import { logError, newErrorId } from "@/lib/errorId";
 import { ageCachedReport, normalizeReport, ReportShapeError, type CacheMarker } from "@/lib/normalizeReport";
@@ -24,7 +25,20 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { chain, address } = await params;
   const url = `/t/${chain}/${address}`;
-  return { title: `MoneyMagnet · ${address.slice(0, 6)}…${address.slice(-4)}`, alternates: { canonical: url }, openGraph: { url } };
+  const shortAddr = `${address.slice(0, 6)}…${address.slice(-4)}`;
+  const where = CHAIN_LABEL[chain as Chain] ?? "EVM";
+  const title = `${shortAddr} tier on ${where}`;
+  const description = `MoneyMagnet's S–F tier for ${where} token ${shortAddr}, with every factor's evidence, its data sources and their status.`;
+  // openGraph / twitter replace the layout's objects (no deep merge, and the app/opengraph-image file is then
+  // dropped too), so every field — the share image included — is restated here.
+  const image = { url: "/opengraph-image", width: 1200, height: 630, alt: "MoneyMagnet — score any meme coin before you ape" };
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: `${title} · MoneyMagnet`, description, siteName: "MoneyMagnet", type: "website", locale: "en_US", url, images: [image] },
+    twitter: { card: "summary_large_image", title: `${title} · MoneyMagnet`, description, images: [image] },
+  };
 }
 
 export default async function TokenPage({ params, searchParams }: { params: Params; searchParams: Search }) {

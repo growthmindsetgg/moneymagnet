@@ -38,6 +38,8 @@
   --warn-text: #b45309;
   --bad: #dc2626;
   --bad-ink: #ffffff;
+  /* Red as text on paper (the --bad fill is 4.5:1 only with white on it): 6.0:1, same as tier F. */
+  --bad-text: #b91c1c;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   color-scheme: light;
 }
@@ -56,6 +58,7 @@
     --warn-text: #fbbf24;
     --bad: #ef4444;
     --bad-ink: #0a0a0a;
+    --bad-text: #f87171;
     color-scheme: dark;
   }
 }
@@ -71,6 +74,7 @@
   --warn-text: #fbbf24;
   --bad: #ef4444;
   --bad-ink: #0a0a0a;
+  --bad-text: #f87171;
   color-scheme: dark;
 }
 

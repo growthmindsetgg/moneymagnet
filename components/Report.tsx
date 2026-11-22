@@ -7,6 +7,7 @@ import ManualChecks from "./ManualChecks";
 import TimeMachine from "./TimeMachine";
 import StateBlock, { brand, rejectWord } from "./StateBlock";
 import ResearchToggle from "./ResearchToggle";
+import TierKey from "./TierKey";
 import { TIER_TEXT } from "./TierChip";
 import { summarize } from "@/lib/summary";
 import { formatStaleAge } from "@/lib/stale";
@@ -506,11 +507,13 @@ const LEAN_LABEL = { conviction: "conviction holders", churn: "churn", mixed: "m
 /** The four-colour key, behind a "?" next to "Why this tier". */
 function Legend() {
   return (
-    <details className="relative inline-block align-middle" data-testid="legend-toggle">
+    // Below 640px the key spans the "Why this tier" box (its positioned ancestor) instead of hanging off the "?",
+    // which pushed it past the right edge of a 360px screen, where it was cut off.
+    <details className="inline-block align-middle sm:relative" data-testid="legend-toggle">
       <summary className="mm-pill inline-grid h-6 w-6 cursor-pointer place-items-center text-xs font-bold" aria-label="Colour key">
         ?
       </summary>
-      <div className="mm-box absolute left-0 top-8 z-30 w-[min(20rem,80vw)] space-y-1.5 bg-paper p-3 text-xs" data-testid="severity-legend">
+      <div className="mm-box absolute inset-x-4 z-30 mt-2 space-y-1.5 bg-paper p-3 text-xs sm:inset-x-auto sm:left-0 sm:top-8 sm:mt-0 sm:w-[min(20rem,80vw)]" data-testid="severity-legend">
         <p className="flex items-center gap-2">
           <Chip sev="good">good</Chip> ≥ 80% of the factor&apos;s points
         </p>
@@ -537,7 +540,7 @@ function WhyThisTier({ report }: { report: ScoreReport }) {
   const ver = verificationLine(report);
   return (
     <section className="space-y-2" id="why" aria-labelledby="why-heading">
-      <div className="mm-box space-y-3 p-4 sm:p-6" data-testid="short-reasons">
+      <div className="mm-box relative space-y-3 p-4 sm:p-6" data-testid="short-reasons">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-2">
             <h2 id="why-heading" className="min-w-0" data-testid="why-tier" data-kind={report.binding?.kind}>
@@ -553,7 +556,7 @@ function WhyThisTier({ report }: { report: ScoreReport }) {
         <ul className="space-y-1.5">
           {lines.map((r) => (
             <li key={r.text} className="flex gap-2 text-sm" data-testid="reason" data-kind={r.kind} data-severity={r.sev}>
-              <span className={`inline-grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ${SEV[r.sev]}`} aria-label={r.kind === "positive" ? "strength" : r.sev === "bad" ? "binding limit" : "holding it back"}>
+              <span className={`inline-grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ${SEV[r.sev]}`} role="img" aria-label={r.kind === "positive" ? "strength" : r.sev === "bad" ? "binding limit" : "holding it back"}>
                 {r.kind === "positive" ? "✓" : "▲"}
               </span>
               <span className="min-w-0 break-words">{r.text}</span>
@@ -571,6 +574,7 @@ function WhyThisTier({ report }: { report: ScoreReport }) {
           {ver.crossChecked}/{ver.total} metrics cross-checked · {ver.differ} differ (see research view)
         </p>
       )}
+      <TierKey evidence testId="read-key" />
     </section>
   );
 }
@@ -586,7 +590,7 @@ function ProsCons({ report }: { report: ScoreReport }) {
         <ul className="mt-2 space-y-1.5">
           {items.map((p) => (
             <li key={p.text} className="flex gap-2 text-sm" data-testid="procon" data-severity={p.sev} data-from={p.from}>
-              <span className={`inline-grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ${SEV[p.sev]}`} aria-label={p.sev === "good" ? "pro" : p.sev === "bad" ? "gate or cap" : "con"}>
+              <span className={`inline-grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ${SEV[p.sev]}`} role="img" aria-label={p.sev === "good" ? "pro" : p.sev === "bad" ? "gate or cap" : "con"}>
                 {p.sev === "good" ? "✓" : "▲"}
               </span>
               <span className="min-w-0 break-words">{p.text}</span>
@@ -803,6 +807,7 @@ function LargestHolder({ report }: { report: ScoreReport }) {
           Funding tx:{" "}
           <a className="underline" href={txUrl(report.chain, t.largestHolder!.fundingTx)} target="_blank" rel="noopener noreferrer" data-testid="funding-tx">
             {t.largestHolder!.fundingTx}
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </p>
       )}
@@ -904,6 +909,7 @@ function Sources({ report }: { report: ScoreReport }) {
               {s.url ? (
                 <a href={s.url} target="_blank" rel="noreferrer" className="mm-link">
                   {brand(s.label)}
+                  <span className="sr-only"> (opens in a new tab)</span>
                 </a>
               ) : (
                 brand(s.label)
@@ -927,7 +933,8 @@ function Sources({ report }: { report: ScoreReport }) {
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
         {dedupeLinks(report.token.links, report).map((l) => (
           <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="mm-link inline-block py-1.5">
-            {l.label} ↗
+            {l.label} <span aria-hidden="true">↗</span>
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
         ))}
       </div>

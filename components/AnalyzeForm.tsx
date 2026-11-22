@@ -53,8 +53,13 @@ export default function AnalyzeForm({ initial = "", compact = false }: { initial
           onChange={(e) => setValue(e.target.value.trim())}
           placeholder="0x… or Solana mint"
           autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          enterKeyHint="go"
           spellCheck={false}
-          className={`min-w-0 flex-1 bg-transparent px-4 font-mono outline-none placeholder:text-muted ${compact ? "py-2.5 text-sm" : "py-4 text-base"}`}
+          aria-invalid={error ? true : undefined}
+          aria-describedby="address-hint"
+          className={`min-w-0 flex-1 bg-transparent px-4 font-mono outline-none placeholder:text-muted ${compact ? "py-2.5 text-base sm:text-sm" : "py-4 text-base"}`}
         />
         <label htmlFor="chain" className="sr-only">
           Chain
@@ -81,7 +86,7 @@ export default function AnalyzeForm({ initial = "", compact = false }: { initial
           {busy ? "Analyzing…" : "Analyze"}
         </button>
       </form>
-      <div className="min-h-5 text-xs" aria-live="polite">
+      <div id="address-hint" className="min-h-5 text-xs" aria-live="polite">
         {error ? <span className="text-tier-f">{error}</span> : detected ? <span className="text-muted">Detected: {detected}</span> : null}
       </div>
       {recent.length > 0 && (

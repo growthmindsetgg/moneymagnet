@@ -11,7 +11,7 @@ import { demoSocial, type SocialDemo } from "@/lib/social/fixtures";
 // e2e suite can screenshot-diff the hero against fixed data. Exists only where HOODTIER_ALLOW_SIMULATE=1
 // (the local e2e server); 404 everywhere else, including production.
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "MoneyMagnet · fixture", robots: { index: false } };
+export const metadata: Metadata = { title: "Fixture", robots: { index: false } };
 
 const NAMES = new Set(["microduck", "peek", "fartcoin", "offline", "pangea-honeypot", "monad-james"]);
 /** Fixtures outside tests/fixtures/ (name → path under tests/fixtures). */

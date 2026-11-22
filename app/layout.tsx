@@ -17,14 +17,19 @@ const jetbrains = localFont({
   display: "optional",
 });
 
+const SITE_TITLE = "MoneyMagnet — score any meme coin before you ape";
+const SITE_DESCRIPTION = "Paste a Robinhood Chain, Base, Monad, Ethereum or Solana token address. MoneyMagnet gives it an S–F tier with every factor's evidence under the score.";
+
 export const metadata: Metadata = {
   // MM_CANONICAL_ORIGIN is resolved in next.config (lib/canonical.ts): the canonical host once it is live.
   metadataBase: new URL(process.env.MM_CANONICAL_ORIGIN || "https://hoodtier.vercel.app"),
   alternates: { canonical: "/" },
-  title: "MoneyMagnet — score any meme coin before you ape",
-  description: "Paste a Robinhood Chain, Base, Monad, Ethereum or Solana token address. MoneyMagnet gives it an S–F tier with every factor's evidence under the score.",
+  // Child pages set a short title ("0xd5f1…e725 tier on Robinhood Chain"); the template appends the brand.
+  title: { default: SITE_TITLE, template: "%s · MoneyMagnet" },
+  description: SITE_DESCRIPTION,
   applicationName: "MoneyMagnet",
-  openGraph: { title: "MoneyMagnet", description: "Score any meme coin before you ape.", siteName: "MoneyMagnet", type: "website", url: "/" },
+  openGraph: { title: SITE_TITLE, description: SITE_DESCRIPTION, siteName: "MoneyMagnet", type: "website", locale: "en_US", url: "/" },
+  twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
 };
 
 export const viewport: Viewport = {
@@ -60,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
         <footer className="mm-rule-t">
           <p className="mx-auto max-w-[1440px] px-4 py-4 text-xs text-muted sm:px-8">
-            data: HoodScan · ScanHood · Helius · RugCheck · DexScreener · GeckoTerminal · pump.fun feed
+            data: HoodScan · ScanHood · Helius · RugCheck · GoPlus · DexScreener · GeckoTerminal · pump.fun feed · nad.fun · Basescan · Etherscan · chain RPCs
             <span className="block sm:inline"> — not investment advice</span>
           </p>
         </footer>

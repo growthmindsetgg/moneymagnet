@@ -1,4 +1,5 @@
 import AnalyzeForm from "@/components/AnalyzeForm";
+import TierKey from "@/components/TierKey";
 
 const TAGS = ["robinhood", "solana", "launch mode", "established"];
 
@@ -35,6 +36,10 @@ export default function Home() {
 
       <div className="mt-6 sm:mt-8" data-testid="home-form">
         <AnalyzeForm />
+      </div>
+
+      <div className="mt-6 max-w-3xl">
+        <TierKey />
       </div>
     </section>
   );
