@@ -59,6 +59,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   "ethereum-rpc": "Ethereum RPC",
   "ethereum-sim": "Ethereum sell simulation",
   etherscan: "Etherscan",
+  cohort: "Peer cohort (GeckoTerminal)",
 };
 
 /** Which chain each source serves. A factor none of whose sources serves the chain is absent there. */
@@ -90,6 +91,7 @@ export const SOURCE_CHAINS: Record<string, Chain[]> = {
   "ethereum-rpc": ["ethereum"],
   "ethereum-sim": ["ethereum"],
   etherscan: ["ethereum"],
+  cohort: ["robinhood", "solana", "base", "monad", "ethereum"],
 };
 
 /** Absent, not null: factors restricted to another chain, or fed only by other chains' sources. */
@@ -103,6 +105,7 @@ type Snap = Record<string, unknown>;
 
 export function metricFormats(cfg: ScoringConfig): Record<string, Format> {
   const map: Record<string, Format> = { volMcRatio: "ratio", volume24hUsd: "usdAbs", volMcBar: "ratio", lpLockedPct: "pct", top1SharePct: "pct", ageHours: "age", curveCirculatingPct: "pct", sellers24h: "int", uniqueBuyers: "int", ageMinutes: "num", launchBuyers: "int", liquidityUsd: "usdAbs", fdvUsd: "usdAbs", deployerDistributedPct: "pct", lastTradeHoursAgo: "age", top10SharePct: "pct", equalSplitPct: "pct", equalSplitCount: "int", roundTripLossPct: "pct", priceChange24hPct: "signedPct" };
+  for (const [k, v] of Object.entries(cfg.metricFormats ?? {})) if (k !== "note") map[k] = v as Format;
   for (const set of Object.values(cfg.sets)) for (const g of set.groups) for (const f of g.factors) map[f.metric] = f.format;
   return map;
 }
@@ -213,21 +216,52 @@ function scoreWeighted(f: FactorDef, s: TokenSnapshot, formats: Record<string, F
     }
     if (n < f.minSample.gte) return na(`insufficient sample — ${n} ${f.minSample.label} (needs ≥ ${f.minSample.gte}); ${display} not scored.`);
   }
-  const t = f.thresholds.find((th) => matchValue(value, th));
+  // A fixed reference picked by another metric's band: the thresholds read metric ÷ reference.
+  let scored: number | boolean = value;
+  let shown = display;
+  let refVars: Record<string, string> = {};
+  const staleMetrics = [f.metric as string];
+  if (f.reference && typeof value === "number") {
+    const ref = f.reference;
+    const by = (s as unknown as Snap)[ref.metric as string];
+    if (isMissing(by)) {
+      const why = s.nullReasons?.[ref.metric as string];
+      const reason = `${ref.label} unknown${why ? ` (${why})` : ""} — needed to pick the reference band`;
+      return nul(`${reason}; ${display} not scored.`, reason);
+    }
+    const band = ref.bands.find((b) => matchValue(by, b));
+    if (!band) {
+      const reason = `config gap: no reference band in factors.json covers ${ref.label} ${formatValue(by, formats[ref.metric as string] ?? "num")}`;
+      return nul(`${reason} — not scored.`, reason, "info");
+    }
+    scored = value / band.value;
+    refVars = {
+      reference: formatValue(band.value, f.format),
+      band: band.label,
+      ratio: formatValue(scored, "ratio"),
+    };
+    shown = `${display} (${refVars.ratio} ref)`;
+    staleMetrics.push(ref.metric as string);
+  }
+  const t = f.thresholds.find((th) => matchValue(scored, th));
   // L7: a value no threshold covers is a config gap, not a measured worst score.
   if (!t) {
-    const reason = `config gap: no threshold in factors.json covers ${display}`;
+    const reason = `config gap: no threshold in factors.json covers ${shown}`;
     return nul(`${reason} — not scored.`, reason, "info");
   }
-  return withStale({
-    ...base,
-    points: Math.round(t.points * f.weight * 100) / 100,
-    evidence: fill(f.evidenceTemplate, s, formats, { value: display, note: t.note ? fill(t.note, s, formats) : "" }),
-    flag: t.flag ?? "none",
-    missing: false,
-    applicable: true,
-    status: "live",
-  });
+  return withStale(
+    {
+      ...base,
+      display: shown,
+      points: Math.round(t.points * f.weight * 100) / 100,
+      evidence: fill(f.evidenceTemplate, s, formats, { ...refVars, value: display, note: t.note ? fill(t.note, s, formats) : "" }),
+      flag: t.flag ?? "none",
+      missing: false,
+      applicable: true,
+      status: "live",
+    },
+    staleMetrics,
+  );
 }
 
 function tierFor(score: number, cfg: ScoringConfig): RatedTier {

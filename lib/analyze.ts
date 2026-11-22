@@ -44,6 +44,7 @@ import { chainRpc } from "./onchain/rpc";
 import { classifyTopHolders } from "./topHolders";
 import { holderStrength } from "./holderStrengthData";
 import { defaultConfig, modeFor } from "./scoring/config";
+import { COHORT_BUDGET_MS, readCohort } from "./cohort";
 
 /** Wall-clock cap for the top-holder classification step (getCode + signature probes + founder history). */
 const HOLDER_CLASS_MIN_MS = 5_000;
@@ -442,7 +443,8 @@ export async function collect(
     });
 
   // Liquidity + mcap history: one observation per analysis; deltas appear from the second one.
-  await liquidityHistoryStep(chain, address, merged);
+  // Relative strength's peer cohort runs beside it (it reads only the merged 7d change and the main pool's venue).
+  await Promise.all([liquidityHistoryStep(chain, address, merged), relativeStrengthStep(chain, address, merged, results, deadline)]);
   const raw: Record<string, unknown> = {};
   for (const r of results) if (r.raw !== undefined) raw[r.status.id] = r.raw;
   const sources = results.map((r) => (flags[r.status.id] ? { ...r.status, flags: flags[r.status.id] } : r.status));
@@ -477,6 +479,45 @@ export async function liquidityHistoryStep(chain: Chain, address: string, merged
       : "no pool liquidity reported by GeckoTerminal or DexScreener";
     merged.nullReasons = { ...merged.nullReasons, liqChange24hPct: reason, liqChange7dPct: reason };
   }
+}
+
+/**
+ * Relative strength (Established mode): the peer cohort's median 7d change for the token's venue (the main pool's
+ * GeckoTerminal DEX — pump.fun graduates trade on pumpswap; Robinhood launchpads are listed as DEXes). Sets
+ * cohortMedian7dPct / cohortSize / cohortLabel (stale-labelled when the cohort came from the KV cache) or the null
+ * reason, and adds the "Peer cohort" source line. deriveMetrics turns it into relStrength7dPp.
+ */
+export async function relativeStrengthStep(
+  chain: Chain,
+  address: string,
+  merged: TokenSnapshot,
+  results: AdapterResult[],
+  deadline: Deadline,
+  read: typeof readCohort = readCohort,
+): Promise<void> {
+  const t0 = Date.now();
+  const skip = (reason: string) => {
+    merged.nullReasons = { ...merged.nullReasons, cohortMedian7dPct: reason };
+    results.push({ status: { id: "cohort", label: SOURCE_LABELS.cohort, state: "skipped", message: reason, ms: 0 }, data: {} });
+  };
+  const age = merged.ageHours ?? (merged.createdAt ? (Date.now() - Date.parse(merged.createdAt)) / 3_600_000 : null);
+  if (age != null && Number.isFinite(age) && modeFor(age, defaultConfig) === "launch") return skip("Launch mode (< 72h): relative strength is an Established-mode factor — peer cohort not read");
+  if (merged.priceChange7dPct == null) {
+    return skip(`the token's own 7d price change is unknown (${merged.nullReasons.priceChange7dPct ?? "no daily candles from GeckoTerminal"}) — peer cohort not read`);
+  }
+  const gecko = results.find((r) => r.status.id === "geckoterminal")?.raw as { pools?: { id: string; dexId?: string | null }[]; mainPool?: string } | undefined;
+  const dex = gecko?.pools?.find((p) => p.id === gecko.mainPool)?.dexId ?? null;
+  const r = await read(chain, dex, address, { budgetMs: Math.min(COHORT_BUDGET_MS(), remaining(deadline) - 1_000) });
+  results.push({ status: { ...r.status, ms: Date.now() - t0 }, data: {}, raw: { dex, median: r.median, size: r.size, label: r.label, ageMinutes: r.ageMinutes } });
+  if (r.median == null) {
+    merged.nullReasons = { ...merged.nullReasons, cohortMedian7dPct: r.reason ?? "peer cohort not read" };
+    return;
+  }
+  merged.cohortMedian7dPct = r.median;
+  merged.cohortSize = r.size;
+  merged.cohortLabel = r.label;
+  // Not fetched in this run ⇒ stale with its age (it expires after 6h, see readCohort).
+  if (r.ageMinutes != null) merged.staleFields = { ...merged.staleFields, cohortMedian7dPct: r.ageMinutes };
 }
 
 /**

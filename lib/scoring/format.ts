@@ -40,6 +40,8 @@ export function formatValue(value: unknown, format: Format): string {
       return `${round(value)}%`;
     case "signedPct":
       return `${value > 0 ? "+" : ""}${round(value)}%`;
+    case "signedPp":
+      return `${value > 0 ? "+" : ""}${round(value)} pp`;
     case "signedRatioPct":
       return `${value > 0 ? "+" : ""}${round(value * 100)}%`;
     case "ratio":

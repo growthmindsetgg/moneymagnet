@@ -117,6 +117,128 @@ None new.
 
 **Open:** once Monad volume is trusted (fixtures re-recorded on new code), consider raising the floor or scaling it with FDV. That is an owner decision.
 
+# Liquidity for its size + relative strength 7d (2026-11-22)
+
+**Status:** committed on branch `worktree-agent-a64850f3e67982bc3`. Not pushed, not deployed. The method ideas come from Sparsity's public Holder Strength write-up; none of their data is used and sparsitydata.com is never fetched.
+
+## What changed
+**1. `liq_fdv` is now "Liquidity for its size".** An existing factor already measured liquidity against market cap: `liq_fdv`, active-pool liquidity ÷ FDV, with flat bars. It was improved in place, not duplicated.
+- The share is scored against a **fixed reference ratio for the token's market-cap band**. The bands live in `factors.json` (`reference` on the factor):
+
+  | FDV band | Reference liquidity / FDV |
+  |---|---|
+  | < $100k | 20% |
+  | $100k–1M | 15% |
+  | $1M–10M | 10% (identical to the old flat bars) |
+  | > $10M | 5% |
+
+- Thresholds read the share ÷ reference: ≥ 1× scores full, ≥ 0.5× scores 0.75, ≥ 0.2× scores 0.45 (info), ≥ 0.1× scores 0.2 (warn), anything lower scores 0 (danger). The score never depends on other coins.
+- **Evidence:** "Active-pool liquidity is 4.3% of FDV ($45M); the fixed reference for the > $10M band is 5%, so it holds 0.85× of the reference — at least half the band reference."
+- **Unknown FDV:** null, with "market cap (FDV) unknown (…) — needed to pick the reference band". No default band is used.
+- **Staleness:** a stale FDV makes the reading stale.
+- **Engine:** `engine.ts` gained a generic `reference` feature: any factor can be scored against a band reference picked by another metric. No code in it is specific to this factor. The new `factors.json` key `metricFormats` holds evidence display formats.
+- **Weight:** `liq_fdv` gave 2 points to the new factor, as follows. Group weights are unchanged.
+
+  | Set | Before | After |
+  |---|---|---|
+  | Established | 9 | 7 |
+  | Base | 13 | 11 |
+  | Monad | 12 | 10 |
+  | Ethereum | 13 | 11 |
+
+**2. New factor `rel_strength_7d`, "Relative strength 7d".** Weight 2 in every Established set's liquidity group. It is absent from Launch sets.
+- **Metric:** `relStrength7dPp = min(7d change, 7d change − cohort median)`, derived in `deriveMetrics`. It is above 0 only when the token **rose AND beat** its cohort's median.
+- **Thresholds:** ≥ +10 pp scores 1, > 0 scores 0.75, ≥ −15 pp scores 0.4 (info), anything lower scores 0 (info).
+- **Token's 7d change (`priceChange7dPct`):** read from GeckoTerminal daily candles that are already fetched (no new call). The rule is the latest close vs the close at or before the start of the day 7 days back. A day with no candle means no trade, so the last close stands. The window string names both dates.
+- **Cohort (`lib/cohort.ts`):** tokens on the same GeckoTerminal venue as the token's main pool, on the same chain.
+  - GeckoTerminal lists Robinhood launchpads as DEXes (pons-dot-family, hoodit, clanker-robinhood, frontier-fun…). pump.fun graduates trade on `pumpswap`.
+  - It reads up to 3 pages of the venue's volume-ranked pools.
+  - It keeps pools with ≥ $10k reserve and ≥ 7d of history, skips majors (stables, wrapped ETH/SOL/BTC, LSTs, the registered non-memes), and keeps one pool per token.
+  - It reads each peer's daily candles (≤ 8 peers) and applies the same 7d rule.
+  - It needs ≥ 5 peers. If the venue has fewer, it falls back to the chain's top pools, and the label says so.
+  - The token itself never counts in its own median.
+- **Caching:** the cohort is cached in KV (`cohort7d:v1:<chain>:<dex>`).
+  - It is refreshed at most every 60 minutes (`COHORT_REFRESH_MIN`) and never used past 6h.
+  - A cached cohort is always labelled "stale Xm", on the factor and on the "Peer cohort (GeckoTerminal)" source line.
+  - One refresh runs at a time per cohort (60s KV lock).
+  - A read that failed with nothing cached is not retried for 5 minutes.
+- **Budget:** at most `COHORT_BUDGET_MS` (default 10s), capped by what is left of the analysis budget (`lib/budget.ts`). The step runs beside the liquidity-history step.
+  - With < 1.5s left, it does not fetch: it uses the cache if there is one, otherwise the factor is null with the reason.
+  - A read cut off by the budget keeps running and stores its result for the next analysis.
+- **Age never penalises.** Under 7 days old (`ageHours < 168`) with no reading, the factor is **n/a**, not null, so coverage does not drop. In Launch mode the cohort is not read, and the source line says why.
+- **Evidence (format example with test values):** "7d price change +25% (daily close 2026-11-15 → latest 2026-11-22) against a median of +5% across 8 pons-dot-family peers on Robinhood Chain; strength = the lesser of the change and its excess over the median = +20 pp (derived) — rose and beat the peer median by ≥ 10 pp."
+
+## Cohort failure modes (each is null with the exact reason, or stale-labelled)
+| Situation | Result |
+|---|---|
+| GeckoTerminal listing 429 / 5xx / timeout, no cache ≤ 6h | null: "peer cohort unreadable: GeckoTerminal pool listing failed: rate limited (HTTP 429)". Retried after 5 min. |
+| Same, cache ≤ 6h | Cached median, stale Xm, "refresh failed: …" on the source line |
+| < 5 qualifying pools on the venue and on the chain | null: "only N qualifying peer pools (≥ $10k reserve, ≥ 7d old, not a major) in … — needs ≥ 5" |
+| < 5 peers' candles readable | null: "only N of M peers' 7d changes could be read (…) — needs ≥ 5" |
+| Only < 5 peers besides the token itself | null: "…: only 4 peers besides this token (needs ≥ 5)" |
+| Token's own 7d change unknown | Cohort not read; null: "the token's own 7d price change is unknown (GeckoTerminal daily candles start … )" |
+| Budget used up | null: "peer cohort timed out after Ns" or "no analysis time left to read the peer cohort" (or the cache, stale) |
+
+The `OUTAGE` pattern in `lib/hold.ts` matches the failure reasons above, so a cohort outage cannot flip a tier: the tier hold applies.
+
+**Known limit.** Volume-ranked GeckoTerminal listings lead with fresh launches and wash-traded dust. This was checked live on 2026-11-22:
+- `solana/dexes/pumpswap` volume pages 1–3 had 0 qualifying pools, and Solana's chain-wide top pools are SOL/USDC plus newborn dust.
+- So **most pump.fun graduates will read null** ("only 0 qualifying peer pools…") until a better cohort source exists.
+- Robinhood launchpad venues work well: `pons-dot-family` gave 8 peers on page 1, median −5.4%, recorded as a fixture.
+- GeckoTerminal's category endpoints (which would give launchpad cohorts directly) return 401 on the public API.
+- Follow-up options: a paid GeckoTerminal key with categories, or a KV-observed cohort built from HoodTier's own recent analyses.
+
+## Tier changes on recorded fixtures (justification)
+The old and new `factors.json` were compared on every recorded fixture: 19 fixtures, 10 of them Established.
+
+| Fixture | Before | After | Why |
+|---|---|---|---|
+| base-brett ($46M FDV, liquidity 4.3%) | B 68 | **A 71.8** | > $10M reference 5% ⇒ 0.85× ⇒ 0.75 (was 0.45 on the flat 5% bar) |
+| base-toshi ($45M FDV, liquidity 2.9%) | B 68.7 | **A 72.6** | 0.59× ⇒ 0.75 (was 0.45 on the flat 2% bar) |
+| ethereum-pepe ($1.5B, 1.8%) | B 64.6 | B 69.7 | 0.35× ⇒ 0.45 (was 0.2) |
+| fartcoin ($147M, 6.3%) | B 66.5 | B 68.6 | 1.27× ⇒ full (was 0.75) |
+| microduck ($4.3M, 7.6%) | A 80.9 | A 81 | $1M–10M band = old bars; the 2 points moved to rel strength |
+| monad-chog / monad-james / holders-james / ethereum-mog / monad-nad | same tier | same tier | Raw score moves ≤ 2; caps or gates still bind |
+
+- **Both moves (B → A) come from the liquidity-for-size change**, which is the intended effect. A $45M Base meme holding 3–4% of its value in pool liquidity (about $1.3–2M) is deep for its size. The old flat 10% bar scored it like a $2M coin with the same share. Both stay inside their fixture's expected tiers (A/B/C).
+- The recorded fixtures predate relative strength, so it is null there (coverage −2 points: 100 → 98, 87 → 85). That is honest: the input was not recorded.
+- Rel strength was funded from `liq_fdv`, not from `trend`. Funding it from `trend` would have lifted weak-trend tokens whenever the cohort is null (microduck went A 84.3 → S 85.0), so it was rejected.
+
+## Tests (no test deleted or weakened)
+- **New:** `tests/liquidity-relative-strength.test.ts` (36 tests).
+  - Bands and edges; the $1M–10M band equals the old bars; monotone in size and depth; evidence text; FDV null; stale FDV; BRETT and TOSHI fixtures.
+  - The derived metric (strong iff rose AND beat), its null reasons and its stale inheritance.
+  - Factor points, evidence and n/a under 7d; the token's own 7d rule.
+  - `pickPeers` filters; `fetchCohort` replayed from **recorded** GeckoTerminal responses (`tests/fixtures/cohort/robinhood-pons-dot-family.json`, made by `scripts/record-cohort-fixture.ts`); the fallback label; listing and candle failures.
+  - `readCohort`: cache within the refresh window shown stale, refresh failure falls back to the cache, never used past 6h, 5-minute failure memo, budget timeout, no time left, subject excluded, too few peers.
+  - `relativeStrengthStep` wiring and the source line.
+- **Updated for the new spec:**
+  - `tests/helpers.ts`: `perfectSnapshot` ("clears every factor") now carries a relative-strength reading.
+  - `tests/scoring.test.ts`: "a group with no data…" also strips the liquidity group's new metric.
+  - `tests/stability.test.ts`: the microduck flap numbers moved A 84.3 / S 87.7 → A 84.5 / S 88. The flap and the hold are asserted exactly as before.
+  - Fixture snapshots: `fixtures.test.ts.snap` and `v3-fixtures.test.ts.snap` were regenerated. Changes are listed in the table above.
+
+## LOOP (partial: typecheck, lint, test only; no deploy)
+| Check | Result |
+|---|---|
+| typecheck | ok |
+| lint | ok (the same 2 old warnings in `scripts/`) |
+| Tests | 672/673 on the full run, then the 1 failure passed on rerun |
+
+**The failure was network-flaky.** The live `api.integration` "analyzes offline" test read U while GeckoTerminal answered HTTP 429, and passed on rerun. GeckoTerminal's public quota was contested throughout this session. In the live runs, the cohort source itself read "failed: rate limited (HTTP 429)" on microduck and offline, and was reported as a null with that reason.
+
+**Not run:** build, verify:api, stability and Playwright.
+
+## Sources, nulls, env
+- **New source line:** "Peer cohort (GeckoTerminal)": ok / partial / stale / failed / skipped, with the reason.
+- **Factors still null:**
+  - `rel_strength_7d` where the cohort cannot be read: mostly Solana pump.fun graduates (see the known limit).
+  - `rel_strength_7d` on tokens whose main pool has < 7 days of daily candles (n/a when the token is < 7 days old).
+- **Env vars (optional, not secret, documented in `.env.example`):**
+  - `COHORT_BUDGET_MS` (default 10000).
+  - `COHORT_REFRESH_MIN` (default 60).
+  - Nothing the owner must set.
+
 # Ethereum + data-audit merge, stalled-index fix (2026-11-22)
 
 **Status:** deployed as `hoodtier-fu18m31dw` (`dpl_BffyCLA7u9uD1k6ZyZhdaefBgnts`), then `hoodtier-kq7jc2axn` (`dpl_E1zyaAaz8ayA8UzMQXH5b8ieRCQt`) with the stale-bound fix. `moneymagnet.vercel.app` points to the latter. The rollback target is `hoodtier-8rgtxeyx4`.

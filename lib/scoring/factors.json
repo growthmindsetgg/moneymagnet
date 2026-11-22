@@ -843,8 +843,8 @@
           "factors": [
             {
               "id": "liq_fdv",
-              "label": "Liquidity / FDV",
-              "weight": 9,
+              "label": "Liquidity for its size",
+              "weight": 7,
               "metric": "liqFdvPct",
               "direction": "higher_better",
               "format": "pct",
@@ -855,29 +855,63 @@
               ],
               "thresholds": [
                 {
-                  "gte": 10,
-                  "points": 1
-                },
-                {
-                  "gte": 5,
-                  "points": 0.75
-                },
-                {
-                  "gte": 2,
-                  "points": 0.45,
-                  "flag": "info"
-                },
-                {
                   "gte": 1,
+                  "points": 1,
+                  "note": "at or above the band reference"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.75,
+                  "note": "at least half the band reference"
+                },
+                {
+                  "gte": 0.2,
+                  "points": 0.45,
+                  "flag": "info",
+                  "note": "a fifth to half of the band reference"
+                },
+                {
+                  "gte": 0.1,
                   "points": 0.2,
-                  "flag": "warn"
+                  "flag": "warn",
+                  "note": "a tenth to a fifth of the band reference"
                 },
                 {
                   "points": 0,
-                  "flag": "danger"
+                  "flag": "danger",
+                  "note": "under a tenth of the band reference"
                 }
               ],
-              "evidenceTemplate": "Active-pool liquidity is {value} of FDV."
+              "evidenceTemplate": "Active-pool liquidity is {value} of FDV ({fdvUsd}); the fixed reference for the {band} band is {reference}, so it holds {ratio} of the reference — {note}.",
+              "reference": {
+                "metric": "fdvUsd",
+                "label": "market cap (FDV)",
+                "note": "Liquidity for its size: a FIXED reference liquidity / market-cap ratio per market-cap band, so a coin's score never depends on other coins. Larger caps carry deeper books and need a smaller share of their value in pool liquidity; small caps need more. FDV stands in for market cap (DexScreener reports fdv, else marketCap; GeckoTerminal fdv_usd). The $1M–10M band keeps the pre-2026-11-22 flat bars (10% / 5% / 2% / 1%).",
+                "bands": [
+                  {
+                    "lt": 100000,
+                    "value": 20,
+                    "label": "< $100k"
+                  },
+                  {
+                    "gte": 100000,
+                    "lt": 1000000,
+                    "value": 15,
+                    "label": "$100k–1M"
+                  },
+                  {
+                    "gte": 1000000,
+                    "lt": 10000000,
+                    "value": 10,
+                    "label": "$1M–10M"
+                  },
+                  {
+                    "gte": 10000000,
+                    "value": 5,
+                    "label": "> $10M"
+                  }
+                ]
+              }
             },
             {
               "id": "main_pool_share",
@@ -1068,6 +1102,55 @@
                 }
               ],
               "evidenceTemplate": "1h swing structure over 7d: {note} ({trendWindow})."
+            },
+            {
+              "id": "rel_strength_7d",
+              "label": "Relative strength 7d",
+              "weight": 2,
+              "metric": "relStrength7dPp",
+              "direction": "higher_better",
+              "format": "signedPp",
+              "source": "hoodtier",
+              "note": "Method idea (relative strength vs peers): strong only if the coin ROSE over 7d AND beat the median 7d move of its peer cohort (same DEX / launchpad on the same chain, read from GeckoTerminal). Derived: relStrength7dPp = min(7d change, 7d change − cohort median), which is > 0 only when both hold. The cohort median is cached in KV (refreshed hourly, never used past 6h, labelled stale with its age); an unreadable cohort leaves the factor null with the reason.",
+              "data": [
+                "geckoterminal",
+                "cohort"
+              ],
+              "thresholds": [
+                {
+                  "gte": 10,
+                  "points": 1,
+                  "note": "rose and beat the peer median by ≥ 10 pp"
+                },
+                {
+                  "gt": 0,
+                  "points": 0.75,
+                  "note": "rose and beat the peer median"
+                },
+                {
+                  "gte": -15,
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "did not both rise and beat the peer median"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "fell, or lagged the peer median, by more than 15 pp"
+                }
+              ],
+              "evidenceTemplate": "7d price change {priceChange7dPct} ({priceChange7dWindow}) against a median of {cohortMedian7dPct} across {cohortSize} {cohortLabel}; strength = the lesser of the change and its excess over the median = {value} (derived) — {note}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "ageHours": {
+                      "lt": 168
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Token is {ageHours} old — a 7d price change needs 7 days of trading, so relative strength does not apply yet (age never penalises)."
+                }
+              ]
             }
           ]
         }
@@ -3923,8 +4006,8 @@
           "factors": [
             {
               "id": "liq_fdv",
-              "label": "Liquidity / FDV",
-              "weight": 13,
+              "label": "Liquidity for its size",
+              "weight": 11,
               "metric": "liqFdvPct",
               "direction": "higher_better",
               "format": "pct",
@@ -3935,29 +4018,63 @@
               ],
               "thresholds": [
                 {
-                  "gte": 10,
-                  "points": 1
-                },
-                {
-                  "gte": 5,
-                  "points": 0.75
-                },
-                {
-                  "gte": 2,
-                  "points": 0.45,
-                  "flag": "info"
-                },
-                {
                   "gte": 1,
+                  "points": 1,
+                  "note": "at or above the band reference"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.75,
+                  "note": "at least half the band reference"
+                },
+                {
+                  "gte": 0.2,
+                  "points": 0.45,
+                  "flag": "info",
+                  "note": "a fifth to half of the band reference"
+                },
+                {
+                  "gte": 0.1,
                   "points": 0.2,
-                  "flag": "warn"
+                  "flag": "warn",
+                  "note": "a tenth to a fifth of the band reference"
                 },
                 {
                   "points": 0,
-                  "flag": "danger"
+                  "flag": "danger",
+                  "note": "under a tenth of the band reference"
                 }
               ],
-              "evidenceTemplate": "Active-pool liquidity is {value} of FDV."
+              "evidenceTemplate": "Active-pool liquidity is {value} of FDV ({fdvUsd}); the fixed reference for the {band} band is {reference}, so it holds {ratio} of the reference — {note}.",
+              "reference": {
+                "metric": "fdvUsd",
+                "label": "market cap (FDV)",
+                "note": "Liquidity for its size: a FIXED reference liquidity / market-cap ratio per market-cap band, so a coin's score never depends on other coins. Larger caps carry deeper books and need a smaller share of their value in pool liquidity; small caps need more. FDV stands in for market cap (DexScreener reports fdv, else marketCap; GeckoTerminal fdv_usd). The $1M–10M band keeps the pre-2026-11-22 flat bars (10% / 5% / 2% / 1%).",
+                "bands": [
+                  {
+                    "lt": 100000,
+                    "value": 20,
+                    "label": "< $100k"
+                  },
+                  {
+                    "gte": 100000,
+                    "lt": 1000000,
+                    "value": 15,
+                    "label": "$100k–1M"
+                  },
+                  {
+                    "gte": 1000000,
+                    "lt": 10000000,
+                    "value": 10,
+                    "label": "$1M–10M"
+                  },
+                  {
+                    "gte": 10000000,
+                    "value": 5,
+                    "label": "> $10M"
+                  }
+                ]
+              }
             },
             {
               "id": "main_pool_share",
@@ -4148,6 +4265,55 @@
                 }
               ],
               "evidenceTemplate": "1h swing structure over 7d: {note} ({trendWindow})."
+            },
+            {
+              "id": "rel_strength_7d",
+              "label": "Relative strength 7d",
+              "weight": 2,
+              "metric": "relStrength7dPp",
+              "direction": "higher_better",
+              "format": "signedPp",
+              "source": "hoodtier",
+              "note": "Method idea (relative strength vs peers): strong only if the coin ROSE over 7d AND beat the median 7d move of its peer cohort (same DEX / launchpad on the same chain, read from GeckoTerminal). Derived: relStrength7dPp = min(7d change, 7d change − cohort median), which is > 0 only when both hold. The cohort median is cached in KV (refreshed hourly, never used past 6h, labelled stale with its age); an unreadable cohort leaves the factor null with the reason.",
+              "data": [
+                "geckoterminal",
+                "cohort"
+              ],
+              "thresholds": [
+                {
+                  "gte": 10,
+                  "points": 1,
+                  "note": "rose and beat the peer median by ≥ 10 pp"
+                },
+                {
+                  "gt": 0,
+                  "points": 0.75,
+                  "note": "rose and beat the peer median"
+                },
+                {
+                  "gte": -15,
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "did not both rise and beat the peer median"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "fell, or lagged the peer median, by more than 15 pp"
+                }
+              ],
+              "evidenceTemplate": "7d price change {priceChange7dPct} ({priceChange7dWindow}) against a median of {cohortMedian7dPct} across {cohortSize} {cohortLabel}; strength = the lesser of the change and its excess over the median = {value} (derived) — {note}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "ageHours": {
+                      "lt": 168
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Token is {ageHours} old — a 7d price change needs 7 days of trading, so relative strength does not apply yet (age never penalises)."
+                }
+              ]
             }
           ]
         }
@@ -5332,8 +5498,8 @@
           "factors": [
             {
               "id": "liq_fdv",
-              "label": "Liquidity / FDV",
-              "weight": 12,
+              "label": "Liquidity for its size",
+              "weight": 10,
               "metric": "liqFdvPct",
               "direction": "higher_better",
               "format": "pct",
@@ -5344,29 +5510,63 @@
               ],
               "thresholds": [
                 {
-                  "gte": 10,
-                  "points": 1
-                },
-                {
-                  "gte": 5,
-                  "points": 0.75
-                },
-                {
-                  "gte": 2,
-                  "points": 0.45,
-                  "flag": "info"
-                },
-                {
                   "gte": 1,
+                  "points": 1,
+                  "note": "at or above the band reference"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.75,
+                  "note": "at least half the band reference"
+                },
+                {
+                  "gte": 0.2,
+                  "points": 0.45,
+                  "flag": "info",
+                  "note": "a fifth to half of the band reference"
+                },
+                {
+                  "gte": 0.1,
                   "points": 0.2,
-                  "flag": "warn"
+                  "flag": "warn",
+                  "note": "a tenth to a fifth of the band reference"
                 },
                 {
                   "points": 0,
-                  "flag": "danger"
+                  "flag": "danger",
+                  "note": "under a tenth of the band reference"
                 }
               ],
-              "evidenceTemplate": "Active-pool liquidity is {value} of FDV."
+              "evidenceTemplate": "Active-pool liquidity is {value} of FDV ({fdvUsd}); the fixed reference for the {band} band is {reference}, so it holds {ratio} of the reference — {note}.",
+              "reference": {
+                "metric": "fdvUsd",
+                "label": "market cap (FDV)",
+                "note": "Liquidity for its size: a FIXED reference liquidity / market-cap ratio per market-cap band, so a coin's score never depends on other coins. Larger caps carry deeper books and need a smaller share of their value in pool liquidity; small caps need more. FDV stands in for market cap (DexScreener reports fdv, else marketCap; GeckoTerminal fdv_usd). The $1M–10M band keeps the pre-2026-11-22 flat bars (10% / 5% / 2% / 1%).",
+                "bands": [
+                  {
+                    "lt": 100000,
+                    "value": 20,
+                    "label": "< $100k"
+                  },
+                  {
+                    "gte": 100000,
+                    "lt": 1000000,
+                    "value": 15,
+                    "label": "$100k–1M"
+                  },
+                  {
+                    "gte": 1000000,
+                    "lt": 10000000,
+                    "value": 10,
+                    "label": "$1M–10M"
+                  },
+                  {
+                    "gte": 10000000,
+                    "value": 5,
+                    "label": "> $10M"
+                  }
+                ]
+              }
             },
             {
               "id": "main_pool_share",
@@ -5558,6 +5758,55 @@
                 }
               ],
               "evidenceTemplate": "1h swing structure over 7d: {note} ({trendWindow})."
+            },
+            {
+              "id": "rel_strength_7d",
+              "label": "Relative strength 7d",
+              "weight": 2,
+              "metric": "relStrength7dPp",
+              "direction": "higher_better",
+              "format": "signedPp",
+              "source": "hoodtier",
+              "note": "Method idea (relative strength vs peers): strong only if the coin ROSE over 7d AND beat the median 7d move of its peer cohort (same DEX / launchpad on the same chain, read from GeckoTerminal). Derived: relStrength7dPp = min(7d change, 7d change − cohort median), which is > 0 only when both hold. The cohort median is cached in KV (refreshed hourly, never used past 6h, labelled stale with its age); an unreadable cohort leaves the factor null with the reason.",
+              "data": [
+                "geckoterminal",
+                "cohort"
+              ],
+              "thresholds": [
+                {
+                  "gte": 10,
+                  "points": 1,
+                  "note": "rose and beat the peer median by ≥ 10 pp"
+                },
+                {
+                  "gt": 0,
+                  "points": 0.75,
+                  "note": "rose and beat the peer median"
+                },
+                {
+                  "gte": -15,
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "did not both rise and beat the peer median"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "fell, or lagged the peer median, by more than 15 pp"
+                }
+              ],
+              "evidenceTemplate": "7d price change {priceChange7dPct} ({priceChange7dWindow}) against a median of {cohortMedian7dPct} across {cohortSize} {cohortLabel}; strength = the lesser of the change and its excess over the median = {value} (derived) — {note}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "ageHours": {
+                      "lt": 168
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Token is {ageHours} old — a 7d price change needs 7 days of trading, so relative strength does not apply yet (age never penalises)."
+                }
+              ]
             }
           ]
         }
@@ -6528,8 +6777,8 @@
           "factors": [
             {
               "id": "liq_fdv",
-              "label": "Liquidity / FDV",
-              "weight": 13,
+              "label": "Liquidity for its size",
+              "weight": 11,
               "metric": "liqFdvPct",
               "direction": "higher_better",
               "format": "pct",
@@ -6540,29 +6789,63 @@
               ],
               "thresholds": [
                 {
-                  "gte": 10,
-                  "points": 1
-                },
-                {
-                  "gte": 5,
-                  "points": 0.75
-                },
-                {
-                  "gte": 2,
-                  "points": 0.45,
-                  "flag": "info"
-                },
-                {
                   "gte": 1,
+                  "points": 1,
+                  "note": "at or above the band reference"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.75,
+                  "note": "at least half the band reference"
+                },
+                {
+                  "gte": 0.2,
+                  "points": 0.45,
+                  "flag": "info",
+                  "note": "a fifth to half of the band reference"
+                },
+                {
+                  "gte": 0.1,
                   "points": 0.2,
-                  "flag": "warn"
+                  "flag": "warn",
+                  "note": "a tenth to a fifth of the band reference"
                 },
                 {
                   "points": 0,
-                  "flag": "danger"
+                  "flag": "danger",
+                  "note": "under a tenth of the band reference"
                 }
               ],
-              "evidenceTemplate": "Active-pool liquidity is {value} of FDV."
+              "evidenceTemplate": "Active-pool liquidity is {value} of FDV ({fdvUsd}); the fixed reference for the {band} band is {reference}, so it holds {ratio} of the reference — {note}.",
+              "reference": {
+                "metric": "fdvUsd",
+                "label": "market cap (FDV)",
+                "note": "Liquidity for its size: a FIXED reference liquidity / market-cap ratio per market-cap band, so a coin's score never depends on other coins. Larger caps carry deeper books and need a smaller share of their value in pool liquidity; small caps need more. FDV stands in for market cap (DexScreener reports fdv, else marketCap; GeckoTerminal fdv_usd). The $1M–10M band keeps the pre-2026-11-22 flat bars (10% / 5% / 2% / 1%).",
+                "bands": [
+                  {
+                    "lt": 100000,
+                    "value": 20,
+                    "label": "< $100k"
+                  },
+                  {
+                    "gte": 100000,
+                    "lt": 1000000,
+                    "value": 15,
+                    "label": "$100k–1M"
+                  },
+                  {
+                    "gte": 1000000,
+                    "lt": 10000000,
+                    "value": 10,
+                    "label": "$1M–10M"
+                  },
+                  {
+                    "gte": 10000000,
+                    "value": 5,
+                    "label": "> $10M"
+                  }
+                ]
+              }
             },
             {
               "id": "main_pool_share",
@@ -6753,6 +7036,55 @@
                 }
               ],
               "evidenceTemplate": "1h swing structure over 7d: {note} ({trendWindow})."
+            },
+            {
+              "id": "rel_strength_7d",
+              "label": "Relative strength 7d",
+              "weight": 2,
+              "metric": "relStrength7dPp",
+              "direction": "higher_better",
+              "format": "signedPp",
+              "source": "hoodtier",
+              "note": "Method idea (relative strength vs peers): strong only if the coin ROSE over 7d AND beat the median 7d move of its peer cohort (same DEX / launchpad on the same chain, read from GeckoTerminal). Derived: relStrength7dPp = min(7d change, 7d change − cohort median), which is > 0 only when both hold. The cohort median is cached in KV (refreshed hourly, never used past 6h, labelled stale with its age); an unreadable cohort leaves the factor null with the reason.",
+              "data": [
+                "geckoterminal",
+                "cohort"
+              ],
+              "thresholds": [
+                {
+                  "gte": 10,
+                  "points": 1,
+                  "note": "rose and beat the peer median by ≥ 10 pp"
+                },
+                {
+                  "gt": 0,
+                  "points": 0.75,
+                  "note": "rose and beat the peer median"
+                },
+                {
+                  "gte": -15,
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "did not both rise and beat the peer median"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "fell, or lagged the peer median, by more than 15 pp"
+                }
+              ],
+              "evidenceTemplate": "7d price change {priceChange7dPct} ({priceChange7dWindow}) against a median of {cohortMedian7dPct} across {cohortSize} {cohortLabel}; strength = the lesser of the change and its excess over the median = {value} (derived) — {note}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "ageHours": {
+                      "lt": 168
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Token is {ageHours} old — a 7d price change needs 7 days of trading, so relative strength does not apply yet (age never penalises)."
+                }
+              ]
             }
           ]
         }
@@ -8282,5 +8614,11 @@
       "launch": "launch 35, safety 25, holders 25, flow 15",
       "launch_robinhood": "launch 35, safety 25, holders 25, flow 15"
     }
+  },
+  "metricFormats": {
+    "note": "Display formats for metrics quoted in evidence templates that no factor scores directly.",
+    "priceChange7dPct": "signedPct",
+    "cohortMedian7dPct": "signedPct",
+    "cohortSize": "int"
   }
 }
