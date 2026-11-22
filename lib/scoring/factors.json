@@ -7736,6 +7736,20 @@
       "evidenceTemplate": "Trading for {ageHours} — track-record bonus +1.5 (age only ever adds)."
     },
     {
+      "id": "thin_trading",
+      "label": "Almost no trading (24h)",
+      "source": "hoodtier",
+      "note": "nad.fun sweep 2026-11-22: GOCHI ($14 volume), EGG ($4 volume, 6 makers) and MONIGGA ($25.9 volume) reached A on holder structure alone. A tier above C needs measurable trading: at least $100 of 24h volume. Zero activity is a measured $0 and is capped the same way (still scored, never U); an unknown volume is not evaluable and never fires the rule. Not age-based: it applies to every factor set. $100 sits under the lowest-volume legitimate fixture rated above C (CHOG, $131.54 recorded). Buyer / seller counts are shown but not used as a floor: they come from swap indexers that can stall (live microduck read 0 buyers / 0 sellers beside $52k of DexScreener volume).",
+      "when": {
+        "volume24hUsd": {
+          "lt": 100
+        }
+      },
+      "capTier": "C",
+      "flag": "warn",
+      "evidenceTemplate": "24h trading: {volume24hUsd} volume, {buyers24h} buyers / {sellers24h} sellers (measured) — below the $100 24h volume a tier above C needs. Holder structure alone does not earn a top tier: capped at C."
+    },
+    {
       "id": "micro_cap",
       "label": "Micro-cap / illiquid",
       "source": "hoodtier",
