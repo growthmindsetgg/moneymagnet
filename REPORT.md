@@ -1,3 +1,75 @@
+# Holder Strength: Conviction / Demand areas (2026-11-22)
+
+**Status:** committed on worktree branch `worktree-agent-a6a7e4ddf69f4fd66`. Not pushed, not deployed. Only `lib/holderStrength.ts`, `lib/holderStrengthData.ts`, `tests/holder-strength.test.ts` and this report changed. `lib/scoring/factors.json`, `components/` and `app/` were not touched.
+
+**Method source.** The area idea comes from Sparsity's public Holder Strength methodology: Conviction, Demand, fixed reference per metric, and "too new to measure" for young coins. Only the idea is borrowed. Nothing was fetched from sparsitydata.com, and none of their data is used. Every input is something we already collect: top-20 holder ledgers (EVM Transfer logs / Helius history), GeckoTerminal day candles, the accumulator supply share and wallet tokens-held counts.
+
+## What changed
+- **Areas.** Every component now carries `area` (`conviction` / `demand`), and the components are listed Conviction first. `HolderStrength.areas[]` gives each area's weight, its 0–100 score (the weighted mean of its scored components) and a null reason when nothing in it was measurable. The overall score is still the weighted mean over all scored components. Areas are display only and do not re-weight the score.
+- **The public shape is unchanged** (`score`, `label`, `components`, `sentences`, `keyPerson`, `wallets`, `excluded`, `nullReason`, `method`, `pending`). The new fields are additive and optional, because details recorded before today do not have them: `areas`, and on each component `area`, `tooNew` and `unavailable`. Labels and bands are the same (Diamond ≥ 80 · Strong 60–79 · Mixed 40–59 · Weak 20–39 · Paper < 20).
+- **New Demand components**, computed from the ledgers we already read:
+  - `whaleNet`: the top-20 buy share of their own swap volume over the last 7d, as buys ÷ (buys + sells) by token quantity. Trades are unpriced, and transfers are not trades. No swaps in 7d scores 0 with the evidence "no activity". This follows CLAUDE.md: zero activity is a value, not missing.
+  - `dipAbsorption`: the same buy share on days that closed red (close < open) in the last 30d, after the 72h launch phase. If no day closed red, the component is n/a (nothing to absorb). Red days with no top-20 swap score 0 ("no activity").
+  - `holderGrowth`: the scorer supports a real holder-count series (7d change: −10% or worse scores 0, +20% or better scores 1). **No source we read keeps one.** GoPlus, RugCheck, nad.fun and the RPC holder index all give only today's count, and our own history stores liquidity and score points. So the collector passes `null`, and the component is null with that reason and marked `unavailable`.
+- **New Conviction component `fullported`.** It measures the share of the top-20 supply held by wallets with ≥ 50% of their portfolio **value** in this token (full points at ≥ 50%). **There is no portfolio-value input, so it is always null for now.** `tokensHeld` is a count of distinct tokens, not a value. HoodScan gives an open-position count only, Helius gives balances without prices and we do not read the SOL balance, and Base / Monad / Ethereum have no keyless token list. The exact reason for each chain is in `portfolioReason(chain)`. A token count is not used as a stand-in for value.
+- **Too new to measure.** Time-based components are null with "too new to measure — token is Nd old; needs ≥ Md" and are never guessed:
+  - `hold` needs 14d of token age;
+  - `drawdown`, `accumulation`, `whaleNet`, `dipAbsorption` and `holderGrowth` need 10d (a full 7d window after the 72h launch phase).
+  - Discipline, maturity and accumulators do not depend on token age and are unchanged.
+- **Weight handling.** Too-new, n/a and source-unavailable components are all left out of the weight. They neither add nor take away points. Because age never penalises, each too-new component lowers the minimum component count by one, from 3 down to a floor of 2. Without this, a 3–10d Solana token would turn into "no score", which is counted as missing in the main score's coverage. The weight rule (≥ 50% of the weight that could be measured) is unchanged. The "only N of M components measurable" reason now counts all 10 components and says how many are too new.
+
+## New weights (sum 100, documented in the `lib/holderStrength.ts` header)
+| Area | Component | Old | New |
+|---|---|---|---|
+| Conviction (67) | hold | 20 | 14 |
+| | drawdown | 20 | 14 |
+| | discipline | 20 | 14 |
+| | maturity | 15 | 10 |
+| | accumulators | 10 | 8 |
+| | fullported | — | 7 (null: no portfolio value) |
+| Demand (33) | accumulation (dip buys) | 15 | 9 |
+| | whaleNet (7d) | — | 9 |
+| | dipAbsorption (red days) | — | 9 |
+| | holderGrowth (7d) | — | 6 (null: no series) |
+
+Fullported and holder growth are always null today, so the effective split is 60 / 27 (69% / 31%).
+
+## Effect on the synthetic label sets (`tests/holder-strength.test.ts`, unchanged assertions)
+All five sets keep their label:
+
+| Set | Old score | New score | Conviction | Demand |
+|---|---|---|---|---|
+| Diamond | 100 | 88.5 | 100 | 50 |
+| Strong | 73.4 | 65.4 | 88.1 | 0 |
+| Mixed | 49.9 | 44.7 | 60.1 | 0 |
+| Weak | 26.2 | 23.4 | 31.5 | 0 |
+| Paper | 17 | 15.4 | 20 | 0 |
+
+These sets stop trading after day ~90, so whale net accumulation over the last 7d reads "no activity" (0). That is intended: holders who are not buying show no demand. The cost to a quiet Diamond-hand token is at most 9 of 100 weight.
+
+## Tests
+- No existing test was deleted, weakened or changed. 23 tests were added, covering:
+  - areas and weights;
+  - whale net (buy share, net sellers, no activity = 0, too new, no history);
+  - dip absorption (share, no red day = n/a, no activity = 0, red days older than 30d or inside the launch window, no candles, too new);
+  - holder growth (unavailable without a series, scored from a series, series too short = missing, too new);
+  - fullported (unavailable with each chain's reason, scored from values, coverage < 30% = missing);
+  - too-new states (which components, the 14d vs 10d thresholds, left out of the weight, the minimum of 2 when young vs 3 otherwise, the null reason counting too-new components).
+- **Snapshots:** no change. `tests/__snapshots__/*.snap` do not contain Holder Strength. The fixture files keep the Holder Strength values recorded live on 2026-10-30, because they are replayed and not recomputed. They will show the new fields after the next `scripts/record-holder-strength.ts` run, which needs the live network.
+- LOOP subset run here: `pnpm typecheck` clean, `pnpm lint` with 0 errors (the 2 warnings are in untouched `scripts/`), `pnpm test` 41 files / 660 tests passed (was 637). That includes the live-network `api.integration` tests; GeckoTerminal answered HTTP 429 during the run, which those tests tolerate. Build, API verify, stability and Playwright were not run: there is no deploy in this task.
+
+## Sources
+- No new source and no new fetch. The collectors read the same ledgers, candles and wallet facts as before.
+- Sparsity: method idea only. Not fetched, no data used.
+
+## Factors / components still null, and why
+- `fullported`: no source gives a wallet's portfolio value. The reasons for each chain are above.
+- `holderGrowth`: no source keeps a holder-count series. The pieces needed to supply one are already in place: our own analyses could append `holderCount` points the way `lib/history.ts` does for liquidity, and pass them as `holderSeries`.
+- Time-based components on tokens younger than 14d / 10d: "too new to measure".
+
+## Env vars the owner must set
+None new.
+
 # Ethereum + data-audit merge, stalled-index fix (2026-11-22)
 
 **Status:** deployed as `hoodtier-fu18m31dw` (`dpl_BffyCLA7u9uD1k6ZyZhdaefBgnts`), then `hoodtier-kq7jc2axn` (`dpl_E1zyaAaz8ayA8UzMQXH5b8ieRCQt`) with the stale-bound fix. `moneymagnet.vercel.app` points to the latter. The rollback target is `hoodtier-8rgtxeyx4`.

@@ -84,8 +84,25 @@ export async function holderStrength(chain: Chain, token: string, s: TokenSnapsh
     accumulatorSupplyPct: s.accumulatorSupplyPct,
     accumulatorReason: s.nullReasons?.accumulatorSupplyPct ?? (chain === "robinhood" ? "no swap-index holder list" : "per-wallet buy / sell counts come from HoodScan's swap index (Robinhood Chain only)"),
     method: read.method,
+    // Not fetched by any source we read — stated, never estimated (holder growth / fullported are left out of the weight).
+    holderSeries: null,
+    holderSeriesReason: HOLDER_SERIES_REASON,
+    portfolioShares: null,
+    portfolioReason: portfolioReason(chain),
   });
   return { ...hs, pending: hs.score == null && read.pending };
+}
+
+/** Why holder growth has no input: every holder-count source gives today's count only. */
+export const HOLDER_SERIES_REASON =
+  "no holder-count series in our sources — GoPlus, RugCheck, nad.fun and the RPC holder index give only today's holder count, and our own history keeps liquidity and score points, not holder counts";
+
+/** Why "fullported" has no input on this chain: no source we read prices a wallet's whole portfolio. */
+export function portfolioReason(chain: Chain): string {
+  if (chain === "robinhood") return "no per-wallet portfolio value — HoodScan's trader profile gives the count of open positions (tokens held), not their USD values or the wallet's native-coin balance";
+  if (chain === "solana") return "no per-wallet portfolio value — Helius token-account lists give balances without prices (only a count of distinct tokens is read), and the wallet's SOL balance is not read";
+  const name = chain === "base" ? "Base" : chain === "monad" ? "Monad" : chain === "ethereum" ? "Ethereum" : chain;
+  return `no per-wallet portfolio value — no keyless token-list API for ${name}, so not even a token count is read`;
 }
 
 const base = (h: ReturnType<typeof strengthHolders>[number]): Omit<HolderLedger, "events" | "complete" | "walletFirstSeenT" | "tokensHeld"> => ({ address: h.address, pct: h.pct, cls: h.cls, label: h.label, keyNeverSold: h.keyNeverSold });

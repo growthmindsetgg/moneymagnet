@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeHolderStrength, isDipBuy, strengthLabel, worstDrawdown7d, type DayCandle, type HolderLedger, type LedgerEvent, type StrengthInput } from "@/lib/holderStrength";
-import { strengthHolders } from "@/lib/holderStrengthData";
+import { computeHolderStrength, isDipBuy, STRENGTH_AREAS, STRENGTH_WEIGHTS, strengthLabel, worstDrawdown7d, type DayCandle, type HolderLedger, type LedgerEvent, type StrengthInput } from "@/lib/holderStrength";
+import { HOLDER_SERIES_REASON, portfolioReason, strengthHolders } from "@/lib/holderStrengthData";
 import { scoreSnapshot } from "@/lib/scoring/engine";
 import { emptySnapshot } from "@/lib/snapshot";
 import { perfectSnapshot } from "./helpers";
@@ -163,6 +163,249 @@ describe("Holder Strength: components", () => {
     const ls = input(many(20, { boughtDay: 5, ageDays: 100 })).ledgers.map((h) => ({ ...h, tokensReason: "no keyless token-list API" }));
     const r = computeHolderStrength({ ...input([]), ledgers: ls });
     expect(r.components.find((x) => x.id === "maturity")!.evidence).toMatch(/token count known for 0 of 20 \(no keyless token-list API\) — the others are scored on age alone/);
+  });
+});
+
+/** A complete wallet ledger with explicit events (seasoned wallet, 6 tokens). */
+function withEvents(i: number, events: LedgerEvent[], pct = 5): HolderLedger {
+  return { address: addr(i), pct, cls: "wallet", events, complete: true, walletFirstSeenT: CREATED - 200 * DAY, tokensHeld: 6 };
+}
+const ev = (t: number, kind: LedgerEvent["kind"], qty: number): LedgerEvent => ({ t, kind, qty, priceUsd: null });
+const comp = (r: ReturnType<typeof computeHolderStrength>, id: string) => r.components.find((c) => c.id === id)!;
+
+describe("Holder Strength: Conviction / Demand areas", () => {
+  it("weights: Conviction 67 + Demand 33 = 100; every component is tagged with its area, Conviction listed first", () => {
+    const conv = STRENGTH_AREAS.conviction.components.reduce((a, id) => a + STRENGTH_WEIGHTS[id], 0);
+    const dem = STRENGTH_AREAS.demand.components.reduce((a, id) => a + STRENGTH_WEIGHTS[id], 0);
+    expect([conv, dem]).toEqual([67, 33]);
+    const r = computeHolderStrength(input(many(20, { boughtDay: 5, ageDays: 100, tokens: 5 })));
+    expect(r.components).toHaveLength(10);
+    expect(r.components.every((c) => c.area === (STRENGTH_AREAS.conviction.components.includes(c.id) ? "conviction" : "demand"))).toBe(true);
+    const firstDemand = r.components.findIndex((c) => c.area === "demand");
+    expect(r.components.slice(firstDemand).every((c) => c.area === "demand")).toBe(true);
+    expect(r.areas!.map((a) => [a.id, a.label, a.weight])).toEqual([
+      ["conviction", "Conviction", 67],
+      ["demand", "Demand", 33],
+    ]);
+  });
+
+  it("an area's score is the weighted mean of its scored components (0–100); the overall score is the mean over all scored components", () => {
+    const r = computeHolderStrength(input(many(20, { boughtDay: 5, dipBuy: true, ageDays: 400, tokens: 12 }), { accumulatorSupplyPct: 8 }));
+    for (const a of r.areas!) {
+      const got = r.components.filter((c) => c.area === a.id && c.score != null);
+      const w = got.reduce((x, c) => x + c.weight, 0);
+      expect(a.scoredWeight).toBe(w);
+      expect(a.score).toBeCloseTo((got.reduce((x, c) => x + c.weight * c.score!, 0) / w) * 100, 1);
+    }
+    const all = r.components.filter((c) => c.score != null);
+    expect(r.score).toBeCloseTo((all.reduce((x, c) => x + c.weight * c.score!, 0) / all.reduce((x, c) => x + c.weight, 0)) * 100, 1);
+    // Diamond-hand holders who stopped trading: conviction full, demand held down by "no activity" in the last 7d.
+    expect(r.areas![0].score).toBe(100);
+    expect(r.areas![1].score!).toBeLessThan(100);
+  });
+
+  it("an area with nothing measurable is null with the reasons of its components", () => {
+    const r = computeHolderStrength(input(many(20, { boughtDay: 5, ageDays: 100, tokens: 5 }), { createdT: NOW - 5 * DAY, candles: null, candleReason: "GeckoTerminal failed: HTTP 429" }));
+    const demand = r.areas!.find((a) => a.id === "demand")!;
+    expect(demand.score).toBeNull();
+    expect(demand.nullReason).toMatch(/^no demand component measurable — dip accumulation: too new to measure/);
+  });
+});
+
+describe("Holder Strength: whale net accumulation (7d)", () => {
+  const recent = (d: number) => NOW - d * DAY;
+
+  it("buy share of the top-20 swap volume over the last 7d, by token quantity; older trades and transfers do not count", () => {
+    const ls = [
+      withEvents(1, [ev(CREATED + DAY * 5, "buy", 1000), ev(recent(2), "buy", 300), ev(recent(20), "sell", 900)]),
+      withEvents(2, [ev(CREATED + DAY * 5, "buy", 1000), ev(recent(3), "sell", 100), ev(recent(1), "out", 500)]),
+    ];
+    const r = computeHolderStrength({ ...input([]), ledgers: ls });
+    const c = comp(r, "whaleNet");
+    expect(c.score).toBeCloseTo(0.75, 5);
+    expect(c.evidence).toMatch(/bought 300 and sold 100 tokens \(net \+200; 1 buyers, 1 sellers\) — buy share 75%/);
+    expect(c.sentence).toBe("top-20 wallets were net buyers over the last 7 days (75% of their swap volume)");
+  });
+
+  it("net sellers score low", () => {
+    const ls = [withEvents(1, [ev(CREATED + DAY * 5, "buy", 1000), ev(recent(2), "sell", 900), ev(recent(1), "buy", 100)])];
+    const c = comp(computeHolderStrength({ ...input([]), ledgers: ls }), "whaleNet");
+    expect(c.score).toBeCloseTo(0.1, 5);
+    expect(c.sentence).toMatch(/net sellers over the last 7 days \(only 10%/);
+  });
+
+  it("no swaps in the last 7d is a value — 0, 'no activity' — not missing", () => {
+    const c = comp(computeHolderStrength(input(many(20, { boughtDay: 5, ageDays: 100, tokens: 5 }))), "whaleNet");
+    expect(c.score).toBe(0);
+    expect(c.nullReason).toBeUndefined();
+    expect(c.evidence).toMatch(/^no activity: none of the 20 read top-20 wallets swapped in the last 7d/);
+  });
+
+  it("too new: a token younger than 10d is 'too new to measure' (null, left out of the weight)", () => {
+    const ls = [withEvents(1, [ev(recent(4), "buy", 1000), ev(recent(1), "buy", 10)])];
+    const c = comp(computeHolderStrength({ ...input([]), ledgers: ls, createdT: NOW - 6 * DAY }), "whaleNet");
+    expect(c.score).toBeNull();
+    expect(c.tooNew).toBe(true);
+    expect(c.nullReason).toBe("too new to measure — token is 6d old; needs ≥ 10d");
+  });
+
+  it("no wallet history read: null with the reason", () => {
+    const r = computeHolderStrength({ ...input([]), ledgers: [{ ...withEvents(1, []), complete: false }] });
+    expect(comp(r, "whaleNet").nullReason).toBe("no top-20 wallet history read");
+  });
+});
+
+describe("Holder Strength: dip absorption (red days)", () => {
+  /** Days 110 and 115 close red (open 1 → close 0.9). */
+  const redCandles = () => candles().map((x, i) => (i === 110 || i === 115 ? { ...x, o: 1, c: 0.9, l: 0.88 } : x));
+  const onDay = (d: number) => CREATED + d * DAY + 7200;
+
+  it("buy share of the top-20 swap volume on days that closed red in the last 30d", () => {
+    const ls = [
+      withEvents(1, [ev(CREATED + DAY * 5, "buy", 1000), ev(onDay(110), "buy", 400), ev(onDay(111), "sell", 999)]),
+      withEvents(2, [ev(CREATED + DAY * 5, "buy", 1000), ev(onDay(115), "sell", 100), ev(onDay(115), "buy", 100)]),
+    ];
+    const c = comp(computeHolderStrength({ ...input([]), ledgers: ls, candles: redCandles() }), "dipAbsorption");
+    expect(c.score).toBeCloseTo(500 / 600, 5);
+    expect(c.evidence).toMatch(/^2 red days in the last 30d: top-20 wallets bought 500 and sold 100 tokens on them — buy share 83%/);
+    expect(c.sentence).toMatch(/net buyers on red days/);
+  });
+
+  it("no red day in the last 30d: n/a (nothing to absorb), not missing", () => {
+    const r = computeHolderStrength(input(many(20, { boughtDay: 5, ageDays: 100, tokens: 5 })));
+    const c = comp(r, "dipAbsorption");
+    expect(c.na).toBe(true);
+    expect(c.score).toBeNull();
+    expect(r.score).not.toBeNull();
+  });
+
+  it("red days without any top-20 swap: 0, 'no activity'", () => {
+    const c = comp(computeHolderStrength(input(many(20, { boughtDay: 5, ageDays: 100, tokens: 5 }), { candles: redCandles() })), "dipAbsorption");
+    expect(c.score).toBe(0);
+    expect(c.evidence).toMatch(/^no activity: 2 red days in the last 30d, no top-20 swap on any of them/);
+  });
+
+  it("a red day older than 30d or inside the 72h launch phase does not count", () => {
+    const c0 = candles().map((x, i) => (i === 1 || i === 80 ? { ...x, o: 1, c: 0.9 } : x));
+    const c = comp(computeHolderStrength(input(many(20, { boughtDay: 0, ageDays: 100, tokens: 5 }), { candles: c0 })), "dipAbsorption");
+    expect(c.na).toBe(true);
+  });
+
+  it("no candles: null with the source's reason; too new below 10d", () => {
+    expect(comp(computeHolderStrength(input(many(20, { boughtDay: 5 }), { candles: null, candleReason: "GeckoTerminal failed: HTTP 429" })), "dipAbsorption").nullReason).toBe("GeckoTerminal failed: HTTP 429");
+    const young = comp(computeHolderStrength(input(many(20, { boughtDay: 5 }), { createdT: NOW - 9 * DAY })), "dipAbsorption");
+    expect(young.tooNew).toBe(true);
+    expect(young.evidence).toBe("too new to measure — token is 9d old; needs ≥ 10d — not scored");
+  });
+});
+
+describe("Holder Strength: holder growth and fullported (inputs our sources do not provide)", () => {
+  it("holder growth without a holder-count series: null with the reason, marked unavailable, not counted as missing", () => {
+    const base = input(many(20, { boughtDay: 5, ageDays: 100, tokens: 5 }));
+    const r = computeHolderStrength({ ...base, holderSeries: null, holderSeriesReason: HOLDER_SERIES_REASON });
+    const c = comp(r, "holderGrowth");
+    expect(c.score).toBeNull();
+    expect(c.unavailable).toBe(true);
+    expect(c.nullReason).toBe(HOLDER_SERIES_REASON);
+    // Same score as with the component absent from the weight entirely.
+    expect(r.score).toBe(computeHolderStrength(base).score);
+  });
+
+  it("holder growth from a real series: −10% → 0, +20% → 1, against the newest point 7–10.5d before the latest", () => {
+    const series = (from: number, to: number) => [
+      { t: NOW - 30 * DAY, count: 1 },
+      { t: NOW - 8 * DAY, count: from },
+      { t: NOW, count: to },
+    ];
+    const g = (from: number, to: number) => comp(computeHolderStrength(input(many(20, { boughtDay: 5 }), { holderSeries: series(from, to) })), "holderGrowth");
+    expect(g(1000, 1200).score).toBe(1);
+    expect(g(1000, 900).score).toBe(0);
+    expect(g(1000, 1050).score).toBeCloseTo(0.5, 5);
+    expect(g(1000, 1050).evidence).toBe("holders 1000 → 1050 over 8d (+5%; 0 at ≤ −10%, full at ≥ +20%)");
+  });
+
+  it("holder growth: a series without a point 7–10.5d back is missing (null with the reason); too new below 10d", () => {
+    const short = comp(computeHolderStrength(input(many(20, { boughtDay: 5 }), { holderSeries: [{ t: NOW - 2 * DAY, count: 10 }, { t: NOW, count: 12 }] })), "holderGrowth");
+    expect(short.score).toBeNull();
+    expect(short.unavailable).toBeUndefined();
+    expect(short.nullReason).toBe("holder-count series has no point 7–10.5d before its latest (2 points)");
+    const young = comp(computeHolderStrength(input(many(20, { boughtDay: 5 }), { createdT: NOW - 7 * DAY, holderSeries: [{ t: NOW, count: 12 }] })), "holderGrowth");
+    expect(young.tooNew).toBe(true);
+  });
+
+  it("fullported without portfolio values: null with the exact reason, unavailable — a token count is not a portfolio value", () => {
+    const ls = input(many(20, { boughtDay: 5, ageDays: 100, tokens: 1 })).ledgers;
+    for (const chain of ["robinhood", "solana", "base", "monad", "ethereum"] as const) {
+      const c = comp(computeHolderStrength({ ...input([]), ledgers: ls, portfolioShares: null, portfolioReason: portfolioReason(chain) }), "fullported");
+      expect(c.score).toBeNull();
+      expect(c.unavailable).toBe(true);
+      expect(c.nullReason).toMatch(/^no per-wallet portfolio value — /);
+    }
+    expect(portfolioReason("robinhood")).toMatch(/count of open positions .* not their USD values/);
+    expect(portfolioReason("solana")).toMatch(/balances without prices/);
+  });
+
+  it("fullported from real portfolio values: share of the supply held by wallets with ≥ 50% of their portfolio in this token; full at ≥ 50%", () => {
+    const ls = input(many(20, { boughtDay: 5, ageDays: 100, tokens: 5 })).ledgers;
+    const shares = Object.fromEntries(ls.map((h, i) => [h.address, i < 4 ? 0.8 : 0.1]));
+    const c = comp(computeHolderStrength({ ...input([]), ledgers: ls, portfolioShares: shares }), "fullported");
+    expect(c.score).toBeCloseTo(0.2 / 0.5, 5);
+    expect(c.evidence).toMatch(/^4 of 20 wallets hold ≥ 50% of their portfolio value in this token \(20% of their supply/);
+    const thin = comp(computeHolderStrength({ ...input([]), ledgers: ls, portfolioShares: { [ls[0].address]: 0.9 } }), "fullported");
+    expect(thin.score).toBeNull();
+    expect(thin.nullReason).toBe("portfolio value read for 1 of 20 wallets (< 30% of their supply)");
+  });
+
+  it("the collector states holder growth and fullported as unavailable — never estimated", () => {
+    expect(HOLDER_SERIES_REASON).toMatch(/^no holder-count series in our sources — .*only today's holder count/);
+  });
+});
+
+describe("Holder Strength: too new to measure (young tokens)", () => {
+  /** A 5-day-old token: wallets bought on day 0, never sold. */
+  const youngInput = (over: Partial<StrengthInput> = {}): StrengthInput => {
+    const created = NOW - 5 * DAY;
+    const ledgers = Array.from({ length: 20 }, (_, i): HolderLedger => ({ address: addr(i + 1), pct: 5, cls: "wallet", events: [ev(created + 3600, "buy", 1000)], complete: true, walletFirstSeenT: created - 200 * DAY, tokensHeld: 8 }));
+    return { ledgers, createdT: created, nowT: NOW, candles: candles().slice(0, 5).map((c, i) => ({ ...c, t: created + i * DAY })), accumulatorSupplyPct: 6, method: "test", ...over };
+  };
+
+  it("time-based components are null 'too new to measure', never guessed: hold < 14d; drawdown, dip accumulation, whale net, dip absorption, holder growth < 10d", () => {
+    const r = computeHolderStrength(youngInput({ holderSeries: [{ t: NOW, count: 50 }] }));
+    const newIds = r.components.filter((c) => c.tooNew).map((c) => c.id).sort();
+    expect(newIds).toEqual(["accumulation", "dipAbsorption", "drawdown", "hold", "holderGrowth", "whaleNet"]);
+    for (const id of newIds) {
+      expect(comp(r, id).score).toBeNull();
+      expect(comp(r, id).evidence).toMatch(/^too new to measure — token is 5d old; needs ≥ 1[04]d — not scored$/);
+    }
+    // Hold uses 14d: a 12-day-old token still has no hold score, while windowed components (10d) do measure.
+    const twelve = computeHolderStrength({ ...input(many(20, { boughtDay: 0, ageDays: 100, tokens: 5 })), createdT: NOW - 12 * DAY });
+    expect(comp(twelve, "hold").tooNew).toBe(true);
+    expect(comp(twelve, "whaleNet").tooNew).toBeUndefined();
+  });
+
+  it("too-new components are left out of the weight: age neither penalises nor inflates the score", () => {
+    const r = computeHolderStrength(youngInput());
+    // Discipline (0 sells < 30d = 0.8), maturity (1) and accumulators (1) remain.
+    expect(r.score).toBeCloseTo(((14 * 0.8 + 10 * 1 + 8 * 1) / 32) * 100, 1);
+    expect(r.label).toBe("Diamond");
+  });
+
+  it("age never pushes a token to 'no score': with components too new, two measured components are enough (three otherwise)", () => {
+    // Young: discipline + maturity (accumulators unread) still score.
+    const young = computeHolderStrength(youngInput({ accumulatorSupplyPct: null, accumulatorReason: "no swap-index holder list" }));
+    expect(young.score).toBeCloseTo(((14 * 0.8 + 10 * 1) / 24) * 100, 1);
+    // Nothing too new (age unknown) and only two measured components (discipline, whale net): null, three are needed.
+    const two = computeHolderStrength(input(many(20, { boughtDay: 5 }), { createdT: null, candles: null, candleReason: "GeckoTerminal failed: HTTP 429" }));
+    expect(two.components.filter((c) => c.score != null).map((c) => c.id).sort()).toEqual(["discipline", "whaleNet"]);
+    expect(two.score).toBeNull();
+    expect(two.nullReason).toMatch(/^only 2 of 10 components measurable — hold duration: token age unknown; drawdown survival: GeckoTerminal failed: HTTP 429/);
+  });
+
+  it("too few measurable components on a young token: null, and the reason counts the too-new ones", () => {
+    const ls = youngInput().ledgers.map((h) => ({ ...h, walletFirstSeenT: null, walletAgeReason: "archive search did not finish in time" }));
+    const r = computeHolderStrength(youngInput({ ledgers: ls, accumulatorSupplyPct: null, accumulatorReason: "no swap-index holder list" }));
+    expect(r.score).toBeNull();
+    expect(r.nullReason).toBe("only 1 of 10 components measurable (5 too new to measure) — wallet maturity: archive search did not finish in time; 0-sell accumulators: no swap-index holder list");
   });
 });
 
