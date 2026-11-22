@@ -1,6 +1,17 @@
 # Session summary: sync + Sparsity-inspired improvements (2026-11-22)
 
-**Status:** merged on `main` and pushed to GitHub (`growthmindsetgg/moneymagnet`). **Not deployed.** Before any deploy, run the rest of the LOOP: verify:api, stability and Playwright.
+**Status:** merged on `main`, pushed to GitHub (`growthmindsetgg/moneymagnet`) and **deployed to production** on 2026-11-22: `hoodtier-bsumxih0u`, aliased to moneymagnet.vercel.app.
+
+## Deploy LOOP results (2026-11-22)
+- **lint / typecheck / test / build:** ok. Lint has 0 errors; tests 709/709.
+- **verify:api:** 6 of 7 tokens passed. `0x30de7ae4…` (Robinhood) had only 2/4 groups with data because GeckoTerminal returned HTTP 429 for every call. The **old production build failed the same check for the same token at the same time**, so this is a source outage, not a regression.
+- **verify:stability:**
+  - local: OK, including the simulated HoodScan 503;
+  - production after deploy (`BASE=https://moneymagnet.vercel.app RUNS=3`): OK, with no tier flips.
+- **Playwright:** 56 passed, 4 flaky (passed on retry), 1 skipped.
+  - `hero.spec.ts` light and dark: the snapshots were regenerated, because the only change is microduck's score line (80.4 / raw 77.4 / 100% → 81.0 / raw 78 / 98%) from banded `liq_fdv` and the new `rel_strength_7d` factor, which is null in the fixture.
+  - `clarity.spec.ts:24` Kolshi still fails locally: its holder severity reads "none" because there is no fresh Robinhood holder replay or production KV on this machine. It fails on the pre-change front end too.
+- **GeckoTerminal is rate-limiting production heavily (HTTP 429).** The cohort makes extra GeckoTerminal calls; they are capped by the hourly cache, the 5-minute failure backoff and single-flight. A GeckoTerminal API key is now the most valuable env var to add.
 
 ## Tasks done and decisions made
 - **Sync.** Restored the source of the live deploy `dpl_4KFeqYXL` (2026-11-22) from Vercel into the repo. The other machine's commits made after that deploy (including the `pnpm sync` script) are not here yet; that machine was offline.
