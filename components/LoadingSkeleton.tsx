@@ -37,7 +37,12 @@ export default function LoadingSkeleton({ chain }: { chain: string }) {
           <div className="mm-skel h-5 w-full max-w-lg" />
         </div>
       </div>
-      <p className="font-mono text-sm" role="status" aria-live="polite" data-testid="loading-status">
+      {/* One stable announcement for screen readers; the cycling adapter names (every 900ms) stay visual only,
+          so a live region does not re-announce on every tick. */}
+      <p className="sr-only" role="status">
+        Analyzing this token: querying {names.length} sources. This can take up to a minute.
+      </p>
+      <p className="font-mono text-sm" aria-hidden="true" data-testid="loading-status">
         {names.map((n, k) => (
           <span key={n} className={k === on ? "bg-neon px-1 text-neon-ink" : "text-muted"}>
             {n} {k === on ? "…" : "·"}{" "}
