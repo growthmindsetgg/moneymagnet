@@ -1,0 +1,952 @@
+{
+  "recordedAt": "2026-11-20T08:54:14.266Z",
+  "note": "PEPE — the largest Ethereum meme ($1.57B FDV, 19 pairs); top holder is Binance 8 (11.9%).",
+  "snapshot": {
+    "chain": "ethereum",
+    "address": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+    "name": "Pepe",
+    "symbol": "PEPE",
+    "launchpad": null,
+    "anchor": null,
+    "assetKind": null,
+    "tokenExists": true,
+    "priceUsd": 0.000003601173129,
+    "fdvUsd": 1495845245,
+    "liquidityUsd": 26269536.9906,
+    "volume24hUsd": 2199459.8700000006,
+    "poolCount": 12,
+    "mainPoolLiquidityUsd": 23875271.007,
+    "mainPoolSharePct": 90.97901988793888,
+    "liqFdvPct": 1.7561667611277527,
+    "liqChange24hPct": null,
+    "liqChange7dPct": null,
+    "liqChange24hWindow": null,
+    "liqChange7dWindow": null,
+    "liqHistoryPoints": 3,
+    "liquidityTotalUsd": 26291426.33,
+    "poolAddresses": [
+      "0xa43fe16908251ee70ef74718545e4fe6c5ccec9f",
+      "0x11950d141ecb863f01007add7d1a342041227b58",
+      "0xce26223d3a383e41c2315f5e360532bf290c513f",
+      "0xf239009a101b6b930a527deaab6961b6e7dec8a6",
+      "0xba4cb46d32ad724b5b6ce32c6ca80d8fcab3296f",
+      "0x992c59d45dd67706d7aaa118beb331c203858417",
+      "0x3202acfd55232f3706aa81a4f18a98686b5e1d1b",
+      "0xcee31c846cbf003f4ceb5bbd234cba03c6e940c7",
+      "0xa7bc6c09907fa2ded89f1c8d05374621cb1f88c5",
+      "0x248823df26180700e56f632dd7fa64a4d63f9db1",
+      "0x8c7733efdb42277977a0027368e75d6ab1f8ece4",
+      "0x694736a70d63241884e891fd0416b1ada7ff2bdb",
+      "0xfd2184ae9af6671dc37cb6295174eed3ab94a0e4",
+      "0x38e6f145586043a030d02f1aa32eb55c65183a1d",
+      "0x950fbb8b935402b78aa8e0020aaaa364c7c2eabf",
+      "0x8021917809cf9abf0789dfa88bc271ad58da5cc8",
+      "0x81dd57114d376a271aadd3f622fb21079333de4d",
+      "0x05b5dba037afa4bbafaca15bf9f6bfaaad183fe6"
+    ],
+    "createdAt": "2023-04-14T17:21:11.000Z",
+    "ageHours": 31575.548129166666,
+    "ageMinutes": 1894532.9,
+    "totalSupply": 420689899644011.4,
+    "holderCount": 578855,
+    "top10SharePct": 39.41,
+    "equalSplitPct": 0,
+    "equalSplitCount": 0,
+    "top1SharePct": 11.923922166116302,
+    "accumulatorCount": null,
+    "accumulatorSupplyPct": null,
+    "earlyCohortSize": null,
+    "earlyExitRatePct": null,
+    "earlyRetentionPct": null,
+    "deployerAddress": "0xfbfeaf0da0f2fde5c66df570133ae35f3eb58c9a",
+    "deployerHoldingPct": 0,
+    "holderClasses": [
+      {
+        "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
+        "pct": 11.923922166116302,
+        "class": "wallet",
+        "label": "Binance 8 (CEX)",
+        "detail": null,
+        "unlocksAt": null,
+        "evidence": "no code (EOA); not the deployer (0xfbfeaf…); Binance 8 (CEX) (data/ethereum-infra.json → cexWallets)",
+        "counted": true
+      },
+      {
+        "address": "0x1d48963dd8fada6ab5c2c7b92eba81ecc5030270",
+        "pct": 6.476972528471668,
+        "class": "wallet",
+        "label": "wallet",
+        "detail": null,
+        "unlocksAt": null,
+        "evidence": "no code (EOA); not the deployer (0xfbfeaf…)",
+        "counted": true
+      },
+      {
+        "address": "0x5a52e96bacdabb82fd05763e25335261b270efcb",
+        "pct": 5.1714252036717285,
+        "class": "wallet",
+        "label": "wallet",
+        "detail": null,
+        "unlocksAt": null,
+        "evidence": "no code (EOA); not the deployer (0xfbfeaf…)",
+        "counted": true
+      },
+      {
+        "address": "0x3f9a8345729ea842708e080e238c92731e5699b8",
+        "pct": 3.0912589188923207,
+        "class": "wallet",
+        "label": "wallet",
+        "detail": null,
+        "unlocksAt": null,
+        "evidence": "no code (EOA); not the deployer (0xfbfeaf…)",
+        "counted": true
+      },
+      {
+        "address": "0x611f7bf868a6212f871e89f7e44684045ddfb09d",
+        "pct": 2.9625906011079723,
+        "class": "wallet",
+        "label": "wallet",
+        "detail": null,
+        "unlocksAt": null,
+        "evidence": "no code (EOA); not the deployer (0xfbfeaf…)",
+        "counted": true
+      }
+    ],
+    "largestHolder": {
+      "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
+      "pct": 11.923922166116302,
+      "class": "wallet",
+      "label": "Binance 8 (CEX)",
+      "detail": null,
+      "unlocksAt": null,
+      "evidence": "no code (EOA); not the deployer (0xfbfeaf…); Binance 8 (CEX) (data/ethereum-infra.json → cexWallets)",
+      "counted": true
+    },
+    "founderNeverSold": false,
+    "founderSold": null,
+    "founderHoldDays": null,
+    "teamNeverSold": false,
+    "teamSold": null,
+    "teamHoldDays": null,
+    "holderStrength": null,
+    "holderStrengthLabel": null,
+    "holderStrengthDetail": {
+      "components": [
+        {
+          "id": "hold",
+          "label": "Hold duration",
+          "weight": 20,
+          "score": null,
+          "evidence": "no data — no first-buy time for any top-20 wallet",
+          "nullReason": "no first-buy time for any top-20 wallet",
+          "sentence": null
+        },
+        {
+          "id": "drawdown",
+          "label": "Drawdown survival",
+          "weight": 20,
+          "score": null,
+          "evidence": "no data — no daily candles from GeckoTerminal for this token",
+          "nullReason": "no daily candles from GeckoTerminal for this token",
+          "sentence": null
+        },
+        {
+          "id": "discipline",
+          "label": "Sell discipline",
+          "weight": 20,
+          "score": null,
+          "evidence": "no data — no top-20 wallet history read",
+          "nullReason": "no top-20 wallet history read",
+          "sentence": null
+        },
+        {
+          "id": "maturity",
+          "label": "Wallet maturity",
+          "weight": 15,
+          "score": null,
+          "evidence": "no data — no wallet age for any top-20 wallet",
+          "nullReason": "no wallet age for any top-20 wallet",
+          "sentence": null
+        },
+        {
+          "id": "accumulation",
+          "label": "Dip accumulation",
+          "weight": 15,
+          "score": null,
+          "evidence": "no data — no daily candles from GeckoTerminal for this token",
+          "nullReason": "no daily candles from GeckoTerminal for this token",
+          "sentence": null
+        },
+        {
+          "id": "accumulators",
+          "label": "0-sell accumulators",
+          "weight": 10,
+          "score": null,
+          "evidence": "no data — per-wallet buy / sell counts come from HoodScan's swap index (Robinhood Chain only)",
+          "nullReason": "per-wallet buy / sell counts come from HoodScan's swap index (Robinhood Chain only)",
+          "sentence": null
+        }
+      ],
+      "keyPerson": [],
+      "wallets": 0,
+      "excluded": [
+        {
+          "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
+          "pct": 11.923922166116302,
+          "why": "labelled CEX wallet"
+        }
+      ],
+      "method": "Transfer logs of the top-20 wallets since creation (0% of wallets read to the head — continues in the background); a pool / router / contract counterparty is a swap; wallet age = first block holding native coin (archive state)",
+      "score": null,
+      "label": null,
+      "sentences": [],
+      "nullReason": "histories read for wallets holding 0% of the top-20 supply outside key-person / locked holders (9 still incomplete; needs ≥ 60%)",
+      "pending": true
+    },
+    "vestingDiamond": false,
+    "holderStrengthPending": true,
+    "deployerSoldPct": null,
+    "deployerHasSold": null,
+    "deployerDistributedPct": null,
+    "insiderNetworks": null,
+    "holders": [
+      {
+        "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
+        "qty": 50162736194264.695,
+        "pct": 11.923922166116302,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet",
+        "label": "Binance 8 (CEX)"
+      },
+      {
+        "address": "0x1d48963dd8fada6ab5c2c7b92eba81ecc5030270",
+        "qty": 27247969229997.645,
+        "pct": 6.476972528471668,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet",
+        "label": "wallet"
+      },
+      {
+        "address": "0x5a52e96bacdabb82fd05763e25335261b270efcb",
+        "qty": 21755663499491.703,
+        "pct": 5.1714252036717285,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet",
+        "label": "wallet"
+      },
+      {
+        "address": "0x3f9a8345729ea842708e080e238c92731e5699b8",
+        "qty": 13004614043624.654,
+        "pct": 3.0912589188923207,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet",
+        "label": "wallet"
+      },
+      {
+        "address": "0x611f7bf868a6212f871e89f7e44684045ddfb09d",
+        "qty": 12463319426664.043,
+        "pct": 2.9625906011079723,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet",
+        "label": "wallet"
+      },
+      {
+        "address": "0xc93e48d89f2d6dbc1672908aa68ce7c24d0413b4",
+        "qty": 11610000000130.02,
+        "pct": 2.7597524946414036,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xbf45fb5d20bc3d0954188773e803b4e30e87e0b8",
+        "qty": 8051614074754.317,
+        "pct": 1.91390715145945,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x176f3dab24a159341c0509bb36b833e7fdd0a132",
+        "qty": 7268180950036.54,
+        "pct": 1.727681352983965,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0x9b0c45d46d386cedd98873168c36efd0dcba8d46",
+        "qty": 7170827034552.411,
+        "pct": 1.7045398619316459,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      },
+      {
+        "address": "0xc671b05671a7cd3080c6ceae79d284bdde0ef271",
+        "qty": 7067567242377.461,
+        "pct": 1.6799945157604332,
+        "buys": null,
+        "sells": null,
+        "isContract": false,
+        "kind": "wallet"
+      }
+    ],
+    "swapHolders": [],
+    "liquidityHolders": [],
+    "liquidityHeldPct": 0,
+    "holderSource": "goplus",
+    "staleFields": {
+      "staircase": 6,
+      "staircaseWindow": 6,
+      "trendScore": 6,
+      "trendWindow": 6,
+      "brokeHigherLow": 6,
+      "upOnlyChart": 6,
+      "patterns": 6
+    },
+    "netFlowRatio24h": null,
+    "netFlowUsd24h": null,
+    "netFlowRatio7d": null,
+    "flowConsistent": null,
+    "buyers24h": 145,
+    "sellers24h": 172,
+    "buyerSellerRatio": 0.8430232558139535,
+    "singleTradeWalletSharePct": null,
+    "tradesPerWallet": 2.5141955835962144,
+    "smartMoneyNetUsd": null,
+    "smartBuyers": null,
+    "volLiqRatio": 0.08372663251685901,
+    "repeatedSizeSharePct": null,
+    "bundleSharePct": null,
+    "washFlag": false,
+    "honeypot": false,
+    "sellable": true,
+    "liquidityPulled": false,
+    "deadCurve": null,
+    "deadLaunch": null,
+    "lastTradeHoursAgo": null,
+    "launchBuyers": 145,
+    "zeroActivity": [],
+    "roundTripLossPct": 2.28,
+    "mintAuthority": false,
+    "freezeAuthority": null,
+    "verified": true,
+    "ownerRenounced": true,
+    "upgradeable": false,
+    "lpLockedPct": null,
+    "isLaunchpad": null,
+    "volMcRatio": 0.001470379290472659,
+    "volMcBar": 0.8,
+    "volMcVsBar": 0.0018379741130908236,
+    "feesSol": null,
+    "feesPerMcap15k": null,
+    "snipeRatioPct": null,
+    "feedWindow": null,
+    "bundleScore": null,
+    "organicScore": null,
+    "timingEntropy": null,
+    "devBuySol": null,
+    "devBuySharePct": null,
+    "freshWalletsTop20": null,
+    "fundingClusterMax": null,
+    "clusterSupplyPct": null,
+    "bundlerMajority": null,
+    "makersCount": null,
+    "makersHoldersRatio": null,
+    "creatorPriorMints": null,
+    "creatorRugRatePct": null,
+    "creatorHasSocials": null,
+    "socialLinks": null,
+    "curveProgressPct": null,
+    "realSolReserves": null,
+    "curveCirculatingPct": null,
+    "uniqueBuyers": null,
+    "sells24h": 973,
+    "buyTxs24h": 995,
+    "sellTxs24h": 973,
+    "buyersBasis": "unique wallets",
+    "allBuyersExited": null,
+    "insiderSupplyPct": null,
+    "first5mSharePct": null,
+    "launchPriceUsd": null,
+    "bundlersFlushed": null,
+    "launchRetraced30": null,
+    "launchWindow": null,
+    "identicalCandleSharePct": null,
+    "identicalWindow": null,
+    "hugeCandlesOnly": null,
+    "staircase": false,
+    "staircaseWindow": "60 × 5m candles, 2026-11-20T01:30Z → 2026-11-20T08:40Z",
+    "trendScore": 0.5,
+    "trendWindow": "168 × 1h candles, 2026-11-13T09:00Z → 2026-11-20T08:00Z",
+    "brokeHigherLow": false,
+    "upOnlyChart": false,
+    "honeypotPattern": false,
+    "patterns": [
+      {
+        "id": "staircase",
+        "result": false,
+        "detail": "Longest step–plateau run with no red candle: 0 steps (flag at 5).",
+        "timeframe": "5m",
+        "from": "2026-11-20T01:30:00.000Z",
+        "to": "2026-11-20T08:40:00.000Z",
+        "candles": 60
+      },
+      {
+        "id": "trend",
+        "result": 0.5,
+        "detail": "Swing highs 0.000004045 → 0.000003609 (LH), lows 0.000003510 → 0.000003548 (HL); last close 0.000003601.",
+        "timeframe": "1h",
+        "from": "2026-11-13T09:00:00.000Z",
+        "to": "2026-11-20T08:00:00.000Z",
+        "candles": 168
+      },
+      {
+        "id": "up_only",
+        "result": false,
+        "detail": "Max drawdown from running peak 13.2%.",
+        "timeframe": "5m",
+        "from": "2026-11-19T00:25:00.000Z",
+        "to": "2026-11-20T08:40:00.000Z",
+        "candles": 288
+      }
+    ],
+    "tmWinnerSimilarity": null,
+    "tmRugSimilarity": null,
+    "nullReasons": {
+      "identicalCandleSharePct": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "launchRetraced30": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "launchPriceUsd": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "hugeCandlesOnly": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "lpLockedPct": "token is ≥ 14 days old — the LP-lock check applies to young tokens (as on Robinhood Chain)",
+      "liqChange24hPct": "only 13m of liquidity history — a 24h change needs ≥ 12h",
+      "liqChange7dPct": "only 13m of liquidity history — a 7d change needs ≥ 84h",
+      "founderSold": "largest holder is not the deployer",
+      "teamSold": "largest holder is not a deployer-funded wallet",
+      "holderStrength": "histories read for wallets holding 0% of the top-20 supply outside key-person / locked holders (9 still incomplete; needs ≥ 60%)"
+    },
+    "provenance": {
+      "honeypot": [
+        {
+          "source": "ethereum-sim",
+          "label": "Ethereum sell simulation",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "sellable": [
+        {
+          "source": "ethereum-sim",
+          "label": "Ethereum sell simulation",
+          "value": true,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "liquidityPulled": [
+        {
+          "source": "ethereum-sim",
+          "label": "Ethereum sell simulation",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "roundTripLossPct": [
+        {
+          "source": "ethereum-sim",
+          "label": "Ethereum sell simulation",
+          "value": 2.28,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": true
+        }
+      ],
+      "totalSupply": [
+        {
+          "source": "ethereum-rpc",
+          "label": "Ethereum RPC",
+          "value": 420689899644011.4,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": true
+        }
+      ],
+      "deployerHoldingPct": [
+        {
+          "source": "ethereum-rpc",
+          "label": "Ethereum RPC",
+          "value": 0,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 0,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "ownerRenounced": [
+        {
+          "source": "ethereum-rpc",
+          "label": "Ethereum RPC",
+          "value": true,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "upgradeable": [
+        {
+          "source": "ethereum-rpc",
+          "label": "Ethereum RPC",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": true
+        },
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "priceUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 0.000003615,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 0.000003601173129,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "fdvUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 1495845245,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 1490065868.68757,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "liquidityUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 26270192.38,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 26269536.9906,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "volume24hUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 2199459.8700000006,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 2224403.9347316716,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "poolCount": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 12,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 17,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "mainPoolLiquidityUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 23900363.55,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 23875271.007,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "mainPoolSharePct": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 90.97901988793888,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 90.88577014335372,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "liquidityTotalUsd": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 26291426.33,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 26342637.6258,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "createdAt": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": "2023-04-14T17:21:11.000Z",
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": "2023-04-14T17:21:11.000Z",
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "ageHours": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 31575.548129166666,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 31575.548129166666,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "sells24h": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 973,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        },
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 368,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "buyTxs24h": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 995,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "sellTxs24h": [
+        {
+          "source": "dexscreener",
+          "label": "DexScreener",
+          "value": 973,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "buyers24h": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 145,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "sellers24h": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 172,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "buyerSellerRatio": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 0.8430232558139535,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "tradesPerWallet": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 2.5141955835962144,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "staircase": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:48:04.264Z",
+          "onchain": false,
+          "stale": true
+        }
+      ],
+      "trendScore": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": 0.5,
+          "fetchedAt": "2026-11-20T08:48:04.264Z",
+          "onchain": false,
+          "stale": true
+        }
+      ],
+      "brokeHigherLow": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:48:04.264Z",
+          "onchain": false,
+          "stale": true
+        }
+      ],
+      "upOnlyChart": [
+        {
+          "source": "geckoterminal",
+          "label": "GeckoTerminal",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:48:04.264Z",
+          "onchain": false,
+          "stale": true
+        }
+      ],
+      "holderCount": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 578855,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "top10SharePct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 39.41,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "top1SharePct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 11.923922166116302,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "deployerAddress": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": "0xfbfeaf0da0f2fde5c66df570133ae35f3eb58c9a",
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "liquidityHeldPct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 0,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "mintAuthority": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": false,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "verified": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": true,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ],
+      "lpLockedPct": [
+        {
+          "source": "goplus",
+          "label": "GoPlus",
+          "value": 0.01,
+          "fetchedAt": "2026-11-20T08:54:04.264Z",
+          "onchain": false
+        }
+      ]
+    },
+    "fakeSignals": [],
+    "links": [
+      {
+        "label": "DexScreener",
+        "url": "https://dexscreener.com/ethereum/0xa43fe16908251ee70ef74718545e4fe6c5ccec9f"
+      },
+      {
+        "label": "GeckoTerminal",
+        "url": "https://www.geckoterminal.com/eth/tokens/0x6982508145454ce325ddbe47a25d4ec3d2311933"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "ethereum-sim",
+      "label": "Ethereum sell simulation",
+      "state": "ok",
+      "message": "sellable via pool 0xe42df52d… (v4, no hook, fee 1%) · transfer probe from 0x1d4896…: ok · pool 0xa43fe169… (v2, fee 0.3%): 0.59% loss (computed from reserves, 0.3% fee) · pool 0x11950d14… (v3, fee 0.3%): 0.60% loss (computed from pool state: fee 0.3% twice, in-tick) · pool 0xce26223d… (v3, fee 0.2736%): 0.55% loss (computed from pool state: fee 0.2736% twice, in-tick) · pool 0x80219178… (v2, fee 0.3%): 0.61% loss (computed from reserves, 0.3% fee) · pool 0xe42df52d… (v4, no hook, fee 1%): 2.28% round-trip loss (V4Quoter, buy then sell) · pool 0xf239009a… (v3, fee 1%): 1.99% loss (computed from",
+      "ms": 2089
+    },
+    {
+      "id": "ethereum-rpc",
+      "label": "Ethereum RPC",
+      "state": "ok",
+      "message": "supply 420,689,899,644,011 · not a proxy · owner renounced",
+      "ms": 561
+    },
+    {
+      "id": "dexscreener",
+      "label": "DexScreener",
+      "state": "ok",
+      "message": "19 pairs",
+      "ms": 211,
+      "url": "https://dexscreener.com/ethereum/0xa43fe16908251ee70ef74718545e4fe6c5ccec9f"
+    },
+    {
+      "id": "geckoterminal",
+      "label": "GeckoTerminal",
+      "state": "stale",
+      "message": "stale (6m old) for 7 fields — 20 pools · OHLCV failed: HTTP 429: {\"status\":{\"error_code\":429,\"error_message\":\"You've exceeded the Rate Limit. Please visit https:",
+      "ms": 5337,
+      "url": "https://www.geckoterminal.com/eth/tokens/0x6982508145454ce325ddbe47a25d4ec3d2311933"
+    },
+    {
+      "id": "goplus",
+      "label": "GoPlus",
+      "state": "ok",
+      "message": "578855 holders · honeypot: no (GoPlus) · sell tax 0%",
+      "ms": 211,
+      "url": "https://gopluslabs.io/token-security/1/0x6982508145454ce325ddbe47a25d4ec3d2311933"
+    },
+    {
+      "id": "etherscan",
+      "label": "Etherscan",
+      "state": "skipped",
+      "message": "ETHERSCAN_API_KEY not set (Etherscan v2, free plan covers Ethereum) — creator, creation time and verified source come from GoPlus / the DEX indexers only"
+    }
+  ]
+}

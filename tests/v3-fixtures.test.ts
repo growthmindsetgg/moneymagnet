@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { scoreSnapshot } from "@/lib/scoring/engine";
 import type { SourceStatus, TokenSnapshot } from "@/lib/types";
 import { V3_FIXTURES } from "./fixtures/v3/addresses";
+import { CHAIN_LABEL } from "@/lib/chain";
 
 // v3 §1d: recorded Base / Monad snapshots (scripts/record-v3-fixtures.ts). Their own snapshot file — the
 // Robinhood / Solana fixture snapshot (tests/__snapshots__/fixtures.test.ts.snap) stays byte-identical.
@@ -15,7 +16,8 @@ describe("v3 Base / Monad recorded fixtures", () => {
       const { snapshot, sources } = load(fx.name);
       const r = scoreSnapshot(snapshot, sources);
       expect(fx.expectTiers, r.tierReason).toContain(r.tier);
-      expect(r.modeLabel).toMatch(fx.chain === "base" ? /Base/ : /Monad/);
+      // Generalised from base ? /Base/ : /Monad/ when Ethereum fixtures were added: the mode label names the fixture's chain.
+      expect(r.modeLabel).toContain(CHAIN_LABEL[fx.chain]);
       // Every factor shown belongs to the chain's set and says live / stale / null-with-reason.
       for (const f of r.groups.flatMap((g) => g.factors)) if (f.status === "null") expect(f.nullReason, f.id).toBeTruthy();
       expect({

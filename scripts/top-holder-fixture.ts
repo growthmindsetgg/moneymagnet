@@ -33,8 +33,10 @@ if (!process.argv.includes("--no-history")) {
 }
 for (const h of s.holderClasses.filter((x) => x.address !== top.address)) console.log(`  also top-5: ${h.address} ${h.pct?.toFixed(2)}% ${h.label}${h.counted ? "" : " (excluded)"}`);
 console.log(largestHolderLine(top));
-console.log(`  founderNeverSold ${s.founderNeverSold} · founderSold ${s.founderSold} · top1 ${s.top1SharePct} · top10 ${s.top10SharePct}`);
+console.log(`  founderNeverSold ${s.founderNeverSold} · founderSold ${s.founderSold} · teamNeverSold ${s.teamNeverSold} · teamSold ${s.teamSold} · teamHoldDays ${s.teamHoldDays} · top1 ${s.top1SharePct} · top10 ${s.top10SharePct}`);
+if (top.fundingTx) console.log(`  funding tx: ${top.fundingTx}`);
+for (const [k, v] of Object.entries(s.nullReasons).filter(([k]) => /team|founder/.test(k))) console.log(`  null ${k}: ${v}`);
 mkdirSync("tests/fixtures/holders", { recursive: true });
-writeFileSync("tests/fixtures/holders/monad-james.json", JSON.stringify({ recordedAt: new Date().toISOString(), note: "JAMES: 61.1% held by an EOA funded by the creation-tx sender (not the deployer); two Safe 6/8 treasuries in the top 5", snapshot: s, sources }, null, 2));
+writeFileSync("tests/fixtures/holders/monad-james.json", JSON.stringify({ recordedAt: new Date().toISOString(), note: "JAMES: 61.1% held by a team wallet — an EOA funded by the creation-tx sender (tokens by plain transfer); two Safe 6/8 treasuries in the top 5", snapshot: s, sources }, null, 2));
 const r = await analyzeAddress(TOKEN, { chain: "monad" });
 console.log(`tier ${r.tier} ${r.score} — ${r.binding?.text}`);

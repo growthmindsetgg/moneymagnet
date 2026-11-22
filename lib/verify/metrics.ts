@@ -19,8 +19,11 @@ export interface VerifiedMetricDef {
 export const RELATIVE_TOLERANCE = 0.15;
 
 export const VERIFIED_METRICS: VerifiedMetricDef[] = [
-  // Market
+  // Market. "min" picks the lowest MEASURED reading: null / non-finite readings never compete (verify/index.ts
+  // eligibleReadings), live readings beat stale ones, and the pool adapters state a pool without a liquidity or
+  // volume figure as unknown (null), never $0 — so an indexer gap cannot win "lowest liquidity / volume" (C1).
   { metric: "priceUsd", label: "Price", kind: "number", direction: "min", conservative: "lowest price" },
+  { metric: "priceChange24hPct", label: "24h price change", kind: "number", direction: "min", tolerance: 5, conservative: "steepest fall" },
   { metric: "fdvUsd", label: "FDV / market cap", kind: "number", direction: "max", tolerance: 100, conservative: "highest FDV (thinnest liquidity and VOL/MC ratios)" },
   { metric: "liquidityUsd", label: "Liquidity (all pools)", kind: "number", direction: "min", tolerance: 100, conservative: "lowest liquidity" },
   { metric: "mainPoolLiquidityUsd", label: "Main-pool liquidity", kind: "number", direction: "min", tolerance: 100, conservative: "lowest liquidity" },
@@ -51,7 +54,16 @@ export const VERIFIED_METRICS: VerifiedMetricDef[] = [
 ];
 
 /** Source ids that read the chain directly. Their readings are truth over any indexer API. */
-export const ONCHAIN_SOURCES = new Set(["rpc", "solana-rpc", "helius", "base-rpc", "monad-rpc"]);
+export const ONCHAIN_SOURCES = new Set(["rpc", "solana-rpc", "helius", "base-rpc", "monad-rpc", "ethereum-rpc"]);
+
+/**
+ * HoodTier's own sell simulations replay a real sell against the chain (eth_call from a holder through every
+ * pool). For the sellability metrics they are on-chain truth: a successful simulated sell outranks a scanner's
+ * "not sellable", which is then flagged as a disputed API reading (grey ≠), never the deciding vote.
+ */
+export const SIM_SOURCES = new Set(["rh-sim", "base-sim", "monad-sim", "ethereum-sim"]);
+export const SIM_METRICS = new Set(["sellable", "honeypot", "roundTripLossPct"]);
+export const isOnchainReading = (source: string, metric: string) => ONCHAIN_SOURCES.has(source) || (SIM_SOURCES.has(source) && SIM_METRICS.has(metric));
 
 /** Metrics a source supplies indirectly: counted for the source when it supplied any input. */
 export const DERIVED_INPUTS: Record<string, string[]> = {

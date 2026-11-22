@@ -2,12 +2,12 @@ import { keccak_256 } from "@noble/hashes/sha3";
 import type { AdapterResult } from "../types";
 import type { EvmChain } from "../chain";
 import { CHAIN_LABEL } from "../chain";
-import { chainRpc, RpcError, type Rpc } from "../onchain/rpc";
+import { chainRpc, errText, isRevert, RpcError, type Rpc } from "../onchain/rpc";
 import { chainInfraEntry, findInfra } from "../onchain/chainInfra";
 import { describeRevert, encodeQuote, simV2, simV3, transferProbe, verdictOf, type PoolKey, type PoolSim } from "./robinhoodSim";
 
 /**
- * Our own sell simulation on Base and Monad (§1b) — on Monad nad.fun curve tokens it is the only
+ * Our own sell simulation on Base, Monad and Ethereum (§1b) — on Monad nad.fun curve tokens it is the only
  * sellability source (no scanner gives a verdict there). Read-only eth_calls:
  * 1. transfer probe: a real holder's transfer(fresh, ½ balance) — a blacklist / transfer lock reverts it;
  * 2. per pool (highest liquidity first, ≤ 6): v4 = native V4Quoter round trip (pool key from
@@ -57,7 +57,7 @@ export interface EvmSimInput {
   rpc?: Rpc;
 }
 
-/** Quote-side amount for a round trip: 0.01 ETH on Base, 10 MON on Monad, 10 USDC. Null for other quotes. */
+/** Quote-side amount for a round trip: 0.01 ETH on Base / Ethereum, 10 MON on Monad, 10 USDC / USDT. Null for other quotes. */
 function quoteAmount(chain: EvmChain, quote: string): bigint | null {
   const q = quote.toLowerCase();
   const e = chainInfraEntry(chain, q);
@@ -77,7 +77,8 @@ async function v4Sim(rpc: Rpc, chain: EvmChain, id: string, token: string, suppl
   let keyHex = await rpc<string>("eth_call", [{ to: pm.address, data: sel("poolKeys(bytes25)") + id.slice(2, 52).padEnd(64, "0") }, "latest"], 10_000).catch(() => null);
   // Pools the PositionManager never saw (Zora coins mint through their own hook): the token's own
   // getPoolKey(), accepted only when it hashes to this pool id.
-  if (!keyHex || keyHex.length < 2 + 5 * 64 || w(keyHex, 0) === 0n) {
+  // An unknown id returns an all-zero key. currency0 alone being zero is native ETH (most Ethereum v4 launch pools), not "unknown".
+  if (!keyHex || keyHex.length < 2 + 5 * 64 || (w(keyHex, 0) === 0n && w(keyHex, 1) === 0n)) {
     const own = await rpc<string>("eth_call", [{ to: token, data: sel("getPoolKey()") }, "latest"], 10_000).catch(() => null);
     keyHex = own && own.length >= 2 + 5 * 64 && "0x" + Buffer.from(keccak_256(Buffer.from(own.slice(2, 2 + 5 * 64), "hex"))).toString("hex") === id ? own : null;
   }
@@ -104,13 +105,17 @@ async function v4Sim(rpc: Rpc, chain: EvmChain, id: string, token: string, suppl
       const res = await rpc<string>("eth_call", [{ from: "0x1111111111111111111111111111111111111111", to: quoter.address, data: encodeQuote(key, zeroForOne, amount) }, "latest"], 12_000);
       return { out: w(res, 0) };
     } catch (err) {
+      // A quote that could not run (timeout, 429, 5xx) is not a revert and not a dry pool.
+      if (!isRevert(err)) return { out: null, error: `RPC: ${errText(err)}`, transport: true };
       const r = describeRevert(err instanceof RpcError ? err.data : undefined);
       return { out: null, error: r.reason, dry: r.dry };
     }
   };
   const buy = await q(!tokenIs0, qIn);
+  if (buy.transport) return { ...base, result: "error", lossPct: null, detail: `buy quote could not run (${buy.error}) — not simulated` };
   if (!buy.out) return { ...base, result: "dry", lossPct: null, detail: `buy quote failed (${buy.error ?? "0 out"}) — no usable liquidity` };
   const sell = await q(tokenIs0, buy.out);
+  if (sell.transport) return { ...base, result: "error", lossPct: null, detail: `sell quote could not run (${sell.error}) — not simulated` };
   if (!sell.out) return { ...base, result: sell.dry ? "dry" : "revert", lossPct: null, detail: `sell of the bought amount reverts: ${sell.error ?? "0 out"}` };
   const loss = Math.max(0, Number(((qIn - sell.out) * 10_000n) / qIn) / 100);
   void supply;
@@ -133,18 +138,28 @@ async function nadfunSim(rpc: Rpc, token: string, nf: NonNullable<EvmSimInput["n
   const router = v2 ? findInfra("monad", "launchpad-factory", /V2 router/i) : curve ? findInfra("monad", "launchpad-factory", /BondingCurveRouter/i) : findInfra("monad", "router", /nad\.fun V1 DexRouter/i);
   const lens = v2 ? router : findInfra("monad", "lens", /nad\.fun V1 Lens/i);
   if (!router || !lens) return null;
-  const base = { pool: router.address, kind: "v2" as const, hooks: null, feePct: null, liquidityUsd: null };
+  const base = { pool: router.address, kind: "v2" as const, hooks: null, feePct: null, liquidityUsd: null, executed: true };
   const qIn = 10n ** 19n; // 10 MON
   const quoteData = sel("getAmountOut(address,uint256,bool)") + addrWord(token) + word(qIn) + word(1n);
-  const buyHex = await rpc<string>("eth_call", [{ to: lens.address, data: quoteData }, "latest"], 10_000).catch((e: RpcError) => (e.data ?? "err") as string);
+  let buyFailed: string | null = null;
+  const buyHex = await rpc<string>("eth_call", [{ to: lens.address, data: quoteData }, "latest"], 10_000).catch((e: unknown) => {
+    if (!isRevert(e)) buyFailed = errText(e);
+    return ((e as RpcError).data ?? "err") as string;
+  });
+  if (buyFailed) return { ...base, result: "error", lossPct: null, detail: `nad.fun buy quote could not run (RPC: ${buyFailed}) — not simulated` };
   const tokens = buyHex && !buyHex.startsWith("err") ? (v2 ? w(buyHex, 0) : w(buyHex, 1)) : null;
   if (!tokens) return { ...base, result: "dry", lossPct: null, detail: `nad.fun buy quote for 10 MON failed${buyHex && buyHex !== "err" ? ` (${buyHex.slice(0, 10)})` : ""}` };
   // Storage slots of balanceOf(F) and allowance(F, router), found by tracing the reads.
+  let slotsFailed: string | null = null;
   const slots = async (data: string) => {
-    const al = await rpc<{ accessList: { address: string; storageKeys: string[] }[] }>("eth_createAccessList", [{ from: FRESH, to: token, data }, "latest"], 10_000).catch(() => null);
+    const al = await rpc<{ accessList: { address: string; storageKeys: string[] }[] }>("eth_createAccessList", [{ from: FRESH, to: token, data }, "latest"], 10_000).catch((e: unknown) => {
+      if (!isRevert(e)) slotsFailed = errText(e);
+      return null;
+    });
     return al?.accessList.find((x) => x.address.toLowerCase() === token)?.storageKeys ?? [];
   };
   const [balKeys, allowKeys] = await Promise.all([slots("0x70a08231" + addrWord(FRESH)), slots("0xdd62ed3e" + addrWord(FRESH) + addrWord(router.address))]);
+  if (slotsFailed) return { ...base, result: "error", lossPct: null, detail: `storage-slot lookup could not run (RPC: ${slotsFailed}) — sell not simulated` };
   if (!balKeys.length || !allowKeys.length) return { ...base, result: "dry", lossPct: null, detail: "could not locate the balance / allowance storage slots — sell not simulated" };
   const stateDiff: Record<string, string> = {};
   for (const k of balKeys) stateDiff[k] = "0x" + word(tokens);
@@ -158,6 +173,7 @@ async function nadfunSim(rpc: Rpc, token: string, nf: NonNullable<EvmSimInput["n
     const loss = Math.max(0, Number(((qIn - back) * 10_000n) / qIn) / 100);
     return { ...base, result: loss < 50 ? "pass" : "fail", lossPct: loss, detail: `${loss.toFixed(2)}% round-trip loss (nad.fun ${v2 ? "V2" : "V1"} ${curve ? "curve" : "DEX"} router: quote 10 MON buy, then a real sell(…) in eth_call)` };
   } catch (err) {
+    if (!isRevert(err)) return { ...base, result: "error", lossPct: null, detail: `nad.fun sell could not run (RPC: ${errText(err)}) — not simulated` };
     const data = err instanceof RpcError ? err.data : undefined;
     // Panic 0x11 on a curve = arithmetic underflow: the curve has no MON left to pay out (nothing to sell into).
     if (data?.startsWith("0x4e487b71") && data.endsWith("11")) return { ...base, result: "dry", lossPct: null, detail: "curve has no MON reserve to pay a sell (Panic 0x11)" };
@@ -184,8 +200,13 @@ export async function evmSim(inp: EvmSimInput): Promise<AdapterResult> {
     const balHex = await rpc<string>("eth_call", [{ to: token, data: "0x70a08231" + addrWord(h) }, "latest"], 10_000).catch(() => null);
     const bal = w(balHex, 0);
     if (!bal) continue;
-    probed++;
     const r = await transferProbe(rpc, token, h, FRESH, bal / 2n);
+    // A probe that could not run (timeout, 429) is not a revert: it does not count as probed.
+    if (r.transport) {
+      probeNote = `transfer probe from ${h.slice(0, 8)}… could not run (${r.error}) — transfers not verified`;
+      continue;
+    }
+    probed++;
     if (!r.ok) reverted++;
     probeNote = `transfer probe from ${h.slice(0, 8)}…: ${r.ok ? "ok" : `blocked (${r.error})`}`;
   }
@@ -212,7 +233,7 @@ export async function evmSim(inp: EvmSimInput): Promise<AdapterResult> {
       ms: Date.now() - t0,
     },
     data: {
-      liquidityPulled: v.liquidityPulled ?? (sims.length ? false : null),
+      liquidityPulled: v.liquidityPulled ?? (sims.some((p) => p.result !== "error") ? false : null),
       sellable: v.sellable,
       honeypot: v.honeypot,
       roundTripLossPct: v.roundTripLossPct,

@@ -126,6 +126,12 @@ export interface ScoringConfig {
   rules: RuleDef[];
   tiers: { tier: RatedTier; min: number }[];
   coverage: { unratedBelowPct: number; capBBelowPct: number; topTierMinPct: number };
+  /**
+   * Tier hysteresis (Schmitt trigger) on the score → band step: a token whose previous analysis was placed by
+   * the score bands keeps that tier while the new score is within `margin` of the line between the two
+   * adjacent tiers. Gates, caps, coverage and S/A requirements still apply afterwards.
+   */
+  hysteresis?: { note?: string; margin: number; maxAgeHours: number };
   requirements: RequirementDef[];
   manualChecks: ManualCheckDef[];
   /** Documentation of the Time Machine's (bounded) score effect; the effect itself is two rules. */

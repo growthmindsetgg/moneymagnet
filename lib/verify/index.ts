@@ -1,6 +1,6 @@
 import type { AdapterResult, MetricVerification, Provenance, TokenSnapshot, VerificationSummary } from "../types";
 import { deriveMetrics, emptySnapshot, mergeSnapshots } from "../snapshot";
-import { DERIVED_INPUTS, ONCHAIN_SOURCES, RELATIVE_TOLERANCE, VERIFIED_METRICS, type VerifiedMetricDef } from "./metrics";
+import { DERIVED_INPUTS, isOnchainReading, RELATIVE_TOLERANCE, VERIFIED_METRICS, type VerifiedMetricDef } from "./metrics";
 
 export { VERIFIED_METRICS, ONCHAIN_SOURCES } from "./metrics";
 
@@ -58,7 +58,7 @@ export function collectProvenance(base: TokenSnapshot, slices: SourceSlice[], no
         label: slice.label,
         value: v,
         fetchedAt: new Date(now - (age ?? 0) * 60_000).toISOString(),
-        onchain: ONCHAIN_SOURCES.has(slice.id),
+        onchain: isOnchainReading(slice.id, k),
         ...(age != null ? { stale: true } : {}),
       });
     }
@@ -79,9 +79,22 @@ function differs(def: VerifiedMetricDef, a: Scalar | null, b: Scalar | null): bo
   return a !== b;
 }
 
+/** A reading that measured something: not null, and a finite number for numeric metrics. */
+const measured = (v: Provenance) => v.value !== null && !(typeof v.value === "number" && !Number.isFinite(v.value));
+
+/**
+ * The readings a pick may come from: live ones when any exists, stale ones (last good snapshot) only when no
+ * source answered live this run (M2). An unknown reading never takes part: it is null, not a 0.
+ */
+export function eligibleReadings(values: Provenance[]): Provenance[] {
+  const known = values.filter(measured);
+  const live = known.filter((v) => !v.stale);
+  return live.length ? live : known;
+}
+
 /** The most conservative of a set of readings (see each metric's `direction`). */
 function conservative(def: VerifiedMetricDef, values: Provenance[]): Provenance | null {
-  const known = values.filter((v) => v.value !== null);
+  const known = eligibleReadings(values);
   switch (def.direction) {
     case "min":
       return known.reduce<Provenance | null>((m, v) => (m === null || Number(v.value) < Number(m.value) ? v : m), null);
@@ -105,10 +118,12 @@ export function verifyMetric(def: VerifiedMetricDef, readings: Provenance[]): Me
     return { ...base, status: "single", chosen: values[0].value, chosenSource: values[0].source, resolution: `single source (${values[0].label})`, wrongSources: [] };
   }
   const disputed = values.some((a, i) => values.slice(i + 1).some((b) => differs(def, a.value as Scalar, b.value as Scalar)));
+  const skippedStale = values.some((v) => v.stale) && values.some((v) => !v.stale && measured(v));
+  const staleNote = skippedStale ? " (live readings preferred over stale ones)" : "";
   const chain = values.filter((v) => v.onchain);
   // On-chain is truth: an API that disagrees with the chain is flagged stale/wrong.
   if (chain.length) {
-    const truth = chain.length === 1 ? chain[0] : (conservative(def, chain) ?? chain[0]);
+    const truth = (chain.length === 1 ? chain[0] : conservative(def, chain)) ?? chain[0];
     const wrong = values.filter((v) => !v.onchain && differs(def, v.value as Scalar, truth.value as Scalar)).map((v) => v.source);
     const chainSplit = chain.some((c) => differs(def, c.value as Scalar, truth.value as Scalar));
     return {
@@ -134,7 +149,7 @@ export function verifyMetric(def: VerifiedMetricDef, readings: Provenance[]): Me
     status: "disputed",
     chosen: pick?.value ?? null,
     chosenSource: pick?.source ?? null,
-    resolution: `sources disagree — scored with the most conservative: ${def.conservative}${pick ? ` (${pick.label})` : ""}`,
+    resolution: `sources disagree — scored with the most conservative: ${def.conservative}${pick ? ` (${pick.label})` : ""}${staleNote}`,
     wrongSources: [],
   };
 }

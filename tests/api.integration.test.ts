@@ -6,9 +6,24 @@ import { FIXTURES } from "./fixtures/addresses";
 const call = (body: unknown) =>
   POST(new Request("http://localhost/api/analyze", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
 
+/** The deployment the live tiers are compared with (PREV_DEPLOYMENT, else production). */
+const PREV = process.env.PREV_DEPLOYMENT ?? "https://moneymagnet.vercel.app";
+async function previousDeploymentTier(address: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${PREV}/api/analyze`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address, fresh: true }), signal: AbortSignal.timeout(90_000) });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { tier?: string; report?: { tier?: string } };
+    return body.report?.tier ?? body.tier ?? null;
+  } catch {
+    return null;
+  }
+}
+
 describe("POST /api/analyze (live network)", () => {
   for (const fx of FIXTURES) {
     it(`analyzes ${fx.name}`, async () => {
+      // Asked in parallel with the local analysis, so both read the market at the same moment.
+      const prevTier = "liveSameAsPrevious" in fx && fx.liveSameAsPrevious ? previousDeploymentTier(fx.address) : null;
       const res = await call({ address: fx.address });
       expect(res.status).toBe(200);
       expect(res.headers.get("cache-control")).toMatch(/max-age=120/);
@@ -33,6 +48,11 @@ describe("POST /api/analyze (live network)", () => {
             expect(honeypot.state).not.toBe("fired");
             console.warn(`[${fx.name}] live simulator now says sellable=${report.token.sellable} — tier ${report.tier} (recorded fixture still asserts F)`);
           }
+        } else if ("liveSameAsPrevious" in fx && fx.liveSameAsPrevious) {
+          // Market-moving fixture: the new code must give the tier the previous deployment gives right now.
+          const prev = await prevTier;
+          if (prev) expect(report.tier, `previous deployment: ${prev}`).toBe(prev);
+          else console.warn(`[${fx.name}] previous deployment (${PREV}) did not answer — tier ${report.tier} not compared`);
         } else {
           expect(fx.expectTiers as readonly string[]).toContain(report.tier);
         }

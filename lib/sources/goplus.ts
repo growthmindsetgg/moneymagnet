@@ -1,14 +1,16 @@
 import type { AdapterResult, Chain, HolderRow, TokenSnapshot } from "../types";
 import { fetchJson } from "./http";
+import { isEvmChain } from "../chain";
+import { chainCexLabel } from "../onchain/chainInfra";
 
 /**
  * GoPlus token_security (keyless): https://api.gopluslabs.io/api/v1/token_security/<chainId>?contract_addresses=<ca>
- * Base 8453 and Monad 143. Its fields are GoPlus's own analysis (a claim, not our measurement); the
+ * Base 8453, Monad 143 and Ethereum 1. Its fields are GoPlus's own analysis (a claim, not our measurement); the
  * sell simulation is the measured sellability, and the verifier compares them. Rate limit: a 20-call
  * burst gets ~10 answers, then `code 4029 too many requests` (treated as an outage, served stale).
  * Monad: no creator / owner fields, and nad.fun curve tokens get holders only (no honeypot / tax verdict).
  */
-const CHAIN_ID: Partial<Record<Chain, number>> = { base: 8453, monad: 143 };
+const CHAIN_ID: Partial<Record<Chain, number>> = { base: 8453, monad: 143, ethereum: 1 };
 
 interface GpHolder {
   address: string;
@@ -64,6 +66,8 @@ export async function goplus(chain: Chain, address: string): Promise<AdapterResu
   }
   const nullReasons: Record<string, string> = {};
   const data: Partial<TokenSnapshot> = {};
+  // Registered exchange wallets get their name tag (data/<chain>-infra.json → cexWallets); they stay counted holders.
+  const cex = (addr: string) => (isEvmChain(chain) ? chainCexLabel(chain, addr) : undefined);
   const holders: HolderRow[] = (r.holders ?? []).map((h) => ({
     address: h.address.toLowerCase(),
     qty: num(h.balance),
@@ -73,9 +77,17 @@ export async function goplus(chain: Chain, address: string): Promise<AdapterResu
     isContract: h.is_contract === 1,
     // Contracts (pools, lockers, curves) and locked balances are not holder conviction.
     kind: h.is_contract === 1 || h.is_locked === 1 ? "liquidity" : "wallet",
-    ...(h.tag ? { label: h.tag } : h.is_locked === 1 ? { label: "locked (GoPlus)" } : {}),
+    ...(h.tag ? { label: h.tag } : h.is_locked === 1 ? { label: "locked (GoPlus)" } : cex(h.address) ? { label: cex(h.address) } : {}),
   }));
-  if (holders.length) {
+  // Listed shares can never add up to more than the supply: when they do, a row is stale (seen on Ethereum: the
+  // minter still listed at 100% while the buyers below it hold 53%). The list is then not used for concentration.
+  const listedPct = Math.round(holders.reduce((s, h) => s + (h.pct ?? 0), 0) * 10) / 10;
+  if (holders.length && listedPct > 100.5) {
+    const top = holders.reduce((a, h) => ((h.pct ?? 0) > (a.pct ?? 0) ? h : a));
+    const why = `GoPlus holder list is inconsistent: the listed balances add up to ${listedPct}% of supply (${top.address.slice(0, 8)}… listed at ${Math.round((top.pct ?? 0) * 10) / 10}%) — concentration not scored`;
+    nullReasons.top1SharePct = why;
+    nullReasons.top10SharePct = why;
+  } else if (holders.length) {
     const wallets = holders.filter((h) => h.kind === "wallet");
     data.holders = holders;
     data.holderSource = "goplus";

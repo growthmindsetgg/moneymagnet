@@ -21,11 +21,21 @@ export function baseAdapters(address: string): [string, () => Promise<AdapterRes
 }
 
 export async function basescan(address: string): Promise<AdapterResult> {
-  const t0 = Date.now();
-  const key = process.env.BASESCAN_API_KEY;
+  // One Etherscan v2 key serves every chain: BASESCAN_API_KEY first, else ETHERSCAN_API_KEY (Base still needs a paid plan).
+  const key = process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY;
   if (!key) return { status: { id: "basescan", label: "Basescan", state: "skipped", message: "BASESCAN_API_KEY not set (Etherscan v2; Base needs a paid plan)" }, data: {} };
+  return etherscanV2({ id: "basescan", label: "Basescan", chainid: 8453, key, page: "https://basescan.org/token/" }, address);
+}
+
+/**
+ * Contract creator + creation time + verified source from the Etherscan v2 API (one key, `chainid` picks the chain):
+ * Basescan (8453) and Etherscan (1) share it.
+ */
+export async function etherscanV2(src: { id: string; label: string; chainid: number; key: string; page: string }, address: string): Promise<AdapterResult> {
+  const t0 = Date.now();
   const a = address.toLowerCase();
-  const api = (q: string) => fetchJson<{ status: string; message: string; result: unknown }>(`https://api.etherscan.io/v2/api?chainid=8453&${q}&apikey=${key}`);
+  const key = src.key;
+  const api = (q: string) => fetchJson<{ status: string; message: string; result: unknown }>(`https://api.etherscan.io/v2/api?chainid=${src.chainid}&${q}&apikey=${key}`);
   const [creation, source] = await Promise.all([api(`module=contract&action=getcontractcreation&contractaddresses=${a}`), api(`module=contract&action=getsourcecode&address=${a}`)]);
   const data: Partial<TokenSnapshot> = {};
   const notes: string[] = [];
@@ -41,7 +51,7 @@ export async function basescan(address: string): Promise<AdapterResult> {
     notes.push(data.verified ? "verified source" : "unverified");
   }
   const ok = creation.status === "1" || source.status === "1";
-  return { status: { id: "basescan", label: "Basescan", state: ok ? "ok" : "failed", message: notes.join(" · "), ms: Date.now() - t0, url: `https://basescan.org/token/${a}` }, data };
+  return { status: { id: src.id, label: src.label, state: ok ? "ok" : "failed", message: notes.join(" · "), ms: Date.now() - t0, url: `${src.page}${a}` }, data };
 }
 
 async function call(rpc: Rpc, to: string, data: string): Promise<string | null> {

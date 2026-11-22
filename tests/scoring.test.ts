@@ -142,10 +142,14 @@ describe("tiers and S/A requirements", () => {
     expect(r.tierReason).toMatch(/Buyers ≥ sellers/);
   });
 
-  it("drops A to B when a basic flaw exists (top-10 ≥ 60%)", () => {
+  // Replaced (2026-11-19): top-10 ≥ 60% used to only fail the A requirement (A → B). A split across wallets now
+  // meets the top10_50 cap (C) first; the basic requirement still fails beside it.
+  it("caps at C when the top-10 wallets hold ≥ 50% (and the top-10 < 60% requirement fails)", () => {
     const r = scoreSnapshot(perfectSnapshot("robinhood", { top10SharePct: 65 }));
     expect(r.rawScore).toBeGreaterThanOrEqual(70);
-    expect(r.tier).toBe("B");
+    expect(r.tier).toBe("C");
+    expect(r.tierReason).toMatch(/Top-10 wallets ≥ 50%/);
+    expect(r.requirements.find((q) => q.id === "basic_top10:A")!.state).toBe("fail");
   });
 
   it("caps unknown sellability at C (spec A.5 — replaces the old 'unknown honeypot allows A')", () => {
@@ -162,6 +166,7 @@ describe("tiers and S/A requirements", () => {
         top1SharePct: 3,
         accumulatorCount: 0,
         accumulatorSupplyPct: 0,
+        holderStrength: 25,
         earlyRetentionPct: 35,
         earlyExitRatePct: 65,
         bundlersFlushed: false,
@@ -209,6 +214,7 @@ describe("tier / displayed-score monotonicity", () => {
         volMcVsBar: pick([0.3, 0.8, 1.2]),
         liqFdvPct: pick([0.5, 3, 12, null]),
         accumulatorCount: pick([0, 2, 6, null]),
+        holderStrength: pick([10, 45, 70, 90, null]),
         insiderSupplyPct: pick([0, 20, 45, null]),
         washFlag: pick([false, false, true]),
         staircase: pick([false, false, true, null]),
@@ -255,7 +261,7 @@ describe("coverage rules", () => {
   const thin = (keep: number) => {
     // Null out factors until roughly `keep`% of established weight remains.
     const all: (keyof TokenSnapshot)[] = [
-      "top10SharePct", "top1SharePct", "accumulatorCount", "accumulatorSupplyPct", "earlyRetentionPct", "bundlersFlushed",
+      "top10SharePct", "top1SharePct", "holderStrength", "accumulatorCount", "accumulatorSupplyPct", "earlyRetentionPct", "bundlersFlushed",
       "deployerHoldingPct", "deployerSoldPct", "netFlowRatio24h", "buyerSellerRatio", "singleTradeWalletSharePct",
       "tradesPerWallet", "smartMoneyNetUsd", "flowConsistent", "washFlag", "volMcVsBar", "roundTripLossPct",
       "ownerRenounced", "upgradeable", "liqFdvPct", "mainPoolSharePct", "liqChange24hPct", "liqChange7dPct", "poolCount", "trendScore",

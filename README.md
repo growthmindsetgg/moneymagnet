@@ -1,6 +1,6 @@
 # HoodTier
 
-Paste a **Robinhood Chain** (chain id 4663), **Base** (8453), **Monad** (143) or **Solana** token address and get a tier:
+Paste a **Robinhood Chain** (chain id 4663), **Base** (8453), **Monad** (143), **Ethereum** (1) or **Solana** token address and get a tier:
 **S / A / B / C / D / F**, or **U** (Unrated) when too little live data exists. Every factor shows:
 - its value and points;
 - an evidence sentence;
@@ -47,7 +47,7 @@ Never delete or weaken a test to go green (see `CLAUDE.md`).
 
 ## Scoring (`lib/scoring/factors.json` → generic `engine.ts`)
 
-- **Per-chain sets.** Robinhood launch tokens use `launch_robinhood`; Base and Monad use `launch_base` / `established_base` / `launch_monad` / `established_monad`, built only from fields their sources fill (docs/chains/<chain>.md).
+- **Per-chain sets.** Robinhood launch tokens use `launch_robinhood`; Base, Monad and Ethereum use `launch_base` / `established_base` / `launch_monad` / `established_monad` / `launch_ethereum` / `established_ethereum`, built only from fields their sources fill (docs/chains/<chain>.md). Ethereum's sets are the Base sets on Ethereum sources, without the launchpad factor (no Ethereum launchpad is registered).
 - **Two factor sets, chosen by age.** `launch` applies under 72h: Launch mechanics 35, Contract safety 25, Holders 25, Flow 15. `established` applies from 72h: Holders 30, Flow 25, Safety 25, Liquidity 20. Age never subtracts points; it only picks the set, and S requires ≥ 72h.
 - **Score.** The weighted factor points are renormalized over the weight that has data, so a missing factor is neutral.
 - **Rules.** One list covers gates, caps and penalties (`rules[]`). Each rule has `when`/`anyOf` conditions and effects (`points`, `capTier`, `forceF`), plus a `source` ("guide" with page `note`, or "hoodtier").
@@ -78,11 +78,12 @@ Every adapter fails soft. If an adapter fails outright, its last good output (st
 | Helius (`HELIUS_API_KEY`) | SOL | holders, wallet age, funding clusters, creator history, curve trades (dev buy, snipes, buyer exits) |
 | pump.fun intel feed (three.ws, keyless) | SOL | bundle/organic/snipe scores, dev buy, creator, authorities, largest token accounts (no fees field) |
 | Liquidity history (KV) | all | 24h/7d liquidity change, from the second analysis on |
-| GoPlus token_security | Base, Monad | honeypot claim, taxes, mintable, proxy, open source, owner (Base), creator (Base), top-10 holders, LP lock |
-| Base / Monad RPC | Base, Monad | code, supply, owner, proxy / EIP-1167 clone, deployer balance |
-| Base / Monad sell simulation | Base, Monad | transfer probe + v2/v3/v4 round trips; on Monad the nad.fun router's real `sell` in eth_call (the only sellability source for nad.fun curve tokens) |
+| GoPlus token_security | Base, Monad, Ethereum | honeypot claim, taxes, mintable, proxy, open source, owner (Base, Ethereum), creator (Base, Ethereum), top-10 holders, LP lock |
+| Base / Monad / Ethereum RPC (`ETHEREUM_RPC_URL` optional) | Base, Monad, Ethereum | code, supply, owner, proxy / EIP-1167 clone, deployer balance |
+| Base / Monad / Ethereum sell simulation | Base, Monad, Ethereum | transfer probe + v2/v3/v4 round trips; on Monad the nad.fun router's real `sell` in eth_call (the only sellability source for nad.fun curve tokens) |
 | nad.fun agent API (`NAD_API_KEY` optional) | Monad | launchpad, creation time, creator, holders, 24h makers / flow, creator swaps (dev sold), candles for curve tokens |
-| Basescan (`BASESCAN_API_KEY`) | Base | creator, creation time, verified source |
+| Basescan (`BASESCAN_API_KEY`, else `ETHERSCAN_API_KEY`) | Base | creator, creation time, verified source |
+| Etherscan (`ETHERSCAN_API_KEY`, else `BASESCAN_API_KEY`; Etherscan v2, chainid=1, free plan) | Ethereum | creator, creation time, verified source |
 
 `scripts/mcp-bridge.mjs` wraps an MCP-only feed as HTTP (`/intel`, `/holders`, `/curve`, `/trades`).
 

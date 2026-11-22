@@ -9,6 +9,7 @@ const ADAPTERS: Record<string, string[]> = {
   solana: ["RugCheck", "Helius", "Solana RPC", "Jupiter quote", "pump.fun feed", "DexScreener", "GeckoTerminal"],
   base: ["GoPlus", "Base RPC", "sell simulation", "Basescan", "DexScreener", "GeckoTerminal"],
   monad: ["Monad RPC", "sell simulation", "explorer", "DexScreener", "GeckoTerminal"],
+  ethereum: ["GoPlus", "Ethereum RPC", "sell simulation", "Etherscan", "DexScreener", "GeckoTerminal"],
 };
 
 export default function LoadingSkeleton({ chain }: { chain: string }) {

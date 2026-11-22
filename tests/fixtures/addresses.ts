@@ -5,6 +5,9 @@ export const FIXTURES = [
     note: "Robinhood Chain meme on NVDA (Pons). Expected A or S with full HoodScan data and ≥ 80% coverage.",
     expectTiers: ["S", "A"],
     critical: ["hoodscan", "scanhood", "rpc"],
+    // The recorded fixture keeps S/A; the live tier moves with the market (net flow, holders), so the live test asserts
+    // "same tier as the previous deployment" (the owner's brief, item 4) instead of a fixed letter.
+    liveSameAsPrevious: true,
   },
   {
     name: "offline",

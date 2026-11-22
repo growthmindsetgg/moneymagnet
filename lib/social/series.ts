@@ -25,7 +25,7 @@ export interface SeriesStore {
   list(chain: Chain, address: string, sinceDays?: number): Promise<SocialSample[]>;
   track(t: Omit<TrackedToken, "lastSampledAt">): Promise<void>;
   /** Tokens analysed in the last `days`, least recently sampled first. */
-  due(days: number, limit: number): Promise<TrackedToken[]>;
+  due(days: number, limit: number, now?: number): Promise<TrackedToken[]>;
   markSampled(chain: Chain, address: string, at: string): Promise<void>;
   prune(days?: number): Promise<number>;
 }
@@ -80,9 +80,9 @@ class PgSeries implements SeriesStore {
     await this.sql`INSERT INTO social_tokens (chain, address, symbol, launched_at, last_analyzed_at) VALUES (${t.chain}, ${t.address}, ${t.symbol}, ${t.launchedAt}, ${t.lastAnalyzedAt})
       ON CONFLICT (chain, address) DO UPDATE SET symbol = EXCLUDED.symbol, launched_at = COALESCE(EXCLUDED.launched_at, social_tokens.launched_at), last_analyzed_at = EXCLUDED.last_analyzed_at`;
   }
-  async due(days: number, limit: number) {
+  async due(days: number, limit: number, now = Date.now()) {
     await this.init();
-    const since = new Date(Date.now() - days * 86_400_000).toISOString();
+    const since = new Date(now - days * 86_400_000).toISOString();
     const rows = (await this.sql`SELECT chain, address, symbol, launched_at, last_analyzed_at, last_sampled_at FROM social_tokens
       WHERE last_analyzed_at >= ${since} ORDER BY last_sampled_at ASC NULLS FIRST, last_analyzed_at ASC LIMIT ${limit}`) as Record<string, unknown>[];
     return rows.map((r) => ({
@@ -131,8 +131,8 @@ export class KvSeries implements SeriesStore {
     const prev = all.find((x) => x.chain === t.chain && x.address === t.address);
     await kvSet("social:tokens:v1", [...all.filter((x) => x !== prev), { ...t, launchedAt: t.launchedAt ?? prev?.launchedAt ?? null, lastSampledAt: prev?.lastSampledAt ?? null }]);
   }
-  async due(days: number, limit: number) {
-    const cut = Date.now() - days * 86_400_000;
+  async due(days: number, limit: number, now = Date.now()) {
+    const cut = now - days * 86_400_000;
     const sampled = (t: TrackedToken) => (t.lastSampledAt ? Date.parse(t.lastSampledAt) : 0);
     return (await this.index())
       .filter((t) => Date.parse(t.lastAnalyzedAt) >= cut)

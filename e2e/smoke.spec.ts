@@ -7,7 +7,7 @@ test("analyze microduck from the home page", async ({ page }) => {
   await page.getByLabel("Token contract address").fill(MICRODUCK);
   // Replaced (v3 §1a): 0x addresses are ambiguous across Robinhood Chain, Base and Monad. With the chain
   // selector on "auto" the form says so, and the server resolves the chain (microduck is on Robinhood only).
-  await expect(page.getByText("Detected: EVM (Robinhood Chain / Base / Monad — checked on each)")).toBeVisible();
+  await expect(page.getByText("Detected: EVM (Robinhood Chain / Base / Monad / Ethereum — checked on each)")).toBeVisible();
   await page.getByRole("button", { name: "Analyze" }).click();
 
   await expect(page).toHaveURL(new RegExp(`/t/robinhood/${MICRODUCK}`), { timeout: 15_000 });
@@ -53,8 +53,10 @@ test("launch-mode token shows the launch badge and guide rules", async ({ page }
   await expect(page.getByTestId("tier-letter")).toBeVisible({ timeout: 90_000 });
   const badge = page.getByTestId("mode-badge");
   const text = await badge.textContent();
-  // The token ages out of launch mode after 72h; the badge must match whichever applies.
-  expect(text === "Launch mode (<72h)" || text === "Established mode").toBe(true);
+  // The token ages out of launch mode after 72h; the badge must match whichever applies. Updated (audit M10): RugCheck's
+  // first-detection time is no longer used as the creation time, so without Helius the age can be unknown — the engine's
+  // existing "(age unknown)" label must then be shown, never a guessed age.
+  expect(text).toMatch(/^(Launch mode \(<72h\)|Established mode)( \(age unknown\))?$/);
   await expect(page.locator('[data-testid="factor-row"][data-status="null"]').first()).toContainText("no data —");
 });
 

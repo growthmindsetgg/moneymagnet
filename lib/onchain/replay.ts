@@ -66,6 +66,15 @@ const isRateLimit = (e: unknown) => e instanceof Error && /\b429\b|rate|too many
 const isRangeError = (e: unknown) =>
   e instanceof Error && !isRateLimit(e) && /exceeds limit|narrow|too large|range|timeout|timed out|aborted|50[234]|limit/i.test(`${e.name} ${e.message}`);
 
+/** Rejects (TimeoutError) when `p` takes longer than `ms`; the timer is always cleared. */
+function withinMs<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const t = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error("replay budget reached (timed out)"), { name: "TimeoutError" })), ms);
+  });
+  return Promise.race([p, t]).finally(() => clearTimeout(timer));
+}
+
 export interface AdvanceOptions {
   budgetMs: number;
   sleep?: (ms: number) => Promise<void>;
@@ -101,8 +110,13 @@ export async function advanceReplay(rpc: Rpc, state: ReplayState, head: number, 
       ranges.push([cursor, end]);
       cursor = end + 1;
     }
+    // Never let one batch run past the budget (a slow endpoint, or the pool's own retries, used to hold a request
+    // for 30s): each call races the time left; a call that loses is a range failure and nothing of it is applied.
+    const left = Math.max(1_000, Math.min(30_000, opts.budgetMs - (now() - t0)));
     const results = await Promise.allSettled(
-      ranges.map(([f, t]) => rpc<RpcLog[]>("eth_getLogs", [{ address: s.token, topics: [TRANSFER_TOPIC], fromBlock: hex(f), toBlock: hex(t) }], 30_000)),
+      ranges.map(([f, t]) =>
+        withinMs(rpc<RpcLog[]>("eth_getLogs", [{ address: s.token, topics: [TRANSFER_TOPIC], fromBlock: hex(f), toBlock: hex(t) }], left), left + 250),
+      ),
     );
     let maxLogs = 0;
     let failed = false;

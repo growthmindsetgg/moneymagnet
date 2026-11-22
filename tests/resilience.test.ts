@@ -305,14 +305,26 @@ describe("liquidity history", () => {
     expect(d.pct).toBeCloseTo(-40); // vs 150 at t0+20h (28h earlier)
   });
 
-  it("labels short histories honestly", () => {
-    const pts: LiqPoint[] = [
+  // Replaced (2026-11-19): a 3h history used to be scored as the 7d change ("3.0h of history"); production showed
+  // "+5.5% over 9m of history" taking full 7d points. Under half the window is not a measurement of it: null.
+  it("labels short histories honestly, and refuses one under half the window (or half the token's life)", () => {
+    const short: LiqPoint[] = [
       { t: t0, liq: 100 },
       { t: t0 + 3 * H, liq: 50 },
     ];
-    const d = liquidityChange(pts, 7 * 24 * H, "7d")!;
+    expect(liquidityChange(short, 7 * 24 * H, "7d")).toBeNull();
+    expect(historyMetrics(short).nullReasons.liqChange7dPct).toMatch(/only 3\.0h of liquidity history — a 7d change needs ≥ 84h/);
+    const fourDays: LiqPoint[] = [
+      { t: t0, liq: 100 },
+      { t: t0 + 96 * H, liq: 50 },
+    ];
+    const d = liquidityChange(fourDays, 7 * 24 * H, "7d")!;
     expect(d.pct).toBeCloseTo(-50);
-    expect(d.window).toBe("3.0h of history");
+    expect(d.window).toBe("96h of history");
+    // A 4h-old token observed for 3h: its whole life is covered, so the 24h change is a measurement.
+    const young = liquidityChange(short, 24 * H, "24h", 4 * H)!;
+    expect(young.pct).toBeCloseTo(-50);
+    expect(young.window).toBe("3.0h of history");
   });
 
   it("spaces observations and persists them in KV", async () => {
@@ -390,10 +402,10 @@ describe("HoodScan outage → stale holder data (simulated 503)", () => {
     const report = scoreSnapshot(snap, [res.status]);
     const holdersGroup = report.groups.find((g) => g.id === "holders")!;
     expect(holdersGroup.hasData).toBe(true);
-    const acc = holdersGroup.factors.find((f) => f.id === "accumulator_count")!;
-    expect(acc.value).toBe(3);
-    expect(acc.stale).toBe("25m");
-    expect(acc.evidence).toMatch(/\(stale, 25m old\)$/);
+    // The 0-sell accumulators are an input to Holder Strength now (no factor of their own): the metric itself is stale.
+    expect(snap.accumulatorCount).toBe(3);
+    expect(snap.staleFields.accumulatorCount).toBe(25);
+    expect(holdersGroup.factors.find((f) => f.id === "accumulator_count")).toBeUndefined();
     expect(holdersGroup.factors.find((f) => f.id === "early_retention")!.stale).toBe("25m");
     // stale-but-present counts toward coverage
     expect(report.coveragePct).toBeGreaterThan(0);

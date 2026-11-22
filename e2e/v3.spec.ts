@@ -138,15 +138,44 @@ test.describe("§1a chain detection", () => {
 test.describe("top-holder classification", () => {
   test("the largest holder is shown with its class; classified top-5 rows are listed (JAMES fixture)", async ({ page }) => {
     await page.goto("/fixture/monad-james");
-    await expect(page.getByTestId("tier-letter")).toHaveText("D", { timeout: 30_000 });
+    await expect(page.getByTestId("tier-letter")).toHaveText("C", { timeout: 30_000 });
     const line = page.getByTestId("largest-holder");
-    await expect(line).toContainText("Largest holder: wallet funded by the deployer, 61.1%");
-    await expect(line).toHaveAttribute("data-class", "wallet");
+    await expect(line).toContainText("Largest holder: team wallet (deployer-funded), 61.1%, 0 sells in 116d, funded in tx 0x5c96c6…ebeb");
+    await expect(line).toHaveAttribute("data-class", "team");
     await line.locator("summary").click();
     await expect(line).toContainText("not the deployer");
+    await expect(line.getByTestId("funding-tx")).toHaveAttribute("href", "https://monadvision.com/tx/0x5c96c6a1de542fce420aab5f3955abde5d042ec254f39129d6442b7dc456ebeb");
     await expect(line).toContainText("treasury (multisig, Safe 6/8)");
     await expect(line).toContainText("unclassified contract");
     const results = await new AxeBuilder({ page }).include('[data-testid="largest-holder"]').withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
     expect(results.violations).toEqual([]);
+  });
+});
+
+test.describe("holder strength", () => {
+  test("microduck: HOLDER STRENGTH tile beside the hero stats (label + bar in the severity colours); the sentences in Research view", async ({ page }) => {
+    await page.goto("/fixture/microduck");
+    const tile = page.getByTestId("holder-strength");
+    await expect(tile).toBeVisible({ timeout: 30_000 });
+    await expect(tile).toHaveAttribute("data-label", "Diamond");
+    await expect(page.getByTestId("holder-strength-label")).toHaveText("Diamond");
+    const bar = page.getByTestId("holder-strength-bar");
+    await expect(bar).toHaveAttribute("data-severity", "good");
+    await expect(bar).toHaveAttribute("aria-valuenow", "81");
+    // Research view only: the three biggest contributors as sentences.
+    await expect(page.getByTestId("holder-strength-detail")).toBeHidden();
+    await page.getByTestId("research-toggle").click();
+    const detail = page.getByTestId("holder-strength-detail");
+    await expect(detail).toBeVisible();
+    await expect(detail.getByTestId("holder-strength-sentences").locator("li")).toHaveCount(3);
+    await expect(detail).toContainText("Top holders have held a median 91%");
+    const results = await new AxeBuilder({ page }).include('[data-testid="holder-strength"]').include('[data-testid="holder-strength-detail"]').withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test("a Launch-mode token: the tile says too young to measure, no factor", async ({ page }) => {
+    await page.goto("/fixture/offline");
+    await expect(page.getByTestId("holder-strength-value")).toContainText("too young to measure", { timeout: 30_000 });
+    await expect(page.getByTestId("holder-strength")).toHaveAttribute("data-label", "none");
   });
 });

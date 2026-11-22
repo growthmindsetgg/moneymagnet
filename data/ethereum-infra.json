@@ -1,0 +1,351 @@
+{
+ "note": "Ethereum mainnet (chain id 1) infrastructure: pool managers, factories, quoters, routers, position managers, LP lockers, quote currencies and registered blue chips (refused by the meme filter). Never a holder, never a deployer. Every entry was checked 2026-11-20 on https://ethereum-rpc.publicnode.com: eth_getCode non-empty (size given) plus the role-proving view call named in identifiedBy; entries whose role no view call proves say so. No launchpad is registered for Ethereum (no launchpad-factory / hook / bonding-curve entries; docs/chains/ethereum.md). `cexWallets` are exchange wallets used only to label holder rows (Holder Strength already excludes CEX-labelled wallets); they are not infrastructure and stay counted in top-holder concentration.",
+ "addresses": [
+  {
+   "address": "0x000000000004444c5dc75cb358380d2e3de08a90",
+   "role": "v4-pool-manager",
+   "label": "Uniswap v4 PoolManager",
+   "identifiedBy": "24,009 B; same 24,009 B as on Base / Robinhood Chain; poolManager() of V4Quoter, StateView, v4 PositionManager and Universal Router (v4) all return it"
+  },
+  {
+   "address": "0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e",
+   "role": "liquidity-manager",
+   "label": "Uniswap v4 PositionManager",
+   "identifiedBy": "23,877 B; name() 'Uniswap v4 Positions NFT', poolManager()=0x0000…8a90"
+  },
+  {
+   "address": "0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203",
+   "role": "quoter",
+   "label": "Uniswap v4 Quoter (V4Quoter)",
+   "identifiedBy": "5,820 B; poolManager()=0x0000…8a90 (same 5,820 B as the Base V4Quoter)"
+  },
+  {
+   "address": "0x7ffe42c4a5deea5b0fec41c94c136cf115597227",
+   "role": "state-view",
+   "label": "Uniswap v4 StateView",
+   "identifiedBy": "3,531 B; poolManager()=0x0000…8a90"
+  },
+  {
+   "address": "0x66a9893cc07d91d95644aedd05d03f95e1dba8af",
+   "role": "router",
+   "label": "Uniswap Universal Router (v4)",
+   "identifiedBy": "19,499 B; poolManager()=0x0000…8a90"
+  },
+  {
+   "address": "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad",
+   "role": "router",
+   "label": "Uniswap Universal Router (v2/v3 era)",
+   "identifiedBy": "17,958 B; bytecode only (no role-proving view); Uniswap-published deployment address"
+  },
+  {
+   "address": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+   "role": "router",
+   "label": "Permit2",
+   "identifiedBy": "9,152 B; DOMAIN_SEPARATOR() answers; same address on every chain"
+  },
+  {
+   "address": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f",
+   "role": "dex-factory",
+   "label": "Uniswap v2 Factory",
+   "identifiedBy": "13,859 B; allPairsLength()=528,310; factory() of Uniswap v2 Router02, factoryV2() of SwapRouter02, uniswapFactory() of the UNCX V2 locker"
+  },
+  {
+   "address": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+   "role": "router",
+   "label": "Uniswap v2 Router02",
+   "identifiedBy": "21,943 B; factory()=Uniswap v2 Factory, WETH()=0xc02a…6cc2"
+  },
+  {
+   "address": "0x1f98431c8ad98523631ae4a59f267346ea31f984",
+   "role": "dex-factory",
+   "label": "Uniswap v3 Factory",
+   "identifiedBy": "24,535 B; owner() answers; factory() of QuoterV2, SwapRouter, SwapRouter02 and the v3 NonfungiblePositionManager"
+  },
+  {
+   "address": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e",
+   "role": "quoter",
+   "label": "Uniswap v3 QuoterV2",
+   "identifiedBy": "8,273 B; factory()=Uniswap v3 Factory, WETH9()=0xc02a…6cc2"
+  },
+  {
+   "address": "0xe592427a0aece92de3edee1f18e0157c05861564",
+   "role": "router",
+   "label": "Uniswap v3 SwapRouter",
+   "identifiedBy": "12,070 B; factory()=Uniswap v3 Factory"
+  },
+  {
+   "address": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+   "role": "router",
+   "label": "Uniswap v3 SwapRouter02",
+   "identifiedBy": "24,497 B; factory()=Uniswap v3 Factory, factoryV2()=Uniswap v2 Factory"
+  },
+  {
+   "address": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+   "role": "liquidity-manager",
+   "label": "Uniswap v3 NonfungiblePositionManager",
+   "identifiedBy": "24,384 B; name() 'Uniswap V3 Positions NFT-V1', factory()=Uniswap v3 Factory"
+  },
+  {
+   "address": "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac",
+   "role": "dex-factory",
+   "label": "SushiSwap v2 Factory",
+   "identifiedBy": "11,264 B; allPairsLength()=4,822; factory() of SushiSwap Router02"
+  },
+  {
+   "address": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+   "role": "router",
+   "label": "SushiSwap Router02",
+   "identifiedBy": "17,762 B; factory()=SushiSwap v2 Factory"
+  },
+  {
+   "address": "0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865",
+   "role": "dex-factory",
+   "label": "PancakeSwap v3 Factory",
+   "identifiedBy": "5,151 B; owner() answers; same address as the Base PancakeSwap v3 Factory"
+  },
+  {
+   "address": "0x1097053fd2ea711dad45caccc45eff7548fcb362",
+   "role": "dex-factory",
+   "label": "PancakeSwap v2 Factory",
+   "identifiedBy": "14,075 B; allPairsLength()=8,129"
+  },
+  {
+   "address": "0x1111111254eeb25477b68fb85ed929f73a960582",
+   "role": "router",
+   "label": "1inch Aggregation Router v5",
+   "identifiedBy": "22,484 B; bytecode only; 1inch-published deployment address"
+  },
+  {
+   "address": "0x111111125421ca6dc452d289314280a0f8842a65",
+   "role": "router",
+   "label": "1inch Aggregation Router v6",
+   "identifiedBy": "24,294 B; bytecode only; 1inch-published deployment address"
+  },
+  {
+   "address": "0xdef1c0ded9bec7f1a1670819833240f027b25eff",
+   "role": "router",
+   "label": "0x Exchange Proxy",
+   "identifiedBy": "1,229 B; bytecode only (proxy); 0x-published deployment address"
+  },
+  {
+   "address": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+   "role": "router",
+   "label": "CoW Protocol GPv2Settlement",
+   "identifiedBy": "16,165 B; domainSeparator() answers"
+  },
+  {
+   "address": "0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789",
+   "role": "router",
+   "label": "ERC-4337 EntryPoint v0.6 (smart-wallet tx.to — not a launchpad)",
+   "identifiedBy": "23,689 B; same address on every chain"
+  },
+  {
+   "address": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+   "role": "router",
+   "label": "ERC-4337 EntryPoint v0.7 (smart-wallet tx.to — not a launchpad)",
+   "identifiedBy": "16,035 B; same address on every chain"
+  },
+  {
+   "address": "0xca11bde05977b3631167028862be2a173976ca11",
+   "role": "router",
+   "label": "Multicall3",
+   "identifiedBy": "3,808 B; same address on every chain"
+  },
+  {
+   "address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+   "role": "quote-token",
+   "label": "WETH",
+   "identifiedBy": "3,124 B; symbol() WETH, decimals 18; WETH()/WETH9() of the v2 Router02 and v3 QuoterV2"
+  },
+  {
+   "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+   "role": "quote-token",
+   "label": "USDC (native, Circle)",
+   "identifiedBy": "2,186 B; proxy; symbol() USDC, decimals 6"
+  },
+  {
+   "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+   "role": "quote-token",
+   "label": "USDT (Tether)",
+   "identifiedBy": "11,075 B; symbol() USDT, decimals 6"
+  },
+  {
+   "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+   "role": "blue-chip",
+   "label": "DAI (MakerDAO stablecoin)",
+   "identifiedBy": "7,904 B; symbol() DAI"
+  },
+  {
+   "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+   "role": "blue-chip",
+   "label": "WBTC (wrapped BTC)",
+   "identifiedBy": "4,582 B; symbol() WBTC"
+  },
+  {
+   "address": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+   "role": "blue-chip",
+   "label": "cbBTC (Coinbase wrapped BTC; same address as on Base)",
+   "identifiedBy": "1,550 B; symbol() cbBTC"
+  },
+  {
+   "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+   "role": "blue-chip",
+   "label": "stETH (Lido staked ETH)",
+   "identifiedBy": "1,035 B; symbol() stETH"
+  },
+  {
+   "address": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+   "role": "blue-chip",
+   "label": "wstETH (wrapped Lido staked ETH)",
+   "identifiedBy": "6,492 B; symbol() wstETH"
+  },
+  {
+   "address": "0xae78736cd615f374d3085123a210448e74fc6393",
+   "role": "blue-chip",
+   "label": "rETH (Rocket Pool staked ETH)",
+   "identifiedBy": "8,800 B; symbol() rETH"
+  },
+  {
+   "address": "0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee",
+   "role": "blue-chip",
+   "label": "weETH (ether.fi wrapped eETH)",
+   "identifiedBy": "845 B; symbol() weETH"
+  },
+  {
+   "address": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+   "role": "blue-chip",
+   "label": "USDe (Ethena synthetic dollar)",
+   "identifiedBy": "7,567 B; symbol() USDe"
+  },
+  {
+   "address": "0x6c3ea9036406852006290770bedfcaba0e23a0e8",
+   "role": "blue-chip",
+   "label": "PYUSD (PayPal USD stablecoin)",
+   "identifiedBy": "1,506 B; symbol() PYUSD"
+  },
+  {
+   "address": "0x514910771af9ca656af840dff83e8264ecf986ca",
+   "role": "blue-chip",
+   "label": "LINK (Chainlink)",
+   "identifiedBy": "3,153 B; symbol() LINK"
+  },
+  {
+   "address": "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984",
+   "role": "blue-chip",
+   "label": "UNI (Uniswap governance token)",
+   "identifiedBy": "12,567 B; symbol() UNI"
+  },
+  {
+   "address": "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9",
+   "role": "blue-chip",
+   "label": "AAVE (Aave governance token)",
+   "identifiedBy": "2,491 B; symbol() AAVE"
+  },
+  {
+   "address": "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
+   "role": "blue-chip",
+   "label": "MKR (Maker governance token)",
+   "identifiedBy": "3,379 B; symbol() MKR"
+  },
+  {
+   "address": "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
+   "role": "blue-chip",
+   "label": "LDO (Lido governance token)",
+   "identifiedBy": "7,440 B; symbol() LDO"
+  },
+  {
+   "address": "0x57e114b691db790c35207b2e685d4a43181e6061",
+   "role": "blue-chip",
+   "label": "ENA (Ethena governance token)",
+   "identifiedBy": "7,713 B; symbol() ENA"
+  },
+  {
+   "address": "0x663a5c229c09b049e36dcc11a9b0d4a8eb9db214",
+   "role": "lp-locker",
+   "label": "UNCX UniswapV2Locker",
+   "identifiedBy": "21,788 B; uniswapFactory()=Uniswap v2 Factory"
+  },
+  {
+   "address": "0xe2fe530c047f2d85298b07d9333c05737f1435fb",
+   "role": "lp-locker",
+   "label": "Team Finance lock (proxy; Team Finance name not confirmed on-chain)",
+   "identifiedBy": "2,240 B; bytecode only (proxy); Team Finance-published Ethereum lock address"
+  },
+  {
+   "address": "0x0000000000000000000000000000000000000000",
+   "role": "burn",
+   "label": "zero address",
+   "identifiedBy": "no code; mint source / burn sink"
+  },
+  {
+   "address": "0x000000000000000000000000000000000000dead",
+   "role": "burn",
+   "label": "dead address",
+   "identifiedBy": "no code; conventional burn sink"
+  },
+  {
+   "address": "0xdead000000000000000042069420694206942069",
+   "role": "burn",
+   "label": "SHIB dead address",
+   "identifiedBy": "no code; GoPlus tags it 'Dead' (41% of SHIB supply on 2026-11-20)"
+  }
+ ],
+ "cexWallets": [
+  {
+   "address": "0xf977814e90da44bfa03b6295a0616a897441acec",
+   "label": "Binance 8 (CEX)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0x28c6c06298d514db089934071355e5743bf21d60",
+   "label": "Binance 14 (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+   "label": "Binance 15 (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0xdfd5293d8e347dfe59e90efd55b2956a1343963d",
+   "label": "Binance 16 (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0x71660c4005ba85c37ccec55d0c4493e66fe775d3",
+   "label": "Coinbase 1 (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0xf89d7b9c864f589bbf53a82105107622b35eaa40",
+   "label": "Bybit (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0",
+   "label": "Kraken 4 (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0x0d0707963952f2fba59dd06f2b425ace40b492fe",
+   "label": "Gate.io 1 (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  },
+  {
+   "address": "0x6262998ced04146fa42253a5c0af90ca02dfd2a3",
+   "label": "Crypto.com (CEX hot wallet)",
+   "identifiedBy": "eth_getCode = 0x (EOA) on 2026-11-20; the name is the public Etherscan name tag — an exchange label cannot be proven on-chain"
+  }
+ ],
+ "lpSeedingSelectors": {
+  "note": "Calls whose token transfers are liquidity provision, not sales: Robinhood's six (multicall, v4 modifyLiquidities, v3 mint / increaseLiquidity, v2 addLiquidity / addLiquidityETH); the Uniswap contracts they belong to are registered above.",
+  "selectors": [
+   "0xac9650d8",
+   "0xdd46508f",
+   "0x88316456",
+   "0x219f5d17",
+   "0xe8e33700",
+   "0xf305d719"
+  ]
+ }
+}

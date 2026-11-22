@@ -100,7 +100,7 @@ export function summarize(r: ScoreReport, baseUrl = "", maxReasons = MAX_REASONS
     tier: meme ? r.tier : null,
     score: meme ? r.score : null,
     rawScore: r.rawScore,
-    held: r.hold ? { text: "unchanged (source down)", ...r.hold } : null,
+    held: r.hold ? { text: r.hold.rescored ? "re-scored with last values (source down)" : "unchanged (source down)", ...r.hold } : null,
     coveragePct: r.coveragePct,
     mode: r.mode,
     verdict: meme ? r.verdict : "Not a meme — not rated.",

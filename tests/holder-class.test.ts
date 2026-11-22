@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { keccak_256 } from "@noble/hashes/sha3";
 import { bytesToHex } from "@noble/hashes/utils";
-import { archiveWalletHistory, classifyContract, CONTRACT_SIGNATURES, kSearch, matchSignature } from "@/lib/onchain/holderClass";
+import { archiveWalletHistory, classifyContract, CONTRACT_SIGNATURES, kSearch, matchSignature, outflowScan } from "@/lib/onchain/holderClass";
 import { applyHolderClasses } from "@/lib/topHolders";
 import { largestHolderLine } from "@/lib/holderLine";
 import { classRow } from "@/lib/onchain/holderClass";
@@ -75,11 +75,13 @@ describe("top-holder classification: the page line", () => {
 describe("top-holder classification: holder math", () => {
   const row = (a: string, pct: number, kind: HolderRow["kind"]): HolderRow => ({ address: a, qty: pct * 1e7, pct, buys: null, sells: null, isContract: kind === "liquidity", kind });
 
-  it("vesting / lockers leave the count (shown apart, labelled), a Safe treasury joins it, and top-1 / top-10 are re-derived", () => {
+  // Replaced (2026-11-19): unclassified contracts used to leave the count, which let a deployer hide supply in any
+  // contract it controls. They are now counted like wallets; only proven pools / vesting / lockers / staking leave.
+  it("vesting / lockers leave the count (shown apart, labelled), a Safe treasury and an unclassified contract join it, and top-1 / top-10 are re-derived", () => {
     const s: TokenSnapshot = {
       ...emptySnapshot("base", addr("9")),
       holders: [row(addr("a"), 40, "wallet"), row(addr("b"), 3, "wallet")],
-      liquidityHolders: [row(addr("c"), 50, "liquidity"), row(addr("d"), 5, "liquidity")],
+      liquidityHolders: [row(addr("c"), 50, "liquidity"), row(addr("d"), 5, "liquidity"), row(addr("e"), 20, "liquidity")],
       top1SharePct: 40,
       top10SharePct: 43,
     };
@@ -87,14 +89,16 @@ describe("top-holder classification: holder math", () => {
       classRow({ address: addr("a"), pct: 40, class: "vesting", label: "vesting contract (Sablier)", detail: null, unlocksAt: null, evidence: "" }),
       classRow({ address: addr("d"), pct: 5, class: "treasury", label: "treasury (multisig, Safe 3/5)", detail: null, unlocksAt: null, evidence: "" }),
       classRow({ address: addr("c"), pct: 50, class: "contract", label: "unclassified contract", detail: null, unlocksAt: null, evidence: "" }),
+      classRow({ address: addr("e"), pct: 20, class: "pool", label: "liquidity pool (unlisted)", detail: null, unlocksAt: null, evidence: "" }),
     ]);
     expect(s.holders.map((h) => [h.address, h.label ?? null])).toEqual([
+      [addr("c"), "unclassified contract"],
       [addr("d"), "treasury (multisig, Safe 3/5)"],
       [addr("b"), null],
     ]);
-    expect(s.top1SharePct).toBe(5);
-    expect(s.top10SharePct).toBe(8);
-    expect(s.liquidityHolders.map((h) => h.label)).toEqual(["unclassified contract", "vesting contract (Sablier)"]);
+    expect(s.top1SharePct).toBe(50);
+    expect(s.top10SharePct).toBe(58);
+    expect(s.liquidityHolders.map((h) => h.label)).toEqual(["vesting contract (Sablier)", "liquidity pool (unlisted)"]);
     expect(s.provenance.top1SharePct?.at(-1)?.source).toBe("holder-class");
   });
 });
@@ -183,6 +187,151 @@ describe("founder softening (top-holder caps)", () => {
   });
 });
 
+describe("team-wallet softening (deployer-funded top holder)", () => {
+  function token(over: Partial<TokenSnapshot>): TokenSnapshot {
+    return deriveMetrics({
+      ...emptySnapshot("monad", addr("e")),
+      tokenExists: true,
+      ageHours: 2781,
+      priceUsd: 0.0016,
+      fdvUsd: 1_600_000,
+      liquidityUsd: 82_000,
+      mainPoolLiquidityUsd: 82_000,
+      volume24hUsd: 300_000,
+      poolCount: 1,
+      totalSupply: 1e9,
+      holderCount: 2400,
+      top10SharePct: 64,
+      deployerHoldingPct: 0,
+      deployerSoldPct: 0,
+      buyers24h: 90,
+      sellers24h: 40,
+      netFlowRatio24h: 0.1,
+      tradesPerWallet: 2,
+      sellable: true,
+      honeypot: false,
+      roundTripLossPct: 0.6,
+      mintAuthority: false,
+      verified: true,
+      ownerRenounced: true,
+      upgradeable: false,
+      isLaunchpad: true,
+      launchpad: "nad.fun V2",
+      trendScore: 50,
+      founderNeverSold: false,
+      ...over,
+    });
+  }
+  const fired = (s: TokenSnapshot) => scoreSnapshot(s, []).rules.filter((r) => r.state === "fired").map((r) => r.id);
+  const order = ["S", "A", "B", "C", "D", "F", "U"];
+
+  it("≥ 35% in a team wallet that never sold in ≥ 30 days: capped at C (one notch below the deployer's B)", () => {
+    const s = token({ top1SharePct: 61.1, teamNeverSold: true, teamSold: false, teamHoldDays: 116 });
+    const r = scoreSnapshot(s, []);
+    expect(fired(s)).toContain("top_holder_35_team");
+    expect(fired(s)).not.toContain("top_holder_35");
+    const rule = r.rules.find((x) => x.id === "top_holder_35_team")!;
+    expect(rule.capTier).toBe("C");
+    expect(rule.evidence).toBe("Team wallet (deployer-funded) holds 61.1%, never sold in 116d — key-person risk: capped at C.");
+    expect(order.indexOf(r.tier)).toBeGreaterThanOrEqual(order.indexOf("C"));
+  });
+
+  it("20–35% in such a team wallet: capped at B (not C)", () => {
+    const s = token({ top1SharePct: 25, teamNeverSold: true, teamSold: false, teamHoldDays: 40 });
+    expect(fired(s)).toContain("top_holder_20_team");
+    expect(fired(s)).not.toContain("top_holder_20");
+    expect(scoreSnapshot(s, []).rules.find((x) => x.id === "top_holder_20_team")!.capTier).toBe("B");
+  });
+
+  it("any team-wallet sell reverts to the normal caps and adds the red 'team wallet started selling' con", () => {
+    const s = token({ top1SharePct: 61.1, teamNeverSold: false, teamSold: true, teamHoldDays: 116 });
+    const r = scoreSnapshot(s, []);
+    expect(fired(s)).toEqual(expect.arrayContaining(["top_holder_35", "top_holder_20", "team_selling"]));
+    expect(["D", "F"]).toContain(r.tier);
+    expect(prosCons(r).cons.find((c) => /Team wallet started selling/.test(c.text))?.sev).toBe("bad");
+  });
+
+  it("sell history not fully read (null): the normal caps apply", () => {
+    const s = token({ top1SharePct: 61.1, teamNeverSold: null });
+    expect(fired(s)).toEqual(expect.arrayContaining(["top_holder_35", "top_holder_20"]));
+    expect(fired(s)).not.toContain("top_holder_35_team");
+  });
+
+  it("the deployer's own wallet stays one notch softer than a team wallet at every share", () => {
+    for (const pct of [25, 61.1]) {
+      const team = scoreSnapshot(token({ top1SharePct: pct, teamNeverSold: true, teamHoldDays: 116 }), []);
+      const founder = scoreSnapshot(token({ top1SharePct: pct, founderNeverSold: true, founderHoldDays: 116, teamNeverSold: false }), []);
+      expect(order.indexOf(team.tier)).toBeGreaterThanOrEqual(order.indexOf(founder.tier));
+    }
+  });
+});
+
+describe("outbound transfer scan (resumable)", () => {
+  const T = addr("7");
+  const W = addr("8");
+  const POOL = addr("9");
+  /** Outbound Transfer logs of W at given blocks to given destinations; pool has code. */
+  function fake(outs: { block: number; to: string; swap?: boolean }[], nonceAt?: (b: number) => number) {
+    const calls: string[] = [];
+    const rpc = (async (method: string, params: unknown[]) => {
+      calls.push(method);
+      if (method === "eth_getLogs") {
+        const q = params[0] as { fromBlock: string; toBlock: string };
+        const [a, b] = [Number(q.fromBlock), Number(q.toBlock)];
+        return outs.filter((o) => o.block >= a && o.block <= b).map((o) => ({ address: T, topics: ["0x", "0x" + "0".repeat(24) + W.slice(2), "0x" + "0".repeat(24) + o.to.slice(2)], data: "0x" + word(5), blockNumber: "0x" + o.block.toString(16), transactionHash: `0xtx${o.block}`, logIndex: "0x0" }));
+      }
+      if (method === "eth_getCode") return params[0] === POOL ? "0x" + "60".repeat(500) : "0x";
+      if (method === "eth_getTransactionReceipt") {
+        const o = outs.find((x) => `0xtx${x.block}` === params[0]);
+        return { logs: o?.swap ? [{ topics: ["0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822"] }] : [] };
+      }
+      throw new Error(method);
+    }) as Rpc;
+    return { rpc, calls, nonceAt: nonceAt ? async (b: number) => nonceAt(b) : undefined };
+  }
+
+  it("transfers to wallets only, whole range: complete, 0 sells", async () => {
+    const { rpc } = fake([{ block: 150, to: addr("a") }, { block: 420, to: addr("b") }]);
+    const r = await outflowScan(rpc, T, W, { fromBlock: 100, head: 1_000, span: 100, deadline: Date.now() + 5_000 });
+    expect(r).toMatchObject({ complete: true, toPools: 0, transfersOut: 2, scannedTo: 1_000 });
+  });
+
+  it("a transfer into a pool, or a tx with a Swap event, is a sell — and the scan stops there", async () => {
+    for (const out of [{ block: 300, to: POOL }, { block: 300, to: addr("c"), swap: true }]) {
+      const { rpc } = fake([out, { block: 900, to: addr("d") }]);
+      const r = await outflowScan(rpc, T, W, { fromBlock: 100, head: 1_000, span: 100, deadline: Date.now() + 5_000, parallel: 1 });
+      expect(r.toPools).toBe(1);
+      expect(r.sellTxs).toEqual(["0xtx300"]);
+      expect(r.complete).toBe(true);
+      expect(r.scannedTo).toBeLessThan(1_000);
+    }
+  });
+
+  it("resumes from saved state without re-reading earlier windows", async () => {
+    const { rpc, calls } = fake([{ block: 950, to: addr("a") }]);
+    const saved = { fromBlock: 100, scannedTo: 899, toPools: 0, transfersOut: 4, transfersOutRaw: "20", sellTxs: [] };
+    const r = await outflowScan(rpc, T, W, { fromBlock: 100, head: 1_000, span: 100, deadline: Date.now() + 5_000, state: saved });
+    expect(r).toMatchObject({ complete: true, transfersOut: 5, scannedTo: 1_000 });
+    // Only the two windows after the saved point: 900–999 and 1000.
+    expect(calls.filter((c) => c === "eth_getLogs")).toHaveLength(2);
+  });
+
+  it("past the deadline it reads nothing and reports incomplete (never a guess)", async () => {
+    const { rpc } = fake([]);
+    const r = await outflowScan(rpc, T, W, { fromBlock: 100, head: 1_000, span: 100, deadline: Date.now() - 1 });
+    expect(r).toMatchObject({ complete: false, scannedTo: 99 });
+  });
+
+  it("stretches where the wallet's nonce did not change are skipped without reading logs", async () => {
+    // One tx at block 640: nonce 3 up to 639, 4 from 640.
+    const { rpc, calls, nonceAt } = fake([{ block: 640, to: addr("a") }], (b) => (b < 640 ? 3 : 4));
+    const r = await outflowScan(rpc, T, W, { fromBlock: 100, head: 100_000, span: 100, deadline: Date.now() + 5_000, parallel: 2, nonceAt });
+    expect(r).toMatchObject({ complete: true, transfersOut: 1, toPools: 0, scannedTo: 100_000 });
+    expect(r.nonceSkipped).toBeGreaterThan(99_000);
+    expect(calls.filter((c) => c === "eth_getLogs").length).toBeLessThan(10);
+  });
+});
+
 describe("archive wallet history", () => {
   const T = addr("7");
   const W = addr("8");
@@ -217,7 +366,7 @@ describe("archive wallet history", () => {
     const h = await archiveWalletHistory(rpc, T, W, { fromBlock: 100, head });
     expect(h.complete).toBe(true);
     expect(h.toPools).toBe(0);
-    expect(h.firstReceipt).toEqual({ block: 123_456, from: addr("3") });
+    expect(h.firstReceipt).toEqual({ block: 123_456, from: addr("3"), tx: "0x2" });
     expect(h.method).toMatch(/nonce unchanged/);
   });
 
@@ -248,17 +397,23 @@ describe("JAMES (Monad) recorded holder fixture", () => {
   // tests/fixtures/holders/monad-james.json — scripts/top-holder-fixture.ts
   const fx = JSON.parse(readFileSync(path.join(__dirname, "fixtures", "holders", "monad-james.json"), "utf8")) as { snapshot: TokenSnapshot; sources: SourceStatus[] };
 
-  it("the 61.1% holder is an EOA funded by the creation-tx sender, not the deployer: normal caps, D", () => {
+  // Replaces "EOA funded by the creation-tx sender, not the deployer: normal caps, D" — the team-wallet class
+  // (owner decision, 2026-10-30) makes a deployer-funded wallet that never sold a softened case.
+  it("the 61.1% holder is a team wallet: an EOA the creation-tx sender funded by plain transfer, 0 sells in 116d ⇒ cap C", () => {
     const s = fx.snapshot;
     expect(s.largestHolder?.address).toBe("0xf8baf2541defab76f2c344ff10cd6d4ef74d3432");
-    expect(s.largestHolder?.class).toBe("wallet");
-    expect(s.largestHolder?.label).toBe("wallet funded by the deployer");
+    expect(s.largestHolder?.class).toBe("team");
+    expect(s.largestHolder?.label).toBe("team wallet (deployer-funded)");
+    expect(s.largestHolder?.fundingTx).toBe("0x5c96c6a1de542fce420aab5f3955abde5d042ec254f39129d6442b7dc456ebeb");
     expect(s.largestHolder?.evidence).toMatch(/no code \(EOA\); not the deployer/);
-    expect(largestHolderLine(s.largestHolder)).toBe("Largest holder: wallet funded by the deployer, 61.1%");
+    expect(s.largestHolder?.evidence).toMatch(/0 into pools \/ routers \/ contracts/);
+    expect(largestHolderLine(s.largestHolder)).toBe("Largest holder: team wallet (deployer-funded), 61.1%, 0 sells in 116d, funded in tx 0x5c96c6…ebeb");
+    expect(s.teamNeverSold).toBe(true);
     const r = scoreSnapshot(s, fx.sources);
-    expect(r.tier).toBe("D");
-    expect(r.rules.find((x) => x.id === "top_holder_35")!.state).toBe("fired");
+    expect(r.rules.find((x) => x.id === "top_holder_35_team")!.state).toBe("fired");
+    expect(r.rules.find((x) => x.id === "top_holder_35")!.state).not.toBe("fired");
     expect(r.rules.find((x) => x.id === "top_holder_35_founder")!.state).not.toBe("fired");
+    expect(r.tier).toBe("C");
   });
 
   it("the two Safe 6/8 multisigs in its top 5 are counted (labelled); unclassified contracts stay excluded", () => {
@@ -270,7 +425,7 @@ describe("JAMES (Monad) recorded holder fixture", () => {
   });
 
   it("were that wallet the deployer with 0 sells over 116 days, the cap would be B with the key-person reason", () => {
-    const s: TokenSnapshot = { ...fx.snapshot, founderNeverSold: true, founderSold: false, founderHoldDays: 116 };
+    const s: TokenSnapshot = { ...fx.snapshot, founderNeverSold: true, founderSold: false, founderHoldDays: 116, teamNeverSold: false };
     const r = scoreSnapshot(s, fx.sources);
     expect(r.rules.find((x) => x.id === "top_holder_35_founder")!.state).toBe("fired");
     expect(r.rules.find((x) => x.id === "top_holder_35")!.state).not.toBe("fired");

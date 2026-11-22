@@ -21,7 +21,7 @@ interface TokenBalance {
   owner?: string;
   uiTokenAmount: { uiAmount: number | null; amount: string; decimals: number };
 }
-interface FullTx {
+export interface FullTx {
   slot: number;
   blockTime: number | null;
   transaction: {

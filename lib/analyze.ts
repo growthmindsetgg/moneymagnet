@@ -10,6 +10,7 @@ import { rugcheck } from "./sources/rugcheck";
 import { helius } from "./sources/helius";
 import { pumpfeed, rejectLateObservation } from "./sources/pumpfeed";
 import { solanaCurve } from "./sources/solanaCurve";
+import { dropDustOnlyMarkets, dropGraduatedCurveMarket, listsOnlyDust, withoutMarketFields } from "./sources/pools";
 import { jupiter } from "./sources/jupiter";
 import { detectChain, normalizeAddress } from "./chain";
 import { historyMetrics, recordLiquidity } from "./history";
@@ -29,21 +30,30 @@ import { after } from "next/server";
 import { kvGet, kvSet } from "./kv";
 import { collectSocial, type SocialPanel } from "./social";
 import { robinx } from "./social/robinx";
-import { appendScore } from "./scoreHistory";
+import { appendScore, previousTier } from "./scoreHistory";
 import { eligibility, knownNonMeme, NOT_A_CA, stockRegistry } from "./memeFilter";
-import { BudgetError, deadlineIn, remaining, sourceCap, within, type Deadline } from "./budget";
-import { isEvmChain, type EvmChain } from "./chain";
+import { ANALYSIS_BUDGET_MS, BudgetError, deadlineIn, remaining, sourceCap, within, type Deadline } from "./budget";
+import { CHAIN_LABEL, isEvmChain, type EvmChain } from "./chain";
 import { evmTokenRpc, rpcSourceId } from "./sources/evmRpc";
 import { goplus } from "./sources/goplus";
 import { nadfun, nadfunChart } from "./sources/nadfun";
 import { evmSim, simSourceId, type EvmPool } from "./sources/evmSim";
 import { baseAdapters, baseLaunchExtras } from "./sources/base";
+import { ethereumAdapters } from "./sources/ethereum";
 import { chainRpc } from "./onchain/rpc";
 import { classifyTopHolders } from "./topHolders";
+import { holderStrength } from "./holderStrengthData";
+import { defaultConfig, modeFor } from "./scoring/config";
 
 /** Wall-clock cap for the top-holder classification step (getCode + signature probes + founder history). */
 const HOLDER_CLASS_MIN_MS = 5_000;
 const holderClassBudgetMs = () => Number(process.env.HOLDER_CLASS_BUDGET_MS || 12_000);
+/** Wall-clock cap for Holder Strength (top-20 ledgers); an unfinished read continues after the response. Below the
+ *  minimum the whole read moves after the response. */
+const HOLDER_STRENGTH_MIN_MS = 1_500;
+/** The request budget (52s) beyond collect's analysis budget (45s): the room the post-collect steps share. */
+const requestRoomMs = () => Math.max(0, REQUEST_BUDGET_MS - ANALYSIS_BUDGET_MS);
+const holderStrengthBudgetMs = () => Number(process.env.HOLDER_STRENGTH_BUDGET_MS || 10_000);
 
 export { detectChain, normalizeAddress };
 
@@ -68,7 +78,7 @@ async function soft(id: string, run: () => Promise<AdapterResult>, deadline?: De
  * When the adapter fails outright, its fields come back from that snapshot — labelled stale with
  * their age and never older than 6h — so a source outage cannot flip the tier.
  */
-const STALEABLE = new Set(["scanhood", "rpc", "geckoterminal", "dexscreener", "rugcheck", "solana-rpc", "helius", "goplus", "base-rpc", "monad-rpc", "nadfun"]);
+const STALEABLE = new Set(["scanhood", "rpc", "geckoterminal", "dexscreener", "rugcheck", "solana-rpc", "helius", "goplus", "base-rpc", "monad-rpc", "ethereum-rpc", "nadfun"]);
 
 export async function withLastGood(id: string, chain: Chain, address: string, result: AdapterResult, now = Date.now()): Promise<AdapterResult> {
   if (!STALEABLE.has(id)) return result;
@@ -76,7 +86,8 @@ export async function withLastGood(id: string, chain: Chain, address: string, re
   const hasData = Object.values(result.data).some((v) => v !== null && v !== undefined && !(Array.isArray(v) && !v.length));
   if (result.status.state !== "failed") {
     const prev = await loadGood(key);
-    if (hasData) await saveGood(key, prev, result.data, now);
+    // A listing of dust pools only may be a side pool of a market this indexer does not see: its market fields are not kept.
+    if (hasData) await saveGood(key, prev, listsOnlyDust(result) ? withoutMarketFields(result.data) : result.data, now);
     // One call of the source hit an outage (e.g. GeckoTerminal OHLCV 429): only its fields come back
     // from the last good run, each labelled stale with its age.
     if (!result.failedFields?.length) return result;
@@ -115,7 +126,7 @@ export interface AnalyzeOptions {
   simulate?: "hoodscan-down";
   /** Shared secret sent by the caller; must equal HOODTIER_SIMULATE_TOKEN to simulate in production. */
   simulateToken?: string | null;
-  /** The chain for an 0x address (robinhood / base / monad); default Robinhood Chain. Ignored for Solana mints. */
+  /** The chain for an 0x address (robinhood / base / monad / ethereum); default Robinhood Chain. Ignored for Solana mints. */
   chain?: Chain;
   /** With `fresh`: the page's ?fresh= value, stored with the result so that page can show this exact run. */
   freshTag?: string;
@@ -141,7 +152,7 @@ function adaptersFor(chain: Chain, address: string, opts: AnalyzeOptions): [stri
     ];
   }
   if (isEvmChain(chain)) {
-    // Base / Monad (v3 §1): merge order = on-chain reads, the launchpad, the market indexers, then the
+    // Base / Monad / Ethereum (v3 §1): merge order = on-chain reads, the launchpad, the market indexers, then the
     // scanners. The sell simulation runs after, fed by these.
     return [
       [rpcSourceId(chain), () => evmTokenRpc(chain, address)],
@@ -151,6 +162,7 @@ function adaptersFor(chain: Chain, address: string, opts: AnalyzeOptions): [stri
       ["geckoterminal", () => geckoterminal(chain, address)],
       ["goplus", () => goplus(chain, address)],
       ...(chain === "base" ? baseAdapters(address) : []),
+      ...(chain === "ethereum" ? ethereumAdapters(address) : []),
     ];
   }
   return [
@@ -249,7 +261,7 @@ async function robinhoodLaunchExtras(address: string, results: AdapterResult[]):
 
 /** Our own sell simulation (v4 quoter + transfer probes), fed by the pools and holders the other sources found. */
 async function runRobinhoodSim(address: string, results: AdapterResult[]): Promise<AdapterResult> {
-  const gecko = results.find((r) => r.status.id === "geckoterminal")?.raw as { pools?: { id: string; liquidityUsd: number; volume24hUsd: number }[] } | undefined;
+  const gecko = results.find((r) => r.status.id === "geckoterminal")?.raw as { pools?: { id: string; liquidityUsd: number | null; volume24hUsd: number | null }[] } | undefined;
   const ds = results.find((r) => r.status.id === "dexscreener")?.raw as { pairs?: { pairAddress: string; liquidity?: { usd?: number }; volume?: { h24?: number } }[] } | undefined;
   const hsPool = (results.find((r) => r.status.id === "hoodscan")?.raw as { token?: { meme?: { pool?: string } } } | undefined)?.token?.meme?.pool;
   const seen = new Map<string, PoolCandidate>();
@@ -279,7 +291,7 @@ async function runRobinhoodSim(address: string, results: AdapterResult[]): Promi
 }
 
 /**
- * Base / Monad after the first wave: our own sell simulation (fed by every pool and holder the sources
+ * Base / Monad / Ethereum after the first wave: our own sell simulation (fed by every pool and holder the sources
  * listed), nad.fun candles for curve tokens no DEX indexer charts, the deployer's current balance, and
  * Base launchpad detection.
  */
@@ -287,7 +299,7 @@ async function evmPostSteps(chain: EvmChain, address: string, results: AdapterRe
   const by = (id: string) => results.find((r) => r.status.id === id);
   // Token age: a launchpad's creation time is the token's. DEX indexers only know pool creation, which is
   // later (a graduation, or a fresh pool on an old token) — never the token's age, so it is dropped then.
-  const created = by("nadfun")?.data.createdAt ?? by("basescan")?.data.createdAt;
+  const created = by("nadfun")?.data.createdAt ?? by("basescan")?.data.createdAt ?? by("etherscan")?.data.createdAt;
   if (created)
     for (const id of ["dexscreener", "geckoterminal"]) {
       const r = by(id);
@@ -300,7 +312,7 @@ async function evmPostSteps(chain: EvmChain, address: string, results: AdapterRe
     const prev = pools.get(k);
     pools.set(k, { id: k, liquidityUsd: Math.max(prev?.liquidityUsd ?? 0, liquidityUsd ?? 0) || null, kind: prev?.kind ?? kind });
   };
-  const gecko = by("geckoterminal")?.raw as { pools?: { id: string; liquidityUsd: number; dexId?: string | null }[] } | undefined;
+  const gecko = by("geckoterminal")?.raw as { pools?: { id: string; liquidityUsd: number | null; dexId?: string | null }[] } | undefined;
   const ds = by("dexscreener")?.raw as { pairs?: { pairAddress: string; liquidity?: { usd?: number }; labels?: string[] }[] } | undefined;
   const gp = by("goplus")?.raw as { dex?: { pair: string; liquidity_type?: string; liquidity?: string }[] } | undefined;
   const kindOf = (s: string | undefined | null): EvmPool["kind"] => (s ? (/v4/i.test(s) ? "v4" : /v3/i.test(s) ? "v3" : /v2/i.test(s) ? "v2" : null) : null);
@@ -382,7 +394,18 @@ export async function collect(
       .sort((a, b) => Date.parse(a) - Date.parse(b))[0];
     results[feedAt] = rejectLateObservation(results[feedAt], created ?? null);
   }
-  if (chain === "base" || chain === "monad") await evmPostSteps(chain, address, results, deadline);
+  // A graduated pump.fun token: a source that indexes only the dead curve pool supplies no market fields.
+  if (chain === "solana" && (results.find((r) => r.status.id === "solana-rpc")?.raw as { complete?: boolean } | undefined)?.complete === true) {
+    for (let i = 0; i < results.length; i++) results[i] = dropGraduatedCurveMarket(results[i]);
+  }
+  // An indexer that sees only dust side-pools (the real market is another indexer's pool or a launchpad curve) supplies no market fields.
+  {
+    const nf = results.find((r) => r.status.id === "nadfun");
+    const nfCurve = /CURVE/.test((nf?.raw as { marketType?: string | null } | undefined)?.marketType ?? "");
+    const dusted = dropDustOnlyMarkets(results, nfCurve ? { label: "nad.fun", volume24hUsd: nf!.data.volume24hUsd ?? null } : null);
+    for (let i = 0; i < results.length; i++) results[i] = dusted[i];
+  }
+  if (isEvmChain(chain) && chain !== "robinhood") await evmPostSteps(chain, address, results, deadline);
   if (chain === "robinhood") {
     await within(classifySwapHolders(results), Math.min(15_000, remaining(deadline)), "holder classification").catch(() => undefined);
     const createdAt = results.find((r) => r.status.id === "rpc")?.data.createdAt ?? results.find((r) => r.status.id === "hoodscan")?.data.createdAt ?? null;
@@ -406,7 +429,7 @@ export async function collect(
     slicesOf(results),
   );
   // LP lock is a young-token check (guide p.16-18), as on Robinhood Chain: < 14 days only.
-  if ((chain === "base" || chain === "monad") && merged.lpLockedPct != null) {
+  if (isEvmChain(chain) && chain !== "robinhood" && merged.lpLockedPct != null) {
     const age = merged.ageHours ?? (merged.createdAt ? (Date.now() - Date.parse(merged.createdAt)) / 3_600_000 : null);
     if (age == null || age >= 336) {
       merged.lpLockedPct = null;
@@ -419,13 +442,7 @@ export async function collect(
     });
 
   // Liquidity + mcap history: one observation per analysis; deltas appear from the second one.
-  if (merged.liquidityTotalUsd != null) {
-    const points = await recordLiquidity(chain, address, merged.liquidityTotalUsd, Date.now(), merged.fdvUsd);
-    Object.assign(merged, historyMetrics(points));
-  } else {
-    const reason = "no pool liquidity reported by GeckoTerminal or DexScreener";
-    merged.nullReasons = { ...merged.nullReasons, liqChange24hPct: reason, liqChange7dPct: reason };
-  }
+  await liquidityHistoryStep(chain, address, merged);
   const raw: Record<string, unknown> = {};
   for (const r of results) if (r.raw !== undefined) raw[r.status.id] = r.raw;
   const sources = results.map((r) => (flags[r.status.id] ? { ...r.status, flags: flags[r.status.id] } : r.status));
@@ -433,7 +450,81 @@ export async function collect(
   const zeroed = applyZeroActivity(deriveMetrics(merged), sources);
   const snapshot = zeroed.zeroActivity.length ? { ...zeroed, launchBuyers: zeroed.uniqueBuyers ?? zeroed.buyers24h, deadLaunch: deadLaunchOf(zeroed) } : zeroed;
   await holderClassification(chain, address, snapshot, results, deadline);
+  await holderStrengthStep(chain, address, snapshot, results, deadline);
   return { snapshot, sources, raw };
+}
+
+/**
+ * Liquidity + mcap history: one observation per analysis; deltas appear from the second one. Only a live, complete
+ * total is recorded (H11): a stale fill or an unknown total leaves the changes null with the reason.
+ */
+export async function liquidityHistoryStep(chain: Chain, address: string, merged: TokenSnapshot, now = Date.now()): Promise<void> {
+  const liqStaleMin = merged.staleFields?.liquidityTotalUsd;
+  if (merged.liquidityTotalUsd != null && liqStaleMin != null) {
+    // H11: a stale fill is the last good snapshot's figure, not an observation at this moment. Recording it with
+    // t = now would fake a flat (or moved) history; the change is not computed from it either.
+    const reason = `liquidity this run is stale (last good snapshot, ${liqStaleMin}m old) — not recorded into the history, change not computed`;
+    merged.nullReasons = { ...merged.nullReasons, liqChange24hPct: reason, liqChange7dPct: reason };
+  } else if (merged.liquidityTotalUsd != null) {
+    // Only a complete live total reaches here: a pool without a liquidity figure leaves liquidityTotalUsd null (C1).
+    const points = await recordLiquidity(chain, address, merged.liquidityTotalUsd, now, merged.fdvUsd);
+    const { nullReasons: why, ...hist } = historyMetrics(points, merged.ageHours ?? null);
+    Object.assign(merged, hist);
+    merged.nullReasons = { ...merged.nullReasons, ...why };
+  } else {
+    const reason = merged.nullReasons.liquidityTotalUsd
+      ? `total pool liquidity unknown (${merged.nullReasons.liquidityTotalUsd})`
+      : "no pool liquidity reported by GeckoTerminal or DexScreener";
+    merged.nullReasons = { ...merged.nullReasons, liqChange24hPct: reason, liqChange7dPct: reason };
+  }
+}
+
+/**
+ * "Vesting diamond": the top holder is a vesting wallet and Holder Strength ≥ 80. Unknown Holder Strength leaves it
+ * unknown (null with the reason), never a measured false (M13).
+ */
+export function vestingDiamondOf(topClass: string | null, score: number | null | undefined, why?: string | null): { value: boolean | null; reason: string | null } {
+  if (topClass == null) return { value: null, reason: null };
+  if (topClass !== "vesting") return { value: false, reason: null };
+  if (score == null) return { value: null, reason: `top holder is a vesting wallet, but Holder Strength is unknown (${why ?? "not enough holder history"})` };
+  return { value: score >= 80, reason: null };
+}
+
+/** Holder Strength (Established mode only — a Launch-mode token is too young to measure). */
+async function holderStrengthStep(chain: Chain, address: string, snapshot: TokenSnapshot, results: AdapterResult[], deadline: Deadline): Promise<void> {
+  const reason = (why: string) => {
+    snapshot.nullReasons = { ...snapshot.nullReasons, holderStrength: why };
+  };
+  if (modeFor(snapshot.ageHours, defaultConfig) !== "established") return reason("token is younger than 72h — too young to measure (Launch mode: information only)");
+  // Only the request budget that is really left (collect's deadline + the room after it, as for the classification);
+  // with too little, the ledgers are read after the response and the factor waits for the next analysis.
+  const ms = Math.min(holderStrengthBudgetMs(), remaining(deadline) + requestRoomMs() - 1_000);
+  if (ms < HOLDER_STRENGTH_MIN_MS) {
+    snapshot.holderStrengthPending = true;
+    reason("holder histories are read in the background (no request time left) — shown from the next analysis");
+    try {
+      after(() => holderStrength(chain, address, snapshot, results, Date.now() + 35_000).then(() => undefined, () => undefined));
+    } catch {
+      // Outside a request (scripts): nothing to schedule.
+    }
+    return;
+  }
+  try {
+    const hs = await within(holderStrength(chain, address, snapshot, results, Date.now() + ms), ms + 1_000, "holder strength");
+    snapshot.holderStrengthDetail = hs;
+    snapshot.holderStrength = hs.score;
+    snapshot.holderStrengthLabel = hs.label;
+    if (hs.score == null) reason(hs.nullReason ?? "not enough holder history");
+    snapshot.holderStrengthPending = hs.score == null && hs.pending === true;
+    const top = snapshot.holderClasses.find((h) => h.pct != null);
+    // M13: unknown Holder Strength leaves "vesting diamond" unknown (null), not a measured false.
+    const vd = vestingDiamondOf(top?.class ?? null, hs.score, hs.nullReason);
+    snapshot.vestingDiamond = vd.value;
+    if (vd.reason) snapshot.nullReasons = { ...snapshot.nullReasons, vestingDiamond: vd.reason };
+  } catch (err) {
+    snapshot.holderStrengthPending = err instanceof BudgetError;
+    reason(err instanceof BudgetError ? `holder histories took longer than ${Math.round(ms / 1000)}s — they continue in the background` : `holder strength failed: ${(err as Error).message.slice(0, 80)}`);
+  }
 }
 
 /** Top-holder classes → holder math and the founder fields. Runs on a copy; applied only when it finishes in time. */
@@ -443,7 +534,7 @@ async function holderClassification(chain: Chain, address: string, snapshot: Tok
   const work: TokenSnapshot = { ...snapshot };
   try {
     await within(classifyTopHolders(chain, address, work, results, Date.now() + ms), ms, "top-holder classification");
-    const keys = ["holders", "liquidityHolders", "holderClasses", "largestHolder", "founderNeverSold", "founderSold", "founderHoldDays", "top1SharePct", "top10SharePct", "liquidityHeldPct", "nullReasons", "provenance"] as const;
+    const keys = ["holders", "liquidityHolders", "holderClasses", "largestHolder", "founderNeverSold", "founderSold", "founderHoldDays", "teamNeverSold", "teamSold", "teamHoldDays", "top1SharePct", "top10SharePct", "liquidityHeldPct", "nullReasons", "provenance"] as const;
     for (const k of keys) (snapshot as unknown as Record<string, unknown>)[k] = work[k];
   } catch (err) {
     const why = err instanceof BudgetError ? `top-holder classification timed out (${Math.round(Math.max(0, ms) / 1000)}s)` : `top-holder classification failed: ${(err as Error).message.slice(0, 80)}`;
@@ -483,7 +574,9 @@ export async function analyzeAddress(input: string, opts: AnalyzeOptions = {}): 
   snapshot.tmRugSimilarity = inputs.rug;
   if (inputs.reason) snapshot.nullReasons = { ...snapshot.nullReasons, tmWinnerSimilarity: inputs.reason, tmRugSimilarity: inputs.reason };
   // A factor lost to an outage never moves the tier across a band: the last complete run's tier is held (lib/hold.ts).
-  const report: ScoreReport = { ...(await holdTier(scoreSnapshot(snapshot, sources), snapshot, sources)), raw, timeMachine: tm, eligibility: meme, ...(social ? { social } : {}) };
+  // Near a band line the previous analysis's tier is kept (hysteresis, factors.json → hysteresis).
+  const previous = await previousTier(chain, address).catch(() => null);
+  const report: ScoreReport = { ...(await holdTier(scoreSnapshot(snapshot, sources, undefined, { previous }), snapshot, sources)), raw, timeMachine: tm, eligibility: meme, ...(social ? { social } : {}) };
   // score_history keeps the tier with the social stage / size / quality beside it (social §6).
   await appendScore(report).catch(() => undefined);
   return report;
@@ -519,7 +612,7 @@ const TM_REQUEST_BUDGET_MS = Number(process.env.TM_REQUEST_BUDGET_MS || 3_000);
 
 async function timeMachineWithin(chain: Chain, address: string, ageHours: number | null): Promise<TimeMachineResult> {
   // The archetype library and the reconstructions cover Solana and Robinhood Chain only.
-  if (chain === "base" || chain === "monad") return unavailable(`no ${chain === "base" ? "Base" : "Monad"} archetypes in the library yet, and no ${chain === "base" ? "Base" : "Monad"} history reconstruction (public RPCs cap eth_getLogs windows)`);
+  if (isEvmChain(chain) && chain !== "robinhood") return unavailable(`no ${CHAIN_LABEL[chain]} archetypes in the library yet, and no ${CHAIN_LABEL[chain]} history reconstruction (public RPCs cap eth_getLogs windows)`);
   const run = timeMachine(chain, address, ageHours).catch((err: Error) => unavailable(`Time Machine failed: ${err.message.slice(0, 120)}`));
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>((r) => (timer = setTimeout(() => r(null), TM_REQUEST_BUDGET_MS)));
@@ -547,7 +640,7 @@ export class NotAMemeError extends Error {
 
 export class InvalidAddressError extends Error {
   constructor(input: string) {
-    super(`${NOT_A_CA} — "${input.slice(0, 60)}" is not a Robinhood Chain / Base / Monad (0x + 40 hex) or Solana (base58, 32–44 chars) address.`);
+    super(`${NOT_A_CA} — "${input.slice(0, 60)}" is not a Robinhood Chain / Base / Monad / Ethereum (0x + 40 hex) or Solana (base58, 32–44 chars) address.`);
   }
 }
 

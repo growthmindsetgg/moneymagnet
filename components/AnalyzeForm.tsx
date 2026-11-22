@@ -12,19 +12,19 @@ export default function AnalyzeForm({ initial = "", compact = false }: { initial
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [recent, setRecent] = useState<RecentItem[]>([]);
-  /** "auto" resolves an 0x address across Robinhood Chain, Base and Monad (§1a). */
+  /** "auto" resolves an 0x address across Robinhood Chain, Base, Monad and Ethereum (§1a). */
   const [pick, setPick] = useState<string>("auto");
 
   useEffect(() => setRecent(loadRecent()), []);
 
   const kind = addressKind(value);
-  const detected = kind === "solana" ? CHAIN_LABEL.solana : kind === "evm" ? (isEvmChain(pick) ? CHAIN_LABEL[pick] : "EVM (Robinhood Chain / Base / Monad — checked on each)") : null;
+  const detected = kind === "solana" ? CHAIN_LABEL.solana : kind === "evm" ? (isEvmChain(pick) ? CHAIN_LABEL[pick] : "EVM (Robinhood Chain / Base / Monad / Ethereum — checked on each)") : null;
 
   /** `chain`: a recent search's known chain; otherwise the selector decides (auto for 0x). */
   function go(address: string, chain?: string) {
     const k = addressKind(address);
     if (!k) {
-      setError("Enter an EVM (0x…, Robinhood Chain / Base / Monad) or Solana (base58) token address.");
+      setError("Enter an EVM (0x…, Robinhood Chain / Base / Monad / Ethereum) or Solana (base58) token address.");
       return;
     }
     setError(null);

@@ -121,6 +121,8 @@ const FIELD_SOURCES: Record<string, CallName[]> = {
   makersCount: ["evidence"],
   sells24h: ["get_token", "stats"],
   isLaunchpad: ["get_token"],
+  // The newest swap comes from the trades list or the stats endpoint's recent swaps (aged by its staleness on refill).
+  lastTradeHoursAgo: ["trades", "stats"],
 };
 
 export interface HoodscanOptions {

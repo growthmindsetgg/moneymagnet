@@ -109,7 +109,7 @@ export async function solanaCurve(mint: string): Promise<AdapterResult> {
   const t0 = Date.now();
   const curve = bondingCurveAddress(mint);
   const [mintRes, res] = await Promise.all([
-    rpcCall<RpcAccount<ParsedMint>>("getAccountInfo", [mint, { encoding: "jsonParsed" }]).catch(() => null),
+    rpcCall<RpcAccount<ParsedMint>>("getAccountInfo", [mint, { encoding: "jsonParsed" }]).catch((e: Error) => ({ error: { message: e.message.slice(0, 80) } }) as RpcAccount<ParsedMint>),
     rpcCall<RpcAccount<[string, string]>>("getAccountInfo", [curve, { encoding: "base64" }]),
   ]);
   if (res.error) throw new Error(res.error.message);
@@ -124,13 +124,18 @@ export async function solanaCurve(mint: string): Promise<AdapterResult> {
       }
     : {};
   const mintNote = info ? `mint authority ${info.mintAuthority ? "set" : "revoked"}, freeze ${info.freezeAuthority ? "set" : "revoked"}` : "mint account unreadable";
+  // A failed mint read (RPC error, or an account that is not a parsed mint) is partial, with the reason on each field.
+  const mintFailed = !info && tokenExists !== false;
+  const mintWhy = mintFailed ? `Solana RPC mint account read failed${mintRes?.error?.message ? `: ${mintRes.error.message}` : " (not a parsed mint account)"}` : null;
+  const mintReasons: Record<string, string> = mintWhy ? { mintAuthority: mintWhy, freezeAuthority: mintWhy, totalSupply: mintWhy } : {};
+  const rpcState = mintFailed ? ("partial" as const) : ("ok" as const);
 
   const acct = res.result?.value;
   if (!acct || acct.owner !== PUMP_PROGRAM) {
     const reason = "not a pump.fun token (no bonding curve account)";
     return {
-      status: { id: "solana-rpc", label: "Solana RPC", state: "ok", message: `${mintNote} · ${reason}`, ms: Date.now() - t0 },
-      data: { ...mintData, tokenExists, nullReasons: { curveProgressPct: reason, realSolReserves: reason } },
+      status: { id: "solana-rpc", label: "Solana RPC", state: rpcState, message: `${mintNote} · ${reason}`, ms: Date.now() - t0 },
+      data: { ...mintData, tokenExists, nullReasons: { ...mintReasons, curveProgressPct: reason, realSolReserves: reason } },
     };
   }
   const state = decodeCurve(Uint8Array.from(Buffer.from(acct.data[0], "base64")));
@@ -148,7 +153,7 @@ export async function solanaCurve(mint: string): Promise<AdapterResult> {
     status: {
       id: "solana-rpc",
       label: "Solana RPC",
-      state: "ok",
+      state: rpcState,
       message: `${mintNote} · ${state.complete ? "bonding curve complete (graduated)" : `bonding curve ${progress.toFixed(1)}% · ${(Number(state.realSolReserves) / LAMPORTS).toFixed(3)} SOL`}`,
       ms: Date.now() - t0,
     },
@@ -163,6 +168,7 @@ export async function solanaCurve(mint: string): Promise<AdapterResult> {
         : Number(((INITIAL_REAL_TOKEN_RESERVES - state.realTokenReserves) * 1_000_000n) / (state.tokenTotalSupply || 1n)) / 10_000,
       launchpad: "pump.fun",
       isLaunchpad: true,
+      ...(mintWhy ? { nullReasons: mintReasons } : {}),
       poolAddresses: curveAccounts(mint),
       links: [{ label: "pump.fun", url: `https://pump.fun/coin/${mint}` }],
     },

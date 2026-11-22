@@ -20,7 +20,7 @@ export default function Home() {
 
       <div className="mt-6 max-w-3xl sm:mt-8">
         <div className="mm-box p-4 text-sm sm:p-5" data-testid="explainer">
-          <p>Paste a contract address — the chain is detected for you (0x… is checked on Robinhood Chain, Base and Monad; base58 is Solana).</p>
+          <p>Paste a contract address — the chain is detected for you (0x… is checked on Robinhood Chain, Base, Monad and Ethereum; base58 is Solana).</p>
           <p>Get a tier from S to F, scored from holders, flow, liquidity and launch behaviour.</p>
           <p>Every factor&apos;s evidence sits under the score: value, points, source, and why.</p>
         </div>

@@ -1,15 +1,16 @@
 import robinhood from "@/data/robinhood-infra.json";
 import base from "@/data/base-infra.json";
 import monad from "@/data/monad-infra.json";
+import ethereum from "@/data/ethereum-infra.json";
 import type { EvmChain } from "../chain";
 import type { InfraEntry } from "./infra";
 
 /**
  * Per-chain infrastructure registries (data/<chain>-infra.json): routers, pool managers, quoters,
  * lockers, launchpad factories and bonding curves, each with how it was identified.
- * Robinhood Chain keeps its own helpers in ./infra (unchanged); Base and Monad use these.
+ * Robinhood Chain keeps its own helpers in ./infra (unchanged); Base, Monad and Ethereum use these.
  */
-const FILES: Record<EvmChain, { addresses: unknown[] }> = { robinhood, base, monad };
+const FILES: Record<EvmChain, { addresses: unknown[] }> = { robinhood, base, monad, ethereum };
 const maps: Partial<Record<EvmChain, Map<string, InfraEntry>>> = {};
 
 function registry(chain: EvmChain): Map<string, InfraEntry> {
@@ -17,6 +18,16 @@ function registry(chain: EvmChain): Map<string, InfraEntry> {
 }
 
 export const chainInfraEntry = (chain: EvmChain, address: string) => registry(chain).get(address.toLowerCase());
+
+/**
+ * Exchange wallets (data/<chain>-infra.json → cexWallets; Ethereum only so far): a label for holder rows, nothing
+ * more. They are not infrastructure: they stay counted in concentration; Holder Strength excludes CEX-labelled wallets.
+ */
+const cexMaps: Partial<Record<EvmChain, Map<string, string>>> = {};
+export function chainCexLabel(chain: EvmChain, address: string): string | undefined {
+  const list = ((FILES[chain] as { cexWallets?: { address: string; label: string }[] }).cexWallets ?? []);
+  return (cexMaps[chain] ??= new Map(list.map((e) => [e.address.toLowerCase(), e.label]))).get(address.toLowerCase());
+}
 export const chainInfraEntries = (chain: EvmChain) => [...registry(chain).values()];
 
 /** The first registered contract with this role whose label matches (e.g. quoter / /v4/i). */

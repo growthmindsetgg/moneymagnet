@@ -5,6 +5,7 @@ import { resolveEvmChain } from "@/lib/resolveChain";
 import { clientId, takeLiveSlot } from "@/lib/rateLimit";
 import { logError, newErrorId } from "@/lib/errorId";
 import type { Chain } from "@/lib/types";
+import { ageCachedReport, type CacheMarker } from "@/lib/normalizeReport";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,10 +29,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing \"address\"" }, { status: 400 });
   }
   if (chainIn != null && chainIn !== "auto" && !isEvmChain(String(chainIn)) && chainIn !== "solana") {
-    return NextResponse.json({ error: `Unknown "chain": use robinhood, base, monad, solana or auto` }, { status: 400 });
+    return NextResponse.json({ error: `Unknown "chain": use robinhood, base, monad, ethereum, solana or auto` }, { status: 400 });
   }
   let chain: Chain | undefined = isEvmChain(String(chainIn)) ? (chainIn as Chain) : undefined;
-  // §1a: an 0x address without a chain is resolved across Robinhood Chain, Base and Monad first.
+  // §1a: an 0x address without a chain is resolved across Robinhood Chain, Base, Monad and Ethereum first.
   if (!chain && addressKind(address) === "evm") {
     const res = await resolveEvmChain(address.trim().toLowerCase()).catch(() => null);
     if (res && res.candidates.length > 1) {
@@ -56,7 +57,15 @@ export async function POST(req: Request) {
       simulate: simulate === "hoodscan-down" ? "hoodscan-down" : undefined,
       simulateToken: req.headers.get("x-hoodtier-simulate-token"),
     });
-    return NextResponse.json(report, { headers: { "cache-control": CACHE_HEADER, "x-hoodtier-cache": cached ? "hit" : "miss" } });
+    // A token the collected data shows is not a meme (e.g. a Robinhood stock token missing from HoodScan's
+    // roster, caught by its "• Robinhood Token" name) is refused like a known one: 422, never a tier.
+    if (report.eligibility && !report.eligibility.meme) {
+      const rejected = report.eligibility.rejected ?? "not a memecoin";
+      return NextResponse.json({ rejected, reason: report.eligibility.reason, error: rejected, meme: false }, { status: 422, headers: { "x-hoodtier-cache": cached ? "hit" : "miss" } });
+    }
+    // The body says whether it was served from the cache and how old it is; stale ages count from the fetch.
+    const body = cached ? (() => { const a = ageCachedReport(report); return { ...a.report, cache: a.cache }; })() : { ...report, cache: { cached: false, generatedAt: report.generatedAt, ageSeconds: 0 } satisfies CacheMarker };
+    return NextResponse.json(body, { headers: { "cache-control": CACHE_HEADER, "x-hoodtier-cache": cached ? "hit" : "miss" } });
   } catch (err) {
     if (err instanceof InvalidAddressError) return NextResponse.json({ error: err.message, rejected: "paste a contract address" }, { status: 400 });
     if (err instanceof NotAMemeError) return NextResponse.json({ rejected: err.message, reason: err.reason, error: err.message, meme: false }, { status: 422 });

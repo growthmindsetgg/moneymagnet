@@ -1,0 +1,47 @@
+{
+ "note": "Ethereum (1) fixtures picked 2026-11-20 ~08:00Z from DexScreener /latest/dex/tokens and GeckoTerminal /networks/eth/new_pools; snapshots recorded 08:54Z with scripts/record-v3-fixtures.ts (no ETHERSCAN_API_KEY, so createdAt = oldest DEX pool). Values are as read at pick time.",
+ "pickedAt": "2026-11-20T08:00:00Z",
+ "fixtures": [
+  {
+   "name": "ethereum-pepe",
+   "kind": "established-meme",
+   "ca": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+   "symbol": "PEPE",
+   "why": "Largest Ethereum meme: 19 DexScreener pairs across Uniswap v2 / v3 / v4 (every simulation path). Owner renounced, not mintable, not a proxy (GoPlus + RPC). Its top holder is Binance 8 (11.9%, no GoPlus tag): exercises the CEX label and the > $1B no-blue-chip decision.",
+   "fdvUsd": 1574592870,
+   "liquidityUsd": 26306711,
+   "holders": 578855,
+   "holdersSource": "GoPlus holder_count",
+   "recorded": { "tier": "B", "score": 64.6, "rawScore": 61.6, "coveragePct": 87, "note": "GeckoTerminal was served stale (last good snapshot) at record time" }
+  },
+  {
+   "name": "ethereum-mog",
+   "kind": "established-meme",
+   "ca": "0xaaee1a9723aadb7afa2810263653a34ba2c21c7a",
+   "symbol": "Mog",
+   "why": "Mid-cap Ethereum meme: one Uniswap v2 WETH pair holds all of the $3.9M liquidity (liq/FDV 12.5%). A 2,513-byte unclassified contract holds 29% ⇒ the top-holder > 20% cap binds (C).",
+   "fdvUsd": 31443543,
+   "liquidityUsd": 3945087,
+   "holders": 59346,
+   "holdersSource": "GoPlus holder_count",
+   "recorded": { "tier": "C", "score": 54.9, "rawScore": 65.9, "coveragePct": 87 }
+  },
+  {
+   "name": "ethereum-pipi",
+   "kind": "launch",
+   "ca": "0x7bcefbb4ea938f71e4352057d9bf6cb2122d47b9",
+   "symbol": "PIPI",
+   "why": "≈ 3 h old native-ETH Uniswap v4 launch (currency0 = 0x0, no hook, fee 0): the case the old v4 pool-key check skipped. The deployer holds the unlocked LP NFT (GoPlus lp_holders ⇒ lpLockedPct 0 ⇒ lp_unlocked_unproven, cap D). GoPlus lists a stale 100% row (162.9% of supply in total) ⇒ concentration null with the reason.",
+   "fdvUsd": 294844,
+   "liquidityUsd": 45074,
+   "recorded": { "tier": "D", "score": 39.9, "rawScore": 82.9, "coveragePct": 70 }
+  }
+ ],
+ "notRecorded": [
+  {
+   "ca": "0xab2f962e344000780f1af89708e73e6197e0088d",
+   "symbol": "RUGGED",
+   "why": "< 24 h v4 launch whose pool was drained: live run gave F (liquidity_pulled gate from our sim, dead_launch). Not kept as a fixture: GoPlus had no record, so most factors are null; the Base / Monad rug fixtures already cover liquidity_pulled."
+  }
+ ]
+}

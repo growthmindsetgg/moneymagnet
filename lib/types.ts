@@ -1,4 +1,6 @@
-export type Chain = "robinhood" | "solana" | "base" | "monad";
+import type { HolderStrength } from "./holderStrength";
+
+export type Chain = "robinhood" | "solana" | "base" | "monad" | "ethereum";
 
 export type SourceState = "ok" | "partial" | "stale" | "failed" | "skipped";
 
@@ -78,6 +80,10 @@ export interface TokenSnapshot {
   /** Human-readable span the 24h/7d change was measured over, e.g. "24h" or "3.2h of history". */
   liqChange24hWindow: string | null;
   liqChange7dWindow: string | null;
+  /** Price change over 24h on the main pair (DexScreener / GeckoTerminal); for a younger pair, since it opened. */
+  priceChange24hPct: number | null;
+  /** What span priceChange24hPct covers: "24h", or "since launch (Xh)" for a pair younger than 24h. */
+  priceChangeWindow: string | null;
   /** Number of stored liquidity observations for this token. */
   liqHistoryPoints: number | null;
   /** Sum of reserves across every known pool — the series stored for liquidity history. */
@@ -93,6 +99,10 @@ export interface TokenSnapshot {
   // Holder conviction
   holderCount: number | null;
   top10SharePct: number | null;
+  /** Derived from holder balances: supply held by the largest group of ≥ 5 top-20 wallets whose balances sit within 10% of each other (one holder split into equal parts). 0 when no such group. */
+  equalSplitPct: number | null;
+  /** Wallets in that group. */
+  equalSplitCount: number | null;
   top1SharePct: number | null;
   accumulatorCount: number | null;
   accumulatorSupplyPct: number | null;
@@ -124,6 +134,22 @@ export interface TokenSnapshot {
   founderSold: boolean | null;
   /** Days the founder wallet has held (since its first receipt, else token age). */
   founderHoldDays: number | null;
+  /** Largest holder is a team wallet (funded by the deployer), the token is ≥ 30 days old and that wallet never swap-sold nor sent to a pool/router (whole history). */
+  teamNeverSold: boolean | null;
+  /** Largest holder is a team wallet and it has sold (a swap, or a transfer into a pool/router). */
+  teamSold: boolean | null;
+  /** Days the team wallet has held (since its first token receipt). */
+  teamHoldDays: number | null;
+  /** Holder Strength 0–100 of the top-20 non-LP holders (Established mode; null with the reason). */
+  holderStrength: number | null;
+  /** Diamond ≥ 80 · Strong 60–79 · Mixed 40–59 · Weak 20–39 · Paper < 20. */
+  holderStrengthLabel: string | null;
+  /** Components, the three biggest contributors as sentences, key-person holders. */
+  holderStrengthDetail: HolderStrength | null;
+  /** The largest classified top-5 holder is a vesting / locked contract and Holder Strength ≥ 80 (softens the top-holder caps one tier). */
+  vestingDiamond: boolean | null;
+  /** Holder histories are still being read (resumed on the next analysis / in the background): the factor is not counted yet. */
+  holderStrengthPending: boolean | null;
   /** Metric name → age in minutes, for values served from the last good snapshot. */
   staleFields: Record<string, number>;
 
@@ -155,6 +181,8 @@ export interface TokenSnapshot {
   deadLaunch: boolean | null;
   /** Hours since the newest trade (HoodScan swaps exactly; DexScreener 6h/24h tx counts as a lower bound). */
   lastTradeHoursAgo: number | null;
+  /** Upper bound from DexScreener counts: the shortest window (1 / 6 / 24h) with at least one trade on the token's pairs. */
+  lastTradeWithinHours: number | null;
   /** Buyer count quoted by the dead-launch evidence (lifetime unique buyers, else 24h buyers). */
   launchBuyers: number | null;
   /** Set when a source answered and activity is genuinely zero: what each source reported. */
@@ -242,6 +270,26 @@ export interface TokenSnapshot {
   links: { label: string; url: string }[];
 }
 
+/** The previous analysis, as hysteresis reads it. */
+export interface PreviousTier {
+  tier: Tier;
+  at: string;
+  mode: "launch" | "established";
+  /** What placed that tier; only "score" / "hysteresis" (the bands) qualify for hysteresis. */
+  bindingKind?: string;
+}
+
+export interface TierHysteresis {
+  /** The tier this score alone maps to. */
+  liveTier: Tier;
+  /** The band line the score sits near, and the margin. */
+  line: number;
+  margin: number;
+  /** The previous analysis that set the held tier. */
+  since: string;
+  minutesAgo: number;
+}
+
 export interface HolderRow {
   address: string;
   qty: number | null;
@@ -253,7 +301,7 @@ export interface HolderRow {
   kind?: "wallet" | "liquidity";
 }
 
-export type HolderClass = "wallet" | "founder" | "treasury" | "vesting" | "locker" | "staking" | "contract";
+export type HolderClass = "wallet" | "founder" | "team" | "treasury" | "vesting" | "locker" | "staking" | "pool" | "contract";
 
 export interface HolderClassRow {
   address: string;
@@ -261,7 +309,7 @@ export interface HolderClassRow {
   class: HolderClass;
   /** e.g. "founder wallet (deployer)", "vesting contract (Hedgey)", "treasury (multisig, Safe 2/3)". */
   label: string;
-  /** Counted in the top-holder / top-10 rules (wallets, founder, treasury) or excluded (vesting, lockers, staking, unclassified contracts). */
+  /** Counted in the top-holder / top-10 rules (wallets, founder, team, treasury, unclassified contracts) or excluded (vesting, lockers, staking, proven pools). */
   counted: boolean;
   /** Short facts for the page line: "0 sells in 116d", "unlocks 2027-03". */
   detail: string | null;
@@ -269,6 +317,8 @@ export interface HolderClassRow {
   unlocksAt: string | null;
   /** How the class was decided (code, signature match, calls made). */
   evidence: string;
+  /** Team wallet: the tx in which the deployer funded it (tokens by transfer, or its first native coin). */
+  fundingTx?: string | null;
 }
 
 export interface FakeSignal {
@@ -396,7 +446,9 @@ export interface ScoreReport {
   verdict: string;
   tierReason: string;
   /** The single binding constraint behind the tier (gate, cap, coverage, requirement or plain score). */
-  binding?: { kind: "coverage" | "gate" | "too-early" | "cap" | "requirement" | "score" | "held"; text: string };
+  binding?: { kind: "coverage" | "gate" | "too-early" | "cap" | "requirement" | "score" | "held" | "hysteresis"; text: string };
+  /** Set when hysteresis kept the previous analysis's tier (the score sits within the margin of a band line). */
+  hysteresis?: TierHysteresis;
   /** Set when the tier is held from the last complete run because a source is down (lib/hold.ts). */
   hold?: import("./hold").TierHold;
   penalties: PenaltyResult[];

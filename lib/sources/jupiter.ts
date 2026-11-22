@@ -44,10 +44,12 @@ export async function jupiter(mint: string): Promise<AdapterResult> {
   const sell = await quote(mint, SOL, BigInt(buy.outAmount));
   const via = (q: JupQuote) => [...new Set((q.routePlan ?? []).map((r) => r.swapInfo?.label).filter(Boolean))].join(" → ") || "?";
   if (!sell.outAmount || sell.outAmount === "0") {
-    // Buyable but no route back: Jupiter cannot sell what it just bought.
+    // Buyable but no route back: Jupiter cannot sell what it just bought. No sell was measured, so the
+    // round-trip loss stays null (not 100%); the boolean carries the finding.
+    const why = `no sell route back on Jupiter (${sell.error ?? "zero output"}) — no round trip measured`;
     return {
       status: status("ok", `buy routes via ${via(buy)}, but no sell route back (${sell.error ?? "zero output"})`),
-      data: { sellable: false, roundTripLossPct: 100 },
+      data: { sellable: false, nullReasons: { roundTripLossPct: why } },
       raw: { buy, sell },
     };
   }

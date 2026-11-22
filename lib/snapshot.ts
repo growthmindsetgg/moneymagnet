@@ -1,5 +1,6 @@
 import type { Chain, SourceStatus, TokenSnapshot } from "./types";
 import { defaultConfig } from "./scoring/config";
+import { formatAge } from "./scoring/format";
 
 export function emptySnapshot(chain: Chain, address: string): TokenSnapshot {
   return {
@@ -23,6 +24,8 @@ export function emptySnapshot(chain: Chain, address: string): TokenSnapshot {
     liqChange7dPct: null,
     liqChange24hWindow: null,
     liqChange7dWindow: null,
+    priceChange24hPct: null,
+    priceChangeWindow: null,
     liqHistoryPoints: null,
     liquidityTotalUsd: null,
     poolAddresses: [],
@@ -32,6 +35,8 @@ export function emptySnapshot(chain: Chain, address: string): TokenSnapshot {
     totalSupply: null,
     holderCount: null,
     top10SharePct: null,
+    equalSplitPct: null,
+    equalSplitCount: null,
     top1SharePct: null,
     accumulatorCount: null,
     accumulatorSupplyPct: null,
@@ -45,6 +50,14 @@ export function emptySnapshot(chain: Chain, address: string): TokenSnapshot {
     founderNeverSold: null,
     founderSold: null,
     founderHoldDays: null,
+    teamNeverSold: null,
+    teamSold: null,
+    teamHoldDays: null,
+    holderStrength: null,
+    holderStrengthLabel: null,
+    holderStrengthDetail: null,
+    vestingDiamond: null,
+    holderStrengthPending: null,
     deployerSoldPct: null,
     deployerHasSold: null,
     deployerDistributedPct: null,
@@ -76,6 +89,7 @@ export function emptySnapshot(chain: Chain, address: string): TokenSnapshot {
     deadCurve: null,
     deadLaunch: null,
     lastTradeHoursAgo: null,
+    lastTradeWithinHours: null,
     launchBuyers: null,
     zeroActivity: [],
     roundTripLossPct: null,
@@ -152,24 +166,35 @@ export function mergeSnapshots(base: TokenSnapshot, slices: Partial<TokenSnapsho
   const out: TokenSnapshot = { ...base, fakeSignals: [...base.fakeSignals], links: [...base.links], patterns: [...base.patterns] };
   const rec = out as unknown as Record<string, unknown>;
   for (const slice of slices) {
+    // Fields whose value this slice supplied to the merged snapshot: only their stale ages may be copied.
+    const won = new Set<string>();
     for (const [k, v] of Object.entries(slice)) {
       if (v === null || v === undefined) continue;
       if (k === "fakeSignals" || k === "links" || k === "patterns") {
         (rec[k] as unknown[]).push(...(v as unknown[]));
       } else if (k === "holders" || k === "swapHolders" || k === "liquidityHolders") {
-        if (!(rec[k] as unknown[]).length && (v as unknown[]).length) rec[k] = v;
+        if (!(rec[k] as unknown[]).length && (v as unknown[]).length) {
+          rec[k] = v;
+          won.add(k);
+        }
       } else if (k === "poolAddresses") {
         out.poolAddresses = [...new Set([...out.poolAddresses, ...(v as string[]).map((x) => x.toLowerCase())])];
-      } else if (k === "nullReasons") {
-        // The first adapter to explain a null wins; a live value elsewhere makes the reason moot.
-        out.nullReasons = { ...(v as Record<string, string>), ...out.nullReasons };
-      } else if (k === "staleFields") {
-        out.staleFields = { ...out.staleFields, ...(v as Record<string, number>) };
+        won.add(k);
+      } else if (k === "nullReasons" || k === "staleFields") {
+        continue;
       } else if (k === "chain" || k === "address" || k === "provenance") {
         continue;
       } else if (rec[k] === null || rec[k] === undefined) {
         rec[k] = v;
+        won.add(k);
       }
+    }
+    // The first adapter to explain a null wins; a live value elsewhere makes the reason moot.
+    if (slice.nullReasons) out.nullReasons = { ...slice.nullReasons, ...out.nullReasons };
+    // A stale age describes this slice's value: when that value lost the merge, the winning value is not stale.
+    if (slice.staleFields) {
+      const ages = Object.fromEntries(Object.entries(slice.staleFields).filter(([k]) => won.has(k)));
+      out.staleFields = { ...out.staleFields, ...ages };
     }
   }
   return out;
@@ -198,10 +223,14 @@ export function deriveMetrics(s: TokenSnapshot): TokenSnapshot {
     if (d.sellers24h == null) d.sellers24h = d.sellTxs24h;
     d.buyersBasis = "tx counts, not unique wallets (DexScreener)";
   }
-  // The feed's "dev has not sold" is a measurement: 0% sold (Helius' exact share wins when present).
-  if (d.chain === "solana" && d.deployerSoldPct == null && d.deployerHasSold === false) d.deployerSoldPct = 0;
-  // A Solana token younger than 24h: GeckoTerminal's 24h unique buyers cover its whole life.
-  if (d.uniqueBuyers == null && d.chain === "solana" && d.ageHours != null && d.ageHours < 24 && d.buyers24h != null) {
+  // The feed's "dev has not sold" covers only its launch observation window, not the token's life: it is never
+  // turned into a lifetime 0% sold (Helius' exact share is the measurement).
+  if (d.chain === "solana" && d.deployerSoldPct == null && d.deployerHasSold === false && !d.nullReasons.deployerSoldPct) {
+    d.nullReasons = { ...d.nullReasons, deployerSoldPct: `only the launch observation says the dev had not sold${d.feedWindow ? ` (${d.feedWindow})` : ""} — not a lifetime share` };
+  }
+  // A Solana token younger than 24h: GeckoTerminal's 24h unique buyers cover its whole life. DexScreener tx
+  // counts are not unique wallets (tx counts ≥ wallets), so they never stand in for unique buyers.
+  if (d.uniqueBuyers == null && d.chain === "solana" && d.ageHours != null && d.ageHours < 24 && d.buyers24h != null && d.buyersBasis === "unique wallets") {
     d.uniqueBuyers = d.buyers24h;
   }
   // Below 10 buyers, snipe ratio and dev-buy share are ~100% by construction — not a measurement.
@@ -255,6 +284,12 @@ export function deriveMetrics(s: TokenSnapshot): TokenSnapshot {
       d.top10SharePct = wallets.slice(0, 10).reduce((a, h) => a + (h.pct ?? 0), 0);
       inherit("top10SharePct", ["holders"]);
     }
+    if (d.equalSplitPct == null) {
+      const g = equalSplit(wallets);
+      d.equalSplitPct = g.pct;
+      d.equalSplitCount = g.count;
+      inherit("equalSplitPct", ["holders"]);
+    }
     if (d.top1SharePct == null && rows.length) {
       // No wallet holds anything (only pools / curves do): the top wallet's share is genuinely 0%.
       d.top1SharePct = wallets[0]?.pct ?? 0;
@@ -299,7 +334,7 @@ export function deriveMetrics(s: TokenSnapshot): TokenSnapshot {
     d.sellers24h != null
   ) {
     d.allBuyersExited = d.buyers24h >= 5 && d.sellers24h > 0;
-    if (d.uniqueBuyers == null) d.uniqueBuyers = d.buyers24h;
+    if (d.uniqueBuyers == null && d.buyersBasis === "unique wallets") d.uniqueBuyers = d.buyers24h;
   }
 
   // Guide p.27: makers vs holders.
@@ -328,7 +363,22 @@ export function deriveMetrics(s: TokenSnapshot): TokenSnapshot {
   }
   if (d.deadCurve == null && d.chain === "robinhood") d.deadCurve = false; // no bonding curve on Robinhood Chain
   d.launchBuyers = d.uniqueBuyers ?? d.buyers24h;
+  // A stalled trade index (HoodScan's swap list once trailed the chain by 17h while DexScreener counted trades in the
+  // last hour) must not read as "no trades": when DexScreener counts a trade inside a shorter window, the index's
+  // last-trade age is contradicted and becomes null with both readings stated.
+  if (d.lastTradeHoursAgo != null && d.lastTradeWithinHours != null && d.lastTradeHoursAgo > d.lastTradeWithinHours) {
+    d.nullReasons = {
+      ...d.nullReasons,
+      lastTradeHoursAgo: `contradicted: the trade index's newest swap is ${formatAge(d.lastTradeHoursAgo)} old, but DexScreener counts trades in the last ${d.lastTradeWithinHours}h — the index is behind`,
+    };
+    d.lastTradeHoursAgo = null;
+  }
   d.deadLaunch = deadLaunchOf(d);
+
+  // The 24h price change covers the pair's whole life when it is younger than 24h: say so on the evidence line.
+  if (d.priceChange24hPct != null && d.priceChangeWindow == null) {
+    d.priceChangeWindow = d.ageHours == null ? "24h (since launch if the pair is younger)" : d.ageHours < 24 ? `since launch (${formatAge(d.ageHours)})` : "24h";
+  }
 
   if (d.flowConsistent == null && d.netFlowRatio24h != null && d.netFlowRatio7d != null) {
     d.flowConsistent = d.netFlowRatio24h >= -0.05 && d.netFlowRatio7d >= -0.05;
@@ -354,13 +404,20 @@ export function deriveMetrics(s: TokenSnapshot): TokenSnapshot {
     if (vl >= 8 && (rep >= 20 || bun >= 20)) {
       triggers.push(`high turnover (${vl.toFixed(1)}× liquidity) with repeated sizes/bundles`);
     }
-    const anyInput = d.volMcRatio != null || d.volLiqRatio != null || d.repeatedSizeSharePct != null || d.bundleSharePct != null;
+    // "No wash" claims turnover and swap patterns are normal: it needs volume/liquidity, plus at least one
+    // swap-pattern input (repeated sizes or same-block bundles) on Robinhood Chain, where HoodScan supplies them.
+    // Elsewhere no source reads swap patterns, so turnover is the whole heuristic. Missing inputs are never read as 0.
+    const swapPattern = d.repeatedSizeSharePct != null || d.bundleSharePct != null;
+    const canClear = d.volLiqRatio != null && (swapPattern || d.chain !== "robinhood");
     if (triggers.length) {
       d.washFlag = true;
       for (const t of triggers) d.fakeSignals.push({ kind: "wash", level: "danger", text: t, source: "HoodTier heuristic" });
-    } else if (d.washFlag == null && anyInput) {
+    } else if (d.washFlag == null && canClear) {
       d.washFlag = false;
       inherit("washFlag", ["volLiqRatio", "repeatedSizeSharePct", "bundleSharePct"]);
+    } else if (d.washFlag == null && !d.nullReasons.washFlag) {
+      const missing = [d.volLiqRatio == null ? "volume/liquidity" : "", !swapPattern && d.chain === "robinhood" ? "repeated-size / same-block-bundle shares" : ""].filter(Boolean).join(" and ");
+      d.nullReasons = { ...d.nullReasons, washFlag: `wash heuristic not cleared: no ${missing} reading` };
     }
     if (!triggers.length && vl >= 8) {
       d.fakeSignals.push({ kind: "wash", level: "warn", text: `24h volume is ${vl.toFixed(1)}× liquidity (elevated turnover)`, source: "HoodTier heuristic" });
@@ -387,14 +444,22 @@ export function applyZeroActivity(s: TokenSnapshot, sources: SourceStatus[], met
   if (positive) return s;
   const said: string[] = [];
   const src = (id: string) => sources.find((x) => x.id === id);
+  const answered = (id: string) => {
+    const x = src(id);
+    return !!x && x.state !== "failed" && x.state !== "skipped";
+  };
   if (s.uniqueBuyers === 0) said.push(`${s.chain === "solana" ? "Helius" : "swap index"}: 0 buyers`);
-  if (s.curveProgressPct === 0 && (s.realSolReserves ?? 0) <= 0.001) said.push("pump.fun curve: 0% / 0 SOL");
+  const curveZero = s.curveProgressPct === 0 && (s.realSolReserves ?? 0) <= 0.001;
+  if (curveZero) said.push("pump.fun curve: 0% / 0 SOL");
   const gt = src("geckoterminal");
   if (gt && gt.state !== "failed" && /no pools/i.test(gt.message ?? "")) said.push("GeckoTerminal: no pools");
   const ds = src("dexscreener");
   if (ds && ds.state !== "failed" && /no pairs/i.test(ds.message ?? "")) said.push("DexScreener: no pairs");
   if (s.volume24hUsd === 0) said.push("24h volume $0");
   if (!said.length) return s;
+  // Indexer silence ("no pools", "no pairs", a $0 volume that may be a defaulted pool sum) is not proof of no
+  // trades: a source that reads the token's trades must have answered (H7/H12).
+  if (!tradeWitness(s, sources, answered, curveZero)) return s;
   const d: TokenSnapshot = { ...s, nullReasons: { ...s.nullReasons }, zeroActivity: said };
   const rec = d as unknown as Record<string, unknown>;
   const BOOLEAN = new Set(["launchRetraced30", "hugeCandlesOnly", "staircase", "upOnlyChart"]);
@@ -408,6 +473,33 @@ export function applyZeroActivity(s: TokenSnapshot, sources: SourceStatus[], met
 }
 
 /**
+ * Did a source that sees the token's trades answer? Solana: Helius' curve replay (0 buyers) or the pump.fun
+ * curve itself at 0% / 0 SOL (chain state). Robinhood: HoodScan's trades or stats call. Monad: nad.fun.
+ * Other chains have no trade reader, so the market indexers' answers stand there.
+ */
+function tradeWitness(s: TokenSnapshot, sources: SourceStatus[], answered: (id: string) => boolean, curveZero: boolean): boolean {
+  switch (s.chain) {
+    case "solana": {
+      if (curveZero && answered("solana-rpc")) return true;
+      const fromHelius = !s.provenance?.uniqueBuyers?.length || s.provenance.uniqueBuyers.some((p) => p.source === "helius" && p.value === 0);
+      return s.uniqueBuyers === 0 && answered("helius") && fromHelius;
+    }
+    case "robinhood": {
+      const hs = sources.find((x) => x.id === "hoodscan");
+      if (!hs || hs.state === "failed" || hs.state === "skipped") return false;
+      if (hs.state === "ok") return true;
+      // Partial / stale: the failed calls are listed as "trades: …" / "stats: …".
+      const msg = hs.message ?? "";
+      return !(/\btrades:/.test(msg) && /\bstats:/.test(msg));
+    }
+    case "monad":
+      return answered("nadfun");
+    default:
+      return true;
+  }
+}
+
+/**
  * §7c dead launch: age ≥ 1h AND (≤ 2 unique buyers OR < $100 liquidity OR a dead curve). Lifetime
  * buyers are exact when known; 24h buyers are a lower bound (more than 2 in 24h ⇒ not ≤ 2 ever).
  * True when any leg is true, false when every leg is known false, else null.
@@ -415,10 +507,30 @@ export function applyZeroActivity(s: TokenSnapshot, sources: SourceStatus[], met
 export function deadLaunchOf(d: TokenSnapshot): boolean | null {
   if (d.ageHours == null) return null;
   if (d.ageHours < 1) return false;
-  const byBuyers = d.uniqueBuyers != null ? d.uniqueBuyers <= 2 : d.buyers24h != null && d.buyers24h > 2 ? false : null;
+  // Tx counts are not a lower bound on wallets (one wallet can trade 3 times): only unique-wallet counts clear the leg.
+  const walletCounts = !/tx counts/i.test(d.buyersBasis ?? "");
+  const byBuyers = d.uniqueBuyers != null ? d.uniqueBuyers <= 2 : walletCounts && d.buyers24h != null && d.buyers24h > 2 ? false : null;
   const byLiquidity = d.liquidityUsd != null ? d.liquidityUsd < 100 : null;
   const byCurve = d.deadCurve;
   const legs = [byBuyers, byLiquidity, byCurve];
   if (legs.includes(true)) return true;
   return legs.every((x) => x === false) ? false : null;
+}
+
+/**
+ * One holder split into equal parts: the largest group of ≥ 5 of the top-20 counted wallets whose balances lie
+ * within 10% of the group's largest. Organic holder lists fall off like a power law; near-identical balances
+ * holding a real share of supply are a split. Derived from the holder list (the evidence says so).
+ */
+export function equalSplit(wallets: { pct: number | null }[]): { pct: number; count: number } {
+  const p = wallets.slice(0, 20).map((h) => h.pct ?? 0).filter((x) => x > 0).sort((a, b) => b - a);
+  let best = { pct: 0, count: 0 };
+  for (let i = 0; i < p.length; i++) {
+    let j = i;
+    while (j + 1 < p.length && p[j + 1] >= p[i] * 0.9) j++;
+    const count = j - i + 1;
+    const sum = p.slice(i, j + 1).reduce((a, x) => a + x, 0);
+    if (count >= 5 && sum > best.pct) best = { pct: Math.round(sum * 100) / 100, count };
+  }
+  return best;
 }

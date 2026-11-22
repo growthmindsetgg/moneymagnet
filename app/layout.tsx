@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.MM_CANONICAL_ORIGIN || "https://hoodtier.vercel.app"),
   alternates: { canonical: "/" },
   title: "MoneyMagnet — score any meme coin before you ape",
-  description: "Paste a Robinhood Chain, Base, Monad or Solana token address. MoneyMagnet gives it an S–F tier with every factor's evidence under the score.",
+  description: "Paste a Robinhood Chain, Base, Monad, Ethereum or Solana token address. MoneyMagnet gives it an S–F tier with every factor's evidence under the score.",
   applicationName: "MoneyMagnet",
   openGraph: { title: "MoneyMagnet", description: "Score any meme coin before you ape.", siteName: "MoneyMagnet", type: "website", url: "/" },
 };
@@ -51,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Wordmark className="h-8 w-auto sm:h-9" />
           </Link>
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs uppercase tracking-wider text-muted sm:inline">Robinhood Chain · Base · Monad · Solana</span>
+            <span className="hidden text-xs uppercase tracking-wider text-muted sm:inline">Robinhood Chain · Base · Monad · Ethereum · Solana</span>
             <ThemeToggle />
           </div>
         </header>

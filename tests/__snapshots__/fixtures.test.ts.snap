@@ -2,7 +2,7 @@
 
 exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
 {
-  "coveragePct": 85,
+  "coveragePct": 74,
   "factors": [
     [
       "top10_share",
@@ -15,6 +15,12 @@ exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
       1.4,
       "warn",
       "live",
+    ],
+    [
+      "holder_strength",
+      0,
+      "none",
+      "null",
     ],
     [
       "deployer_holding",
@@ -128,6 +134,10 @@ exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
       "pass",
     ],
     [
+      "sell_tax_50",
+      "unknown",
+    ],
+    [
       "liquidity_pulled",
       "n/a",
     ],
@@ -160,6 +170,10 @@ exports[`recorded fixture snapshots > fartcoin scores in S/A/B/C/D 1`] = `
       "unknown",
     ],
     [
+      "price_collapse",
+      "unknown",
+    ],
+    [
       "dead_launch",
       "unknown",
     ],
@@ -188,20 +202,14 @@ exports[`recorded fixture snapshots > microduck scores in S/A 1`] = `
       "live",
     ],
     [
-      "accumulator_count",
-      4,
-      "none",
-      "live",
-    ],
-    [
-      "accumulator_supply",
-      4,
+      "holder_strength",
+      10,
       "none",
       "live",
     ],
     [
       "early_retention",
-      3,
+      1.5,
       "none",
       "live",
     ],
@@ -353,6 +361,10 @@ exports[`recorded fixture snapshots > microduck scores in S/A 1`] = `
       "pass",
     ],
     [
+      "sell_tax_50",
+      "pass",
+    ],
+    [
       "liquidity_pulled",
       "unknown",
     ],
@@ -385,20 +397,24 @@ exports[`recorded fixture snapshots > microduck scores in S/A 1`] = `
       "pass",
     ],
     [
+      "price_collapse",
+      "pass",
+    ],
+    [
       "dead_launch",
       "unknown",
     ],
   ],
   "mode": "established",
-  "rawScore": 77.4,
-  "score": 80.4,
+  "rawScore": 77.9,
+  "score": 80.9,
   "tier": "A",
 }
 `;
 
 exports[`recorded fixture snapshots > offline scores in C/D/F 1`] = `
 {
-  "coveragePct": 65,
+  "coveragePct": 63,
   "factors": [
     [
       "vol_mc",
@@ -421,14 +437,14 @@ exports[`recorded fixture snapshots > offline scores in C/D/F 1`] = `
     [
       "bundle_score",
       0,
-      "info",
-      "live",
+      "none",
+      "n/a",
     ],
     [
       "organic_score",
       0,
-      "info",
-      "live",
+      "none",
+      "n/a",
     ],
     [
       "timing_entropy",
@@ -576,6 +592,10 @@ exports[`recorded fixture snapshots > offline scores in C/D/F 1`] = `
       "pass",
     ],
     [
+      "sell_tax_50",
+      "unknown",
+    ],
+    [
       "liquidity_pulled",
       "n/a",
     ],
@@ -608,6 +628,10 @@ exports[`recorded fixture snapshots > offline scores in C/D/F 1`] = `
       "unknown",
     ],
     [
+      "price_collapse",
+      "unknown",
+    ],
+    [
       "vol_mc_bundle",
       "fail",
     ],
@@ -621,7 +645,7 @@ exports[`recorded fixture snapshots > offline scores in C/D/F 1`] = `
     ],
   ],
   "mode": "launch",
-  "rawScore": 53.4,
+  "rawScore": 54.4,
   "score": 0,
   "tier": "F",
 }
@@ -784,11 +808,16 @@ exports[`recorded fixture snapshots > pangea-honeypot scores in F 1`] = `
   ],
   "fired": [
     "honeypot",
+    "sell_tax_50",
     "owner_not_renounced",
   ],
   "gates": [
     [
       "honeypot",
+      "fail",
+    ],
+    [
+      "sell_tax_50",
       "fail",
     ],
     [
@@ -821,6 +850,10 @@ exports[`recorded fixture snapshots > pangea-honeypot scores in F 1`] = `
     ],
     [
       "dev_sold",
+      "pass",
+    ],
+    [
+      "price_collapse",
       "pass",
     ],
     [
@@ -1022,6 +1055,10 @@ exports[`recorded fixture snapshots > peek scores in F 1`] = `
       "pass",
     ],
     [
+      "sell_tax_50",
+      "pass",
+    ],
+    [
       "liquidity_pulled",
       "n/a",
     ],
@@ -1051,6 +1088,10 @@ exports[`recorded fixture snapshots > peek scores in F 1`] = `
     ],
     [
       "dev_sold",
+      "pass",
+    ],
+    [
+      "price_collapse",
       "pass",
     ],
     [

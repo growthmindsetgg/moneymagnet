@@ -1,5 +1,5 @@
 {
- "note": "Public Robinhood Chain (4663) RPC endpoints, probed 2026-10-24T09:21:22.392Z (scripts/probe-rpcs.mjs). Rotated on 429/5xx with a per-endpoint cooldown; ROBINHOOD_RPC_URL goes first when set. 'logs' = supports eth_getLogs; 'override' = supports eth_call state overrides (needed by the sell simulation).",
+ "note": "Public Robinhood Chain (4663) RPC endpoints, probed 2026-10-24T09:21:22.392Z (scripts/probe-rpcs.mjs). Rotated on 429/5xx with a per-endpoint cooldown; ROBINHOOD_RPC_URL goes first when set. 'logs' = supports eth_getLogs; 'override' = supports eth_call state overrides (needed by the sell simulation). 'logs': 'fallback' = serves eth_getLogs slowly, used only while the full-log endpoints cool down.",
  "probedAt": "2026-10-24T09:21:49.958Z",
  "endpoints": [
   {
@@ -52,11 +52,12 @@
   },
   {
    "url": "https://rpc-robinhood.globalstake.io",
-   "logs": "full",
+   "logs": "fallback",
    "override": true,
    "storage": true,
    "latencyMs": 275,
-   "burst429": "0/20"
+   "burst429": "0/20",
+   "logsNote": "serves eth_getLogs but ~21s for a 100k-block range (2026-11-19) vs < 1s on the official RPC — fallback only"
   },
   {
    "url": "https://robinhood.daybreak-rpc.network",

@@ -848,7 +848,74 @@
         "label": "DexScreener",
         "url": "https://dexscreener.com/robinhood/0xcde4d35e341901bc0308c2ffc789448ccd0f238a59597fe702e6710484b9c370"
       }
-    ]
+    ],
+    "holderStrength": 81.2,
+    "holderStrengthLabel": "Diamond",
+    "holderStrengthDetail": {
+      "components": [
+        {
+          "id": "hold",
+          "label": "Hold duration",
+          "weight": 20,
+          "score": 1,
+          "evidence": "supply-weighted median hold = 91% of token age (63d; full points at ≥ 70%), 20 wallets",
+          "sentence": "top holders have held a median 91% of the token's 63-day life"
+        },
+        {
+          "id": "drawdown",
+          "label": "Drawdown survival",
+          "weight": 20,
+          "score": 0.6340902946742363,
+          "evidence": "worst 7d drawdown −88% from 2026-09-05: 8 of 13 wallets holding then never sold during it (63% of their supply)",
+          "sentence": "8 of 13 top-20 wallets held through the −88% drawdown"
+        },
+        {
+          "id": "discipline",
+          "label": "Sell discipline",
+          "weight": 20,
+          "score": 0.799301244962214,
+          "evidence": "11 of 20 wallets never sold; 1 sold > 50% of their position; supply-weighted 80%",
+          "sentence": "11 of 20 top wallets have never sold"
+        },
+        {
+          "id": "maturity",
+          "label": "Wallet maturity",
+          "weight": 15,
+          "score": 0.4999152533604607,
+          "evidence": "0 real wallets (≥ 90d old before buying, ≥ 5 tokens), 1 fresh (< 7d); supply-weighted 50%",
+          "sentence": "1 of 5 top wallets were less than a week old when they bought"
+        },
+        {
+          "id": "accumulation",
+          "label": "Dip accumulation",
+          "weight": 15,
+          "score": 1,
+          "evidence": "17 wallets bought ≥ 20% below the 7d high, holding 84% of top-20 supply (full points at ≥ 30%)",
+          "sentence": "17 top wallets bought the dips (84% of top-20 supply)"
+        },
+        {
+          "id": "accumulators",
+          "label": "0-sell accumulators",
+          "weight": 10,
+          "score": 1,
+          "evidence": "multi-buy, zero-sell wallets hold 11.57% of supply",
+          "sentence": "multi-buy wallets that never sold hold 11.6% of supply"
+        }
+      ],
+      "keyPerson": [],
+      "wallets": 20,
+      "excluded": [],
+      "method": "Transfer logs of the top-20 wallets since creation (100% of wallets read to the head); a pool / router / contract counterparty is a swap; wallet age = first swap HoodScan indexed, tokens = its open positions",
+      "score": 81.2,
+      "label": "Diamond",
+      "sentences": [
+        "Top holders have held a median 91% of the token's 63-day life",
+        "17 top wallets bought the dips (84% of top-20 supply)",
+        "11 of 20 top wallets have never sold"
+      ]
+    },
+    "holderStrengthPending": false,
+    "vestingDiamond": false
   },
   "sources": [
     {
@@ -890,5 +957,6 @@
       "ms": 418,
       "url": "https://dexscreener.com/robinhood/0xcde4d35e341901bc0308c2ffc789448ccd0f238a59597fe702e6710484b9c370"
     }
-  ]
+  ],
+  "holderStrengthRecordedAt": "2026-10-30T07:26:03.009Z"
 }

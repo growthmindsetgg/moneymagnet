@@ -37,7 +37,7 @@ export async function resampleSocial(
   const now = opts.now ?? Date.now;
   const t0 = now();
   const limit = Math.min(opts.limit ?? CRON_MAX_TOKENS, CRON_MAX_TOKENS);
-  const due = await store.due(opts.days ?? CRON_DAYS, limit);
+  const due = await store.due(opts.days ?? CRON_DAYS, limit, t0);
   const out: ResampleResult = { due: due.length, sampled: 0, stored: 0, skipped: [], spentUsd: 0, calls: 0, stoppedEarly: null, pruned: 0, ms: 0 };
   let misses = 0;
   for (const t of due) {

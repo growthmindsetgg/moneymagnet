@@ -3,7 +3,7 @@ import { chainRpc, type Rpc } from "./onchain/rpc";
 import { kvGet, kvSet } from "./kv";
 
 /**
- * §1a: an 0x address can be a token on Robinhood Chain, Base or Monad. Each chain's RPC is asked for
+ * §1a: an 0x address can be a token on Robinhood Chain, Base, Monad or Ethereum. Each chain's RPC is asked for
  * bytecode and totalSupply() (an ERC-20 answers it); DexScreener's token endpoint (all chains in one call)
  * gives each chain's FDV and pair count. A chain counts when the token contract exists there.
  */
@@ -20,7 +20,7 @@ export interface Resolution {
   checks: Record<EvmChain, string>;
 }
 
-const DS_CHAIN: Record<string, EvmChain> = { robinhood: "robinhood", base: "base", monad: "monad" };
+const DS_CHAIN: Record<string, EvmChain> = { robinhood: "robinhood", base: "base", monad: "monad", ethereum: "ethereum" };
 const TTL_S = 600;
 
 interface DsPair {
@@ -32,11 +32,11 @@ interface DsPair {
 
 export async function resolveEvmChain(
   address: string,
-  deps: { rpc?: (c: EvmChain) => Rpc; fetchPairs?: (a: string) => Promise<DsPair[]>; cache?: boolean } = {},
+  deps: { rpc?: (c: EvmChain) => Rpc; fetchPairs?: (a: string) => Promise<DsPair[]>; cache?: boolean; chainTimeoutMs?: number } = {},
 ): Promise<Resolution> {
   const a = address.toLowerCase();
   const useCache = deps.cache ?? !deps.rpc;
-  const key = `resolve:v1:${a}`;
+  const key = `resolve:v2:${a}`; // v2: Ethereum joined the candidate chains
   if (useCache) {
     const hit = await kvGet<Resolution>(key);
     if (hit) return hit;
@@ -44,7 +44,9 @@ export async function resolveEvmChain(
   const rpcOf = deps.rpc ?? chainRpc;
   const fetchPairs = deps.fetchPairs ?? dexPairs;
   const [onChain, pairs] = await Promise.all([
-    Promise.all(EVM_CHAINS.map(async (c) => [c, await tokenOn(rpcOf(c), a)] as const)),
+    // Every chain in parallel, each under its own hard deadline: one slow chain (e.g. an Ethereum endpoint
+    // rotating through 429s) answers "RPC unreachable" instead of holding up the others.
+    Promise.all(EVM_CHAINS.map(async (c) => [c, await capped(tokenOn(rpcOf(c), a), deps.chainTimeoutMs ?? CHAIN_TIMEOUT_MS)] as const)),
     fetchPairs(a).catch(() => null),
   ]);
   const checks = {} as Record<EvmChain, string>;
@@ -63,6 +65,15 @@ export async function resolveEvmChain(
   // Only cache an answer every chain gave (an unreachable RPC is retried next time).
   if (useCache && !Object.values(checks).includes("RPC unreachable")) await kvSet(key, res, TTL_S);
   return res;
+}
+
+/** Per-chain cap on the code + totalSupply lookups (the two 8s calls, retries included). */
+const CHAIN_TIMEOUT_MS = 12_000;
+
+function capped(p: Promise<"token" | "contract" | "none" | "error">, ms: number): Promise<"token" | "contract" | "none" | "error"> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<"error">((r) => (timer = setTimeout(() => r("error"), ms)));
+  return Promise.race([p, late]).finally(() => clearTimeout(timer));
 }
 
 /** "token" = bytecode and a totalSupply() answer; "contract" = code without one; "none" = no code. */

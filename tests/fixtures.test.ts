@@ -46,13 +46,16 @@ describe("recorded fixture snapshots", () => {
     expect(caught.some((id) => ["all_buyers_exited", "vol_mc_bundle", "dev_buy_big", "dev_sold"].includes(id))).toBe(true);
   });
 
-  it("offline: snipe_ratio, bundle_score and dev_buy_sol are live from the three.ws feed", () => {
+  // Replaced (audit H2): offline has < 50 unique buyers, so bundle_score is now n/a ("insufficient sample") instead of a
+  // live 0; snipe_ratio and dev_buy_share are still live from the feed.
+  it("offline: snipe_ratio and dev_buy_sol are live from the three.ws feed; bundle_score is n/a on < 50 buyers", () => {
     const { snapshot, sources } = load("offline");
     const r = scoreSnapshot(snapshot, sources);
     const f = (id: string) => r.groups.flatMap((g) => g.factors).find((x) => x.id === id)!;
     expect(sources.find((s) => s.id === "pumpfeed")!.state).toBe("ok");
     expect(f("snipe_ratio").status).toBe("live");
-    expect(f("bundle_score").status).toBe("live");
+    expect(f("bundle_score").status).toBe("n/a");
+    expect(f("bundle_score").evidence).toMatch(/^insufficient sample — \d+ unique buyers \(needs ≥ 50\)/);
     expect(f("dev_buy_share").status).toBe("live");
     expect(snapshot.devBuySol).toBeGreaterThan(0);
     expect(f("dev_buy_share").evidence).toMatch(/SOL \(three\.ws launch observation/);

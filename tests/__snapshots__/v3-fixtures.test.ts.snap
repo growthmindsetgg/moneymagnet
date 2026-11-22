@@ -392,6 +392,7 @@ exports[`v3 Base / Monad recorded fixtures > base-rug (rug) scores in F 1`] = `
     "top_holder_bundle",
     "top_holder_20",
     "top_holder_35",
+    "top10_50",
   ],
   "mode": "launch",
   "rawScore": 66.2,
@@ -507,6 +508,308 @@ exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in 
   "rawScore": 65.7,
   "score": 68.7,
   "tier": "B",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores in B/C/D 1`] = `
+{
+  "coveragePct": 87,
+  "factors": [
+    [
+      "top10_share",
+      3.3,
+      "live",
+    ],
+    [
+      "top_holder",
+      0,
+      "live",
+    ],
+    [
+      "deployer_holding",
+      9,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      2.7,
+      "live",
+    ],
+    [
+      "trades_per_wallet",
+      6,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      13,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "verified",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "n/a",
+    ],
+    [
+      "liq_fdv",
+      13,
+      "live",
+    ],
+    [
+      "main_pool_share",
+      6,
+      "live",
+    ],
+    [
+      "liq_change_24h",
+      0,
+      "null",
+    ],
+    [
+      "liq_change_7d",
+      0,
+      "null",
+    ],
+    [
+      "pool_count",
+      3,
+      "live",
+    ],
+    [
+      "trend",
+      0,
+      "live",
+    ],
+  ],
+  "fired": [
+    "top_holder_20",
+    "track_record_30d",
+  ],
+  "mode": "established",
+  "rawScore": 65.9,
+  "score": 54.9,
+  "tier": "C",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > ethereum-pepe (established) scores in A/B/C 1`] = `
+{
+  "coveragePct": 87,
+  "factors": [
+    [
+      "top10_share",
+      6.05,
+      "live",
+    ],
+    [
+      "top_holder",
+      2,
+      "live",
+    ],
+    [
+      "deployer_holding",
+      9,
+      "live",
+    ],
+    [
+      "buyer_seller_ratio",
+      4.95,
+      "live",
+    ],
+    [
+      "trades_per_wallet",
+      6,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      13,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "verified",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "n/a",
+    ],
+    [
+      "liq_fdv",
+      2.6,
+      "live",
+    ],
+    [
+      "main_pool_share",
+      6,
+      "live",
+    ],
+    [
+      "liq_change_24h",
+      0,
+      "null",
+    ],
+    [
+      "liq_change_7d",
+      0,
+      "null",
+    ],
+    [
+      "pool_count",
+      2.1,
+      "live",
+    ],
+    [
+      "trend",
+      3.5,
+      "stale",
+    ],
+  ],
+  "fired": [
+    "track_record_30d",
+  ],
+  "mode": "established",
+  "rawScore": 61.6,
+  "score": 64.6,
+  "tier": "B",
+}
+`;
+
+exports[`v3 Base / Monad recorded fixtures > ethereum-pipi (launch) scores in A/B/C/D/F/U 1`] = `
+{
+  "coveragePct": 70,
+  "factors": [
+    [
+      "vol_mc",
+      0,
+      "live",
+    ],
+    [
+      "launch_retrace",
+      10,
+      "live",
+    ],
+    [
+      "chart_identical",
+      10,
+      "live",
+    ],
+    [
+      "chart_staircase",
+      8,
+      "live",
+    ],
+    [
+      "sellable",
+      0,
+      "live",
+    ],
+    [
+      "mint_authority",
+      0,
+      "live",
+    ],
+    [
+      "owner_renounced",
+      0,
+      "live",
+    ],
+    [
+      "upgradeable",
+      0,
+      "live",
+    ],
+    [
+      "lp_lock",
+      0,
+      "live",
+    ],
+    [
+      "top_holder",
+      0,
+      "null",
+    ],
+    [
+      "top10_share",
+      0,
+      "null",
+    ],
+    [
+      "buyer_seller_ratio",
+      7,
+      "live",
+    ],
+    [
+      "sell_count",
+      4,
+      "live",
+    ],
+    [
+      "trend",
+      9,
+      "live",
+    ],
+    [
+      "round_trip_loss",
+      10,
+      "live",
+    ],
+  ],
+  "fired": [
+    "lp_unlocked_unproven",
+    "vol_mc_bundle",
+  ],
+  "mode": "launch",
+  "rawScore": 82.9,
+  "score": 39.9,
+  "tier": "D",
 }
 `;
 
@@ -733,6 +1036,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
   "fired": [
     "top_holder_20",
     "top_holder_35",
+    "top10_50",
     "track_record_30d",
   ],
   "mode": "established",

@@ -55,6 +55,8 @@ describe("disputes resolve to the most conservative value", () => {
     ["deployerHoldingPct", [1, 6], 6],
     ["fdvUsd", [1_000_000, 2_000_000], 2_000_000],
     ["roundTripLossPct", [2, 40], 40],
+    ["priceChange24hPct", [-20, -66], -66], // steepest fall
+
     ["lpLockedPct", [100, 20], 20],
     ["ageHours", [100, 30], 30], // youngest → stricter Launch rules
     ["deployerHasSold", [false, true], true], // "sold" over "not sold"

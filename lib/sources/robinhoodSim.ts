@@ -1,7 +1,7 @@
 import { keccak_256 } from "@noble/hashes/sha3";
 import type { AdapterResult } from "../types";
 import { kvGet, kvSet } from "../kv";
-import { hex, makeRpc, RpcError, type Rpc } from "../onchain/rpc";
+import { errText, hex, isRevert, makeRpc, RpcError, type Rpc } from "../onchain/rpc";
 import { patientRpc } from "../timemachine/robinhood";
 import { fetchJson } from "./http";
 import infra from "@/data/robinhood-infra.json";
@@ -135,18 +135,23 @@ export function describeRevert(data: string | undefined): { reason: string; dry:
 /** A plausible EOA to quote "as": hooks can tax calls whose origin is 0x0 or a contract. */
 const QUOTE_FROM_FALLBACK = "0x1111111111111111111111111111111111111111";
 
-async function quote(rpc: Rpc, key: PoolKey, zeroForOne: boolean, amount: bigint, from: string): Promise<{ out: bigint | null; error?: string; dry?: boolean }> {
+/** `transport` = the quote could not run (timeout, 429, 5xx, quoter bytecode unavailable): not a revert, not dry. */
+type Quote = { out: bigint | null; error?: string; dry?: boolean; transport?: boolean };
+
+async function quote(rpc: Rpc, key: PoolKey, zeroForOne: boolean, amount: bigint, from: string): Promise<Quote> {
   try {
     const code = await patchedQuoter(key.manager);
     const res = await rpc<string>("eth_call", [{ from, to: QUOTER_AT, data: encodeQuote(key, zeroForOne, amount), gas: hex(QUOTE_GAS) }, "latest", { [QUOTER_AT]: { code } }], 12_000);
     return { out: BigInt("0x" + res.slice(2, 66)) };
   } catch (err) {
+    if (!isRevert(err)) return { out: null, error: `RPC: ${errText(err)}`, transport: true };
     const r = describeRevert(err instanceof RpcError ? err.data : undefined);
     return { out: null, error: err instanceof RpcError && err.data !== undefined ? r.reason : (err as Error).message.slice(0, 120), dry: r.dry };
   }
 }
 
-export async function transferProbe(rpc: Rpc, token: string, from: string, to: string, amount: bigint): Promise<{ ok: boolean; error?: string }> {
+/** ok:false with `transport` = the probe could not run (timeout, 429, 5xx): says nothing about a block. */
+export async function transferProbe(rpc: Rpc, token: string, from: string, to: string, amount: bigint): Promise<{ ok: boolean; error?: string; transport?: boolean }> {
   const data = "0xa9059cbb" + addrWord(to) + word(amount);
   try {
     const res = await rpc<string>("eth_call", [{ from, to: token, data }, "latest"], 15_000);
@@ -154,6 +159,7 @@ export async function transferProbe(rpc: Rpc, token: string, from: string, to: s
     if (res && res !== "0x" && BigInt(res.slice(0, 66)) === 0n) return { ok: false, error: "transfer returned false" };
     return { ok: true };
   } catch (err) {
+    if (!isRevert(err)) return { ok: false, error: `RPC: ${errText(err)}`, transport: true };
     return { ok: false, error: (err as Error).message.slice(0, 120) };
   }
 }
@@ -185,11 +191,38 @@ export interface PoolSim {
   hooks: string | null;
   feePct: number | null;
   liquidityUsd: number | null;
-  /** pass = round trip completed with < 50% loss; fail = completed with ≥ 50%; revert = sell reverts; dry = no liquidity. */
-  result: "pass" | "fail" | "revert" | "dry";
+  /**
+   * pass = round trip completed with < 50% loss; fail = completed with ≥ 50%; revert = sell reverts; dry = no liquidity;
+   * error = a quote could not run (RPC timeout / 429 / 5xx) — listed, but excluded from the verdict.
+   */
+  result: "pass" | "fail" | "revert" | "dry" | "error";
   lossPct: number | null;
   detail: string;
+  /** A real sell run inside eth_call (nad.fun router), not a quote or pool-state math: ranks first. */
+  executed?: boolean;
 }
+
+/** A listed pool with at least this liquidity is a market a trader would use. */
+export const MARKET_MIN_LIQ_USD = 500;
+/** A pool whose own LP fee is this high is a trap a router avoids, not the token's cost of selling. */
+export const JUNK_FEE_PCT = 10;
+
+/**
+ * Which passing pool's round trip is the token's: the route a trader would take.
+ * 0 = a real executed sell (nad.fun router); 1 = quoter-verified v4 on a listed pool ≥ $500; 2 = v2/v3 math on a
+ * pool ≥ $500; 3 = anything else (unknown / thin liquidity); 4 = a pool whose own LP fee is ≥ 10%.
+ * Lowest loss wins within a rank. A quoter-verified pool still ranks before state math when both are real markets
+ * (math can miss in-pool costs), but a junk-fee or unlisted pool never sets the loss over a liquid one (143 / BC
+ * on Monad, 2026-11-22: a 20–28% fee v4 pool with unknown liquidity read 47–48% while the main v3 pool read 2%).
+ */
+export function routeRank(s: PoolSim): number {
+  if (s.executed) return 0;
+  if (s.feePct != null && s.feePct >= JUNK_FEE_PCT) return 4;
+  const market = s.liquidityUsd != null && s.liquidityUsd >= MARKET_MIN_LIQ_USD;
+  if (market) return s.kind === "v4" ? 1 : 2;
+  return 3;
+}
+const byRoute = (a: PoolSim, b: PoolSim) => routeRank(a) - routeRank(b) || Number(a.kind !== "v4") - Number(b.kind !== "v4") || (a.lossPct ?? 0) - (b.lossPct ?? 0);
 
 export interface SimResult {
   /** Every pool's liquidity is gone (dry / < $100) — nothing to sell into. */
@@ -331,8 +364,10 @@ export async function simulateRobinhood(inp: SimInput): Promise<SimResult> {
     let lossPct: number | null = null;
     let detail = "";
     let result: PoolSim["result"];
+    const notRun = (what: string, q: Quote): PoolSim => ({ ...base, result: "error", lossPct: null, detail: `${what} could not run (${q.error}) — not simulated` });
     if (ethQuoted(quoteCur)) {
       const buy = await quote(rpc, key, !tokenIs0, BUY_ETH_WEI, from);
+      if (buy.transport) return notRun("buy quote", buy);
       if (buy.out == null || buy.out === 0n) {
         // With nothing at the current tick, a buy that reverts is the quoter walking empty ticks
         // (it runs out of gas before NotEnoughLiquidity): the pool is dry, not blocking sells.
@@ -340,6 +375,7 @@ export async function simulateRobinhood(inp: SimInput): Promise<SimResult> {
         return { ...base, result: dry ? "dry" : "revert", lossPct: null, detail: `buy reverts (${buy.error ?? "zero output"})${inRange === 0n && !buy.dry ? " with 0 in-range liquidity" : ""}` };
       }
       const sell = await quote(rpc, key, tokenIs0, buy.out, from);
+      if (sell.transport) return notRun("sell quote", sell);
       if (sell.out == null || sell.out === 0n) {
         result = sell.dry ? "dry" : "revert";
         detail = `sell reverts (${sell.error ?? "zero output"})`;
@@ -347,7 +383,9 @@ export async function simulateRobinhood(inp: SimInput): Promise<SimResult> {
         lossPct = Math.max(0, Number(((BUY_ETH_WEI - sell.out) * 10_000n) / BUY_ETH_WEI) / 100);
         // A holder-sized exit (1e-6 of supply) must also go through.
         const exitAmount = supply / 1_000_000n;
-        const exit = exitAmount > buy.out ? await quote(rpc, key, tokenIs0, exitAmount, from) : { out: 1n } as { out: bigint | null; error?: string; dry?: boolean };
+        const exit: Quote = exitAmount > buy.out ? await quote(rpc, key, tokenIs0, exitAmount, from) : { out: 1n };
+        // The exit check is what makes this a pass: unrun, the pool is unverified (not a pass, not a revert).
+        if (exit.transport) return notRun(`0.01 ETH round trip ${lossPct.toFixed(2)}%, but the 1e-6-of-supply sell quote`, exit);
         if ((exit.out == null || exit.out === 0n) && !exit.dry) {
           result = "revert";
           detail = `0.01 ETH round trip ${lossPct.toFixed(2)}%, but a 1e-6-of-supply sell reverts (${exit.error ?? "zero output"})`;
@@ -359,11 +397,13 @@ export async function simulateRobinhood(inp: SimInput): Promise<SimResult> {
     } else {
       const amount = supply / 1_000_000n || 1n;
       const sell = await quote(rpc, key, tokenIs0, amount, from);
+      if (sell.transport) return notRun("sell quote", sell);
       if (sell.out == null || sell.out === 0n) {
         result = sell.dry ? "dry" : "revert";
         detail = `sell reverts (${sell.error ?? "zero output"})`;
       } else {
         const back = await quote(rpc, key, !tokenIs0, sell.out, from);
+        if (back.transport) return notRun("buy-back quote", back);
         lossPct = back.out != null ? Math.max(0, Number(((amount - back.out) * 10_000n) / amount) / 100) : null;
         result = lossPct == null ? "revert" : lossPct < 50 ? "pass" : "fail";
         detail = lossPct == null ? `buy-back reverts (${back.error})` : `${lossPct.toFixed(2)}% loss (sell 1e-6 of supply → buy back)`;
@@ -394,7 +434,10 @@ export async function simulateRobinhood(inp: SimInput): Promise<SimResult> {
           notReached++;
           continue;
         }
-        const s = await simV4(k);
+        // A failed read inside (e.g. the in-range liquidity slot) costs this pool only: listed as not simulated.
+        const s = await simV4(k).catch(
+          (err): PoolSim => ({ pool: k.id, kind: "v4", hooks: k.hooks.toLowerCase() !== ZERO_ADDR ? k.hooks : null, feePct: k.fee / 10_000, liquidityUsd: listed.get(k.id)?.reserveUsd ?? null, result: "error", lossPct: null, detail: `pool read failed (RPC: ${errText(err)}) — not simulated` }),
+        );
         if (s) sims.push(s);
       }
     }),
@@ -410,17 +453,21 @@ export async function simulateRobinhood(inp: SimInput): Promise<SimResult> {
 
   // Transfer probes: a real holder → a fresh wallet, and → the best pool's custody (PoolManager / pair).
   // Quoter-verified (v4) passes rank before v2/v3 results computed from pool state.
-  const passing = sims.filter((s) => s.result === "pass").sort((a, b) => Number(a.kind !== "v4") - Number(b.kind !== "v4") || (a.lossPct ?? 0) - (b.lossPct ?? 0));
+  const passing = sims.filter((s) => s.result === "pass").sort(byRoute);
   const best = passing[0];
   let blocked: string | null = null;
+  let probeFailed: string | null = null;
   if (probeHolder) {
     const amt = holderBalance / 2n < supply / 1_000_000n ? holderBalance / 2n : supply / 1_000_000n;
     const custody = best ? (best.kind === "v4" ? keys.get(best.pool)!.manager : best.pool) : null;
-    const probes = await Promise.all([transferProbe(rpc, token, probeHolder, FRESH, amt), custody ? transferProbe(rpc, token, probeHolder, custody, amt) : Promise.resolve({ ok: true } as { ok: boolean; error?: string })]);
-    const bad = probes.find((x) => !x.ok);
+    const probes = await Promise.all([transferProbe(rpc, token, probeHolder, FRESH, amt), custody ? transferProbe(rpc, token, probeHolder, custody, amt) : Promise.resolve({ ok: true } as { ok: boolean; error?: string; transport?: boolean })]);
+    // Only a probe that ran and reverted (or returned false) is a block; one that could not run is unverified.
+    const bad = probes.find((x) => !x.ok && !x.transport);
     if (bad) blocked = `transfer from a holder reverts (${bad.error})`;
+    const lost = probes.find((x) => x.transport);
+    if (lost) probeFailed = `transfer probe could not run (${lost.error}) — transfers not verified`;
   }
-  const probeNote = probeHolder ? (blocked ? "" : "transfers from a holder succeed") : "no holder with a balance to probe transfers";
+  const probeNote = probeHolder ? (blocked ? "" : probeFailed ?? "transfers from a holder succeed") : "no holder with a balance to probe transfers";
 
   const extra: string[] = [];
   if (notReached > 0) extra.push(`${notReached} pools not simulated (time budget ${SIM_BUDGET_MS / 1000}s)`);
@@ -433,14 +480,17 @@ const poolLabel = (s: PoolSim) => `pool ${s.pool.slice(0, 10)}… (${s.kind}${s.
 
 /**
  * The token's verdict from every pool's round trip. Sellable = at least one pool completes with
- * < 50% loss (quoter-verified v4 pools rank before v2/v3 results computed from pool state); the
- * round-trip loss is the best pool's. A hooked pool that fails while another passes is an info
+ * < 50% loss; the round-trip loss is the best route's (routeRank: an executed sell, then quoter-verified
+ * liquid pools, then state math on liquid pools; junk-fee and unlisted pools last). A hooked pool that fails while another passes is an info
  * flag, not a honeypot. Every pool dry ⇒ liquidity removed. Honeypot only when a sell actually
  * reverts (or a holder's transfer is blocked) and no pool passes.
  */
-export function verdictOf(sims: PoolSim[], o: { blocked?: string | null; probeNote?: string; extra?: string[] } = {}): Omit<SimResult, "pool"> {
-  const lines = [...sims.map((x) => `${poolLabel(x)}: ${x.detail}`), ...(o.extra ?? [])];
-  const passing = sims.filter((x) => x.result === "pass").sort((a, b) => Number(a.kind !== "v4") - Number(b.kind !== "v4") || (a.lossPct ?? 0) - (b.lossPct ?? 0));
+export function verdictOf(allSims: PoolSim[], o: { blocked?: string | null; probeNote?: string; extra?: string[] } = {}): Omit<SimResult, "pool"> {
+  const lines = [...allSims.map((x) => `${poolLabel(x)}: ${x.detail}`), ...(o.extra ?? [])];
+  // Pools whose quotes could not run (RPC errors) are listed but excluded: they are neither a revert nor dry.
+  const sims = allSims.filter((x) => x.result !== "error");
+  const errored = allSims.length - sims.length;
+  const passing = sims.filter((x) => x.result === "pass").sort(byRoute);
   const best = passing[0];
   const info: string[] = [];
   const hookedFail = sims.find((x) => x.hooks && (x.result === "revert" || x.result === "fail"));
@@ -448,10 +498,34 @@ export function verdictOf(sims: PoolSim[], o: { blocked?: string | null; probeNo
   const hooked = sims.some((x) => !!x.hooks);
   const anyRevert = sims.some((x) => x.result === "revert");
   const allDry = sims.length > 0 && sims.every((x) => x.result === "dry" || (x.liquidityUsd != null && x.liquidityUsd < 100));
-  if (!sims.length) return { sellable: null, honeypot: null, roundTripLossPct: null, hooked: false, pools: [], info, detail: "no pool found (v4 PoolManager, or v2/v3 pairs ≥ $500)" };
-  if (o.blocked) return { sellable: false, honeypot: true, roundTripLossPct: null, hooked, pools: sims, info, detail: `honeypot — ${o.blocked} · ${lines.join(" · ")}` };
-  if (best) return { sellable: true, honeypot: false, roundTripLossPct: best.lossPct, hooked, pools: sims, info, detail: `sellable via ${poolLabel(best)}${o.probeNote ? ` · ${o.probeNote}` : ""} · ${lines.join(" · ")}` };
-  if (allDry) return { liquidityPulled: true, sellable: false, honeypot: false, roundTripLossPct: null, hooked, pools: sims, info, detail: `liquidity removed — every pool is dry · ${lines.join(" · ")}` };
+  if (!allSims.length) return { sellable: null, honeypot: null, roundTripLossPct: null, hooked: false, pools: [], info, detail: "no pool found (v4 PoolManager, or v2/v3 pairs ≥ $500)" };
+  if (o.blocked) return { sellable: false, honeypot: true, roundTripLossPct: null, hooked, pools: allSims, info, detail: `honeypot — ${o.blocked} · ${lines.join(" · ")}` };
+  if (best) return { sellable: true, honeypot: false, roundTripLossPct: best.lossPct, hooked, pools: allSims, info, detail: `sellable via ${poolLabel(best)}${o.probeNote ? ` · ${o.probeNote}` : ""} · ${lines.join(" · ")}` };
+  // No pool passed and some could not be simulated: "every pool reverts / is dry" is unproven.
+  if (errored)
+    return {
+      sellable: null,
+      honeypot: null,
+      roundTripLossPct: null,
+      hooked,
+      pools: allSims,
+      info,
+      detail: `sell simulation incomplete — ${errored} of ${allSims.length} pools could not be simulated (RPC errors) and none passed · ${lines.join(" · ")}`,
+    };
+  // No pool passed and every pool simulated has an own LP fee ≥ JUNK_FEE_PCT: the loss is the pool's fee, not the token
+  // blocking or taxing sells (PANAL on Monad: one 95%-fee v4 pool beside the nad.fun curve read "honeypot"). Not a verdict.
+  // Every simulated pool is such a pool (a $0.77 one is no proof the market's liquidity was removed either).
+  if (!anyRevert && sims.length && sims.every((x) => x.feePct != null && x.feePct >= JUNK_FEE_PCT))
+    return {
+      sellable: null,
+      honeypot: null,
+      roundTripLossPct: null,
+      hooked,
+      pools: allSims,
+      info,
+      detail: `no verdict — the only pools that could be simulated charge an LP fee of ${JUNK_FEE_PCT}% or more, so their loss is the pool's fee, not the token's · ${lines.join(" · ")}`,
+    };
+  if (allDry) return { liquidityPulled: true, sellable: false, honeypot: false, roundTripLossPct: null, hooked, pools: allSims, info, detail: `liquidity removed — every pool is dry · ${lines.join(" · ")}` };
   const worst = sims.filter((x) => x.lossPct != null).sort((a, b) => (a.lossPct ?? 0) - (b.lossPct ?? 0))[0];
   return {
     sellable: false,
@@ -471,7 +545,7 @@ export async function robinhoodSim(inp: SimInput): Promise<AdapterResult> {
   return {
     status: { id: "rh-sim", label: "HoodTier sell simulation", state: r.sellable == null ? "partial" : "ok", message: r.detail, ms: Date.now() - t0 },
     data: {
-      liquidityPulled: r.liquidityPulled ?? (r.pools.length ? false : null),
+      liquidityPulled: r.liquidityPulled ?? (r.pools.some((p) => p.result !== "error") ? false : null),
       sellable: r.sellable,
       honeypot: r.honeypot,
       roundTripLossPct: r.roundTripLossPct,

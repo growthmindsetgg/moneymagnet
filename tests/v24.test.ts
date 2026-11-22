@@ -13,6 +13,7 @@ const basicsOnly = (s: TokenSnapshot): TokenSnapshot => ({
   top1SharePct: 25,
   accumulatorCount: 0,
   accumulatorSupplyPct: 0,
+  holderStrength: 5,
   earlyRetentionPct: 10,
   bundlersFlushed: false,
   deployerHoldingPct: 10,
@@ -108,11 +109,14 @@ describe("v2.4 wash ⇒ cap D", () => {
 });
 
 describe("v2.4 feed scores need ≥ 50 unique buyers", () => {
-  it("below 50: organic / bundle score are live, 0 points, 'insufficient sample'", () => {
+  // Replaced (audit H2): an insufficient sample used to score 0 points as "live" while its text said "not scored".
+  // It is now n/a — not scored and not counted in the covered weight.
+  it("below 50: organic / bundle score are n/a (not scored, not covered), 'insufficient sample'", () => {
     const r = scoreSnapshot(perfectLaunch("solana", { uniqueBuyers: 30 }));
     for (const id of ["organic_score", "bundle_score"]) {
       const f = r.groups.flatMap((g) => g.factors).find((x) => x.id === id)!;
-      expect(f.status).toBe("live");
+      expect(f.status).toBe("n/a");
+      expect(f.applicable).toBe(false);
       expect(f.points).toBe(0);
       expect(f.evidence).toMatch(/^insufficient sample — 30 unique buyers \(needs ≥ 50\)/);
     }

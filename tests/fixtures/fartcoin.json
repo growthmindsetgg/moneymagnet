@@ -378,7 +378,8 @@
       "snipeRatioPct": "Helius key not set",
       "deployerSoldPct": "Helius key not set",
       "creatorHasSocials": "metadata fetch failed: HTTP 429: This IPFS gateway is switching to a service worker gateway only. See h",
-      "roundTripLossPct": "no buy/sell simulator for Solana (token transfer fee is 0%)"
+      "roundTripLossPct": "no buy/sell simulator for Solana (token transfer fee is 0%)",
+      "holderStrength": "Helius key not set — Solana holder histories need it"
     },
     "fakeSignals": [
       {
@@ -405,7 +406,23 @@
         "label": "DexScreener",
         "url": "https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw"
       }
-    ]
+    ],
+    "holderStrength": null,
+    "holderStrengthLabel": null,
+    "holderStrengthDetail": {
+      "score": null,
+      "label": null,
+      "components": [],
+      "sentences": [],
+      "keyPerson": [],
+      "wallets": 0,
+      "excluded": [],
+      "nullReason": "Helius key not set — Solana holder histories need it",
+      "method": "Helius key not set",
+      "pending": false
+    },
+    "holderStrengthPending": false,
+    "vestingDiamond": false
   },
   "sources": [
     {
@@ -453,5 +470,6 @@
       "ms": 330,
       "url": "https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw"
     }
-  ]
+  ],
+  "holderStrengthRecordedAt": "2026-10-30T07:27:01.430Z"
 }

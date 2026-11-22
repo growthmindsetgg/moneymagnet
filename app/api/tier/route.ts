@@ -18,7 +18,7 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
 /**
  * The compact endpoint: paste a CA, get a tier, conviction vs churn and ≤ 5 short reasons.
  *   GET /api/tier?ca=<address>[&chain=base][&fresh=1]      POST /api/tier { "ca": "<address>", "chain"?: "base", "fresh"?: true }
- * An 0x address without a chain is resolved across Robinhood Chain, Base and Monad; on more than one ⇒ 300 + candidates.
+ * An 0x address without a chain is resolved across Robinhood Chain, Base, Monad and Ethereum; on more than one ⇒ 300 + candidates.
  * Cached for 2 minutes in the shared KV; live analyses are rate limited per client (429 + Retry-After).
  * Non-memes get 422 with the reason. The full evidence is GET /t/<chain>/<address> or POST /api/analyze.
  */

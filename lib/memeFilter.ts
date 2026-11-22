@@ -67,8 +67,8 @@ export async function stockRegistry(): Promise<StockRegistry> {
 export function knownNonMeme(chain: Chain, address: string, stocks?: StockRegistry): Eligibility | null {
   if (chain === "solana" && SOLANA_NON_MEMES[address]) return reject(SOLANA_NON_MEMES[address], `${SOLANA_NON_MEMES[address]} is not a meme`);
   if (chain === "robinhood" && stocks?.addresses.has(address.toLowerCase())) return reject("stock token", "listed in HoodScan's tokenized stock / ETF roster");
-  // Base / Monad: quote tokens (WETH, WMON, USDC…) and registered blue chips in data/<chain>-infra.json.
-  if (chain === "base" || chain === "monad") {
+  // Base / Monad / Ethereum: quote tokens (WETH, WMON, USDC…) and registered blue chips in data/<chain>-infra.json.
+  if (chain === "base" || chain === "monad" || chain === "ethereum") {
     const e = chainInfraEntry(chain, address);
     if (e && (e.role === "quote-token" || e.role === "quote-currency" || e.role === "blue-chip")) return reject(/USD|stable/i.test(e.label) ? "stablecoin" : /^W[A-Z]+\b|wrapped/i.test(e.label) ? "wrapped / bridged / stable asset" : "blue chip", `${e.label} is not a meme (registered in data/${chain}-infra.json)`);
   }

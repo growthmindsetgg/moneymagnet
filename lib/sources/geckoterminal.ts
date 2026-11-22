@@ -14,6 +14,7 @@ interface GtPool {
     fdv_usd: string | null;
     base_token_price_usd: string | null;
     volume_usd: { h24: string | null };
+    price_change_percentage?: { h24?: string | null };
     transactions: { h24?: { buys: number; sells: number; buyers: number; sellers: number } };
   };
   relationships: { base_token: { data: { id: string } }; dex?: { data?: { id?: string } } };
@@ -23,7 +24,7 @@ interface GtOhlcv {
   data?: { attributes?: { ohlcv_list?: number[][] } };
 }
 
-const NETWORK: Record<Chain, string> = { robinhood: "robinhood", solana: "solana", base: "base", monad: "monad" };
+const NETWORK: Record<Chain, string> = { robinhood: "robinhood", solana: "solana", base: "base", monad: "monad", ethereum: "eth" };
 const API = "https://api.geckoterminal.com/api/v2";
 
 export async function geckoterminal(chain: Chain, address: string): Promise<AdapterResult> {
@@ -35,7 +36,7 @@ export async function geckoterminal(chain: Chain, address: string): Promise<Adap
     isRetryable: (e) => e instanceof Error && /\b429\b|timed? ?out|TimeoutError/i.test(`${e.name} ${e.message}`),
   }).catch((e: Error) => {
     // Base / Monad: 404 = GeckoTerminal does not index the token (e.g. a nad.fun curve token) — an answer, not an outage.
-    if ((chain === "base" || chain === "monad") && /HTTP 404/.test(e.message)) return { data: [] as GtPool[] };
+    if ((chain === "base" || chain === "monad" || chain === "ethereum") && /HTTP 404/.test(e.message)) return { data: [] as GtPool[] };
     throw e;
   });
   const pools = res.data ?? [];
@@ -47,41 +48,54 @@ export async function geckoterminal(chain: Chain, address: string): Promise<Adap
   const rows: (PoolRow & { dexId?: string | null })[] = pools.map((p) => ({
     id: p.attributes.address,
     name: p.attributes.name,
-    liquidityUsd: num(p.attributes.reserve_in_usd) ?? 0,
-    volume24hUsd: num(p.attributes.volume_usd.h24) ?? 0,
+    // A pool listed without reserve / volume is unknown, never $0 (C1).
+    liquidityUsd: num(p.attributes.reserve_in_usd),
+    volume24hUsd: num(p.attributes.volume_usd?.h24),
     createdAt: p.attributes.pool_created_at,
     dexId: p.relationships.dex?.data?.id ?? null,
   }));
   const pump = chain === "solana" ? pumpMarket(rows) : null;
   const asBase = pools.filter((p) => p.relationships.base_token.data.id.toLowerCase() === baseId.toLowerCase());
   const main = [...(asBase.length ? asBase : pools)].sort(
-    (a, b) => (num(b.attributes.reserve_in_usd) ?? 0) - (num(a.attributes.reserve_in_usd) ?? 0),
+    // Ordering only: a pool without a reserve figure sorts last.
+    (a, b) => (num(b.attributes.reserve_in_usd) ?? -1) - (num(a.attributes.reserve_in_usd) ?? -1),
   )[0];
   const tx = main.attributes.transactions.h24;
   // Buyer/seller counts are per pool; they stand for the token only when the main pool carries
   // (nearly) all of its volume. Otherwise they would be a partial count presented as the total.
-  const totalVol = rows.reduce((a, r) => a + r.volume24hUsd, 0);
-  const mainVolShare = totalVol > 0 ? (num(main.attributes.volume_usd.h24) ?? 0) / totalVol : 1;
-  const wholeToken = mainVolShare >= 0.9;
-  const scopeReason = `GeckoTerminal counts buyers per pool and the main pool has only ${(mainVolShare * 100).toFixed(0)}% of 24h volume`;
+  // The share is only known when every pool's volume is: an unreported pool may carry the trading.
+  const volUnknown = rows.filter((r) => r.volume24hUsd == null).length;
+  const mainVol = num(main.attributes.volume_usd?.h24);
+  const totalVol = volUnknown ? null : rows.reduce((a, r) => a + r.volume24hUsd!, 0);
+  const mainVolShare = totalVol == null || mainVol == null ? null : totalVol > 0 ? mainVol / totalVol : 1;
+  const wholeToken = mainVolShare != null && mainVolShare >= 0.9;
+  const scopeReason =
+    mainVolShare == null
+      ? `GeckoTerminal counts trades per pool and ${volUnknown || 1} pool${(volUnknown || 1) > 1 ? "s are" : " is"} listed without a 24h volume, so the main pool's share of the token's trading is unknown`
+      : `GeckoTerminal counts trades per pool and the main pool has only ${(mainVolShare * 100).toFixed(0)}% of 24h volume`;
 
+  const pools0 = pump ? null : poolMetrics(rows);
+  const poolReasons = pools0?.nullReasons;
   const data: Partial<TokenSnapshot> = {
-    ...(pump ? pump.metrics : poolMetrics(rows)),
+    ...(pump ? pump.metrics : pools0),
     poolAddresses: rows.map((r) => r.id).filter((id) => /^0x[0-9a-fA-F]{40}$/.test(id) || !id.startsWith("0x")),
     fdvUsd: num(main.attributes.fdv_usd),
     priceUsd: asBase.length ? num(main.attributes.base_token_price_usd) : null,
+    // Read on the most-traded pool with this token as base: a dust pool's stale price is not the market's move.
+    priceChange24hPct: asBase.length ? num([...asBase].sort((a, b) => (num(b.attributes.volume_usd.h24) ?? 0) - (num(a.attributes.volume_usd.h24) ?? 0))[0].attributes.price_change_percentage?.h24) : null,
     // Unique buyer/seller wallets on the main pool — the per-pool counts GeckoTerminal publishes.
     buyers24h: wholeToken ? (tx?.buyers ?? null) : null,
     sellers24h: wholeToken ? (tx?.sellers ?? null) : null,
-    sells24h: tx?.sells ?? null,
-    tradesPerWallet: tx && tx.buyers + tx.sellers > 0 ? (tx.buys + tx.sells) / (tx.buyers + tx.sellers) : null,
+    // Main-pool trade counts stand for the token under the same rule as the buyer/seller counts (M5).
+    sells24h: wholeToken ? (tx?.sells ?? null) : null,
+    tradesPerWallet: wholeToken && tx && tx.buyers + tx.sellers > 0 ? (tx.buys + tx.sells) / (tx.buyers + tx.sellers) : null,
     links: [{ label: "GeckoTerminal", url: page }],
   };
-  const raw: Record<string, unknown> = { pools: rows, mainPool: main.attributes.address };
+  const raw: Record<string, unknown> = { pools: rows, mainPool: main.attributes.address, ...(pump?.curveOnly ? { curveOnly: true } : {}) };
 
   // Chart patterns from the main pool's candles (guide p.24, 27, 61-71).
   let failedFields: string[] | undefined;
-  const ohlcvNote = await chartPatterns(net, main.attributes.address, main.attributes.pool_created_at, data).catch((e: Error) => {
+  const ohlcvNote = await chartPatterns(net, main.attributes.address, main.attributes.pool_created_at, data, raw).catch((e: Error) => {
     const reason = `GeckoTerminal OHLCV failed: ${/\b429\b/.test(e.message) ? "rate limited (HTTP 429)" : e.message.slice(0, 80)}`;
     data.nullReasons = Object.fromEntries(
       ["identicalCandleSharePct", "staircase", "trendScore", "brokeHigherLow", "upOnlyChart", "launchRetraced30", "launchPriceUsd", "hugeCandlesOnly"].map((m) => [m, reason]),
@@ -91,7 +105,10 @@ export async function geckoterminal(chain: Chain, address: string): Promise<Adap
     return `OHLCV failed: ${e.message}`;
   });
   if (ohlcvNote) raw.ohlcv = ohlcvNote;
-  if (!wholeToken) data.nullReasons = { ...data.nullReasons, buyers24h: scopeReason, sellers24h: scopeReason };
+  if (!wholeToken) data.nullReasons = { ...data.nullReasons, buyers24h: scopeReason, sellers24h: scopeReason, sells24h: scopeReason, tradesPerWallet: scopeReason };
+  // Pool aggregates GeckoTerminal could not state (a pool without reserve / volume): poolMetrics' reasons
+  // (chartPatterns replaces data.nullReasons, so they are put back here).
+  if (!pump && poolReasons) data.nullReasons = { ...poolReasons, ...data.nullReasons };
   if (pump) data.nullReasons = { ...data.nullReasons, ...pump.nullReasons };
 
   return {
@@ -136,7 +153,7 @@ async function ohlcv(net: string, pool: string, tf: "minute" | "hour" | "day", a
 }
 
 /** Fills pattern metrics on `data` and returns null, or a failure note. Never invents a value. */
-async function chartPatterns(net: string, pool: string, createdAt: string | null, data: Partial<TokenSnapshot>): Promise<string | null> {
+async function chartPatterns(net: string, pool: string, createdAt: string | null, data: Partial<TokenSnapshot>, raw: Record<string, unknown> = {}): Promise<string | null> {
   const launchTs = createdAt ? Math.floor(Date.parse(createdAt) / 1000) : null;
   const ageH = launchTs ? (Date.now() / 1000 - launchTs) / 3600 : null;
   const [m1, m5, d1, h1, launch1m] = await Promise.all([
@@ -188,6 +205,8 @@ async function chartPatterns(net: string, pool: string, createdAt: string | null
     nullReasons.launchRetraced30 = launchTs ? "token is ≥ 72h old — launch window not fetched" : "pool creation time unknown";
   }
 
+  // Daily candles of the main pool, kept for Holder Strength (drawdowns and dips over the token's life).
+  raw.dayCandles = d1.map((c) => ({ t: c.t, o: c.o, h: c.h, l: c.l, c: c.c }));
   // Launch price = open of the first daily candle of the main pool.
   if (d1.length && launchTs && d1[0].t <= launchTs + 86_400) data.launchPriceUsd = d1[0].o;
   else nullReasons.launchPriceUsd = "first daily candle not available from GeckoTerminal";

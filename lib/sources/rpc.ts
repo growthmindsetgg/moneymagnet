@@ -1,12 +1,16 @@
 import type { AdapterResult, HolderRow, TokenSnapshot } from "../types";
+import { evmMintAuthority } from "../onchain/mintScan";
+import { after } from "next/server";
 import { getKV, kvGet, kvSet } from "../kv";
 import { deployerStats, findCreation, type Creation, type DeployerStats } from "../onchain/creation";
 import { creationKey, replayKey } from "../onchain/keys";
 import { advanceReplay, newReplayState, rankHolders, replayProgressPct, type ReplayState } from "../onchain/replay";
-import { codeKind, makeRpc, type Rpc } from "../onchain/rpc";
+import { callOrRevert, codeKind, makeRpc, type Rpc } from "../onchain/rpc";
 import { infraEntry, isInfrastructure, launchpadOfFactory } from "../onchain/infra";
 import infraRegistry from "@/data/robinhood-infra.json";
 
+/** CLAUDE.md: stale data expires after 6h. */
+const STALE_MAX_MIN = 360;
 const EIP1967_IMPL = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 const ZERO_WORD = /^0x0*$/;
 const TOP_HOLDERS = 60;
@@ -17,21 +21,16 @@ export interface RpcOptions {
   replayBudgetMs?: number;
 }
 
-async function safeCall(rpc: Rpc, to: string, data: string): Promise<string | null> {
-  try {
-    return await rpc<string>("eth_call", [{ to, data }, "latest"], 10_000);
-  } catch {
-    return null; // revert, e.g. no owner() function
-  }
-}
-
-/** Supply sitting in registered infrastructure (pool managers, curves, vaults, burn addresses). */
-async function registeredInfraHeld(rpc: Rpc, token: string): Promise<bigint> {
+/**
+ * Supply sitting in registered infrastructure (pool managers, curves, vaults, burn addresses).
+ * `failed` counts balanceOf reads that did not answer: their supply is unknown, not 0.
+ */
+async function registeredInfraHeld(rpc: Rpc, token: string): Promise<{ held: bigint; failed: number; total: number }> {
   const holders = infraRegistry.addresses.filter((e) => ["v4-pool-manager", "bonding-curve", "burn"].includes(e.role)).map((e) => e.address.toLowerCase());
   const bals = await Promise.all(
-    holders.map((h) => rpc<string>("eth_call", [{ to: token, data: "0x70a08231" + h.slice(2).padStart(64, "0") }, "latest"], 10_000).then((r) => (r && r !== "0x" ? BigInt(r) : 0n)).catch(() => 0n)),
+    holders.map((h) => rpc<string>("eth_call", [{ to: token, data: "0x70a08231" + h.slice(2).padStart(64, "0") }, "latest"], 10_000).then((r) => (r && r !== "0x" ? BigInt(r) : 0n)).catch(() => null)),
   );
-  return bals.reduce((a, b) => a + b, 0n);
+  return { held: bals.reduce<bigint>((a, b) => a + (b ?? 0n), 0n), failed: bals.filter((b) => b === null).length, total: holders.length };
 }
 
 const pctOf = (raw: bigint, supply: bigint) => (supply > 0n ? Number((raw * 1_000_000n) / supply) / 10_000 : null);
@@ -44,11 +43,11 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
   const t0 = Date.now();
   const rpc = opts.rpc ?? makeRpc();
   const a = address.toLowerCase();
-  const [code, supplyHex, decHex, ownerHex, implSlot, headHex] = await Promise.all([
+  const [code, supplyCall, decCall, ownerCall, implSlot, headHex] = await Promise.all([
     rpc<string>("eth_getCode", [a, "latest"], 15_000),
-    safeCall(rpc, a, "0x18160ddd"),
-    safeCall(rpc, a, "0x313ce567"),
-    safeCall(rpc, a, "0x8da5cb5b"),
+    callOrRevert(rpc, a, "0x18160ddd"),
+    callOrRevert(rpc, a, "0x313ce567"),
+    callOrRevert(rpc, a, "0x8da5cb5b"),
     rpc<string>("eth_getStorageAt", [a, EIP1967_IMPL, "latest"], 10_000).catch(() => null),
     rpc<string>("eth_blockNumber", [], 10_000),
   ]);
@@ -56,25 +55,45 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
     return { status: { id: "rpc", label: "Robinhood RPC", state: "partial", message: "No contract code at this address", ms: Date.now() - t0 }, data: { tokenExists: false } };
   }
   const head = Number(headHex);
+  const [supplyHex, decHex, ownerHex] = [supplyCall.value, decCall.value, ownerCall.value];
   const decimals = decHex && decHex !== "0x" ? Number(BigInt(decHex)) : 18;
   const supplyRaw = supplyHex && supplyHex !== "0x" ? BigInt(supplyHex) : null;
   const scale = 10 ** decimals;
-  const totalSupply = supplyRaw != null ? Number(supplyRaw) / scale : null;
+  // A failed decimals() read would scale the supply by a guessed 18: leave it null instead.
+  const totalSupply = supplyRaw != null && !decCall.error ? Number(supplyRaw) / scale : null;
+  const readNotes: string[] = [];
+  const readReasons: Record<string, string> = {};
+  if (supplyCall.error) readReasons.totalSupply = `totalSupply() read failed: ${supplyCall.error}`;
+  else if (decCall.error && supplyRaw != null) readReasons.totalSupply = `decimals() read failed: ${decCall.error}`;
+  if (readReasons.totalSupply) readNotes.push(readReasons.totalSupply);
 
-  let ownerRenounced: boolean | null = true; // owner() reverting = no Ownable owner
-  if (ownerHex && ownerHex !== "0x") {
+  // owner() reverting = no Ownable owner. A failed read says nothing about the owner: null, never "renounced".
+  let ownerRenounced: boolean | null = true;
+  if (ownerCall.error) {
+    ownerRenounced = null;
+    readReasons.ownerRenounced = `owner() read failed: ${ownerCall.error}`;
+    readNotes.push(readReasons.ownerRenounced);
+  } else if (ownerHex && ownerHex !== "0x") {
     const owner = `0x${ownerHex.slice(-40)}`.toLowerCase();
     ownerRenounced = /^0x0{40}$/.test(owner) || owner === "0x000000000000000000000000000000000000dead";
   }
 
+  const upgradeable = implSlot == null ? null : !ZERO_WORD.test(implSlot);
+  const mint = evmMintAuthority(code, ownerRenounced, upgradeable, readReasons.ownerRenounced);
   const data: Partial<TokenSnapshot> = {
     totalSupply,
     ownerRenounced,
-    upgradeable: implSlot == null ? null : !ZERO_WORD.test(implSlot),
+    upgradeable,
+    mintAuthority: mint.mintAuthority,
   };
-  const notes: string[] = [];
+  const notes: string[] = [...readNotes];
   const raw: Record<string, unknown> = { owner: ownerHex, implSlot, head, supplyRaw: supplyRaw?.toString() ?? null, decimals };
-  data.nullReasons = { creatorHasSocials: "Robinhood Chain ERC-20s carry no social-link metadata" };
+  data.nullReasons = {
+    creatorHasSocials: "Robinhood Chain ERC-20s carry no social-link metadata",
+    ...readReasons,
+    ...(mint.mintAuthority == null ? { mintAuthority: mint.reason } : {}),
+  };
+  raw.mint = mint.reason;
 
   // 1. Creation + deployer (cached forever: it never changes).
   let creation = await kvGet<Creation>(creationKey(a));
@@ -120,7 +139,8 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
     let stats = await kvGet<Record<string, string | number | null>>(dKey);
     if (!stats) {
       try {
-        const infraHeldRaw = await registeredInfraHeld(rpc, a);
+        const infra = await registeredInfraHeld(rpc, a);
+        const infraHeldRaw = infra.held;
         const d: DeployerStats = await deployerStats(rpc, a, creation.deployer, creation.creationBlock, head, supplyRaw, { creationTx: creation.mintTx, infraHeldRaw });
         stats = {
           balance: d.balance.toString(),
@@ -131,16 +151,23 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
           distributed: d.distributed.toString(),
           distributedPct: d.distributedPct,
           infraHeld: infraHeldRaw.toString(),
-          holdingPct: d.holdingPct,
+          // Unread infrastructure balances leave infra supply in the denominator: the share is unknown, not lower.
+          holdingPct: infra.failed ? null : d.holdingPct,
+          infraUnread: infra.failed ? `infra balance unread (${infra.failed} of ${infra.total} balanceOf calls failed)` : null,
           soldPct: d.soldPct,
         };
-        await kvSet(dKey, stats, 600);
+        // A partial read is not cached: the next run retries the failed balances.
+        if (!infra.failed) await kvSet(dKey, stats, 600);
       } catch (err) {
         notes.push(`deployer flows failed: ${(err as Error).message.slice(0, 80)}`);
       }
     }
     if (stats) {
       data.deployerHoldingPct = stats.holdingPct as number | null;
+      if (stats.infraUnread) {
+        data.nullReasons = { ...data.nullReasons, deployerHoldingPct: `${stats.infraUnread} — infrastructure supply cannot be excluded from the denominator` };
+        notes.push(stats.infraUnread as string);
+      }
       data.deployerSoldPct = stats.soldPct as number;
       data.deployerDistributedPct = (stats.distributedPct as number | undefined) ?? null;
       data.deployerHasSold = BigInt(stats.sentToContracts as string) > 0n;
@@ -150,6 +177,8 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
 
   // 3. Holder balances via a resumable Transfer-log replay. Failures here only cost holder data.
   let state: ReplayState | null = null;
+  let lagMin: number | null = null;
+  let tooOld = false;
   const stored = creation ? await kvGet<ReplayState>(replayKey(a)) : null;
   // A full replay can take many minutes (microduck: 1.57M logs); per-instance memory can never finish
   // it and only burns the RPC's rate limit, so it needs durable KV unless a state already exists.
@@ -159,9 +188,26 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
     raw.replay = { skipped: "no durable KV" };
   } else if (creation) try {
     state = stored ?? newReplayState(a, creation.creationBlock);
-    state = await advanceReplay(rpc, state, head, { budgetMs: opts.replayBudgetMs ?? Number(process.env.REPLAY_BUDGET_MS || 20_000) });
+    // Inside the request only a short advance; the rest continues after the response (see save below).
+    state = await advanceReplay(rpc, state, head, { budgetMs: opts.replayBudgetMs ?? Number(process.env.REPLAY_BUDGET_MS || 8_000) });
 
-    if (state.complete && supplyRaw) {
+    // A completed replay that has fallen behind the head is old data: labelled stale up to 6h, not used past that.
+    lagMin = null;
+    // Robinhood Chain makes ~10 blocks a second (measured 2026-11-19): under 1,200 blocks behind is ~2 minutes, i.e. current.
+    if (state.complete && head - state.scannedTo <= 1_200) lagMin = 0;
+    else if (state.complete && state.scannedTo < head) {
+      const [at, now] = await Promise.all([
+        rpc<{ timestamp: string } | null>("eth_getBlockByNumber", [`0x${state.scannedTo.toString(16)}`, false], 8_000).catch(() => null),
+        rpc<{ timestamp: string } | null>("eth_getBlockByNumber", ["latest", false], 8_000).catch(() => null),
+      ]);
+      lagMin = at && now ? Math.max(0, Math.round((Number(now.timestamp) - Number(at.timestamp)) / 60)) : null;
+    }
+    tooOld = state.complete && state.scannedTo < head && (lagMin == null || lagMin > STALE_MAX_MIN);
+    if (tooOld) {
+      notes.push(`holder replay is ${lagMin == null ? "behind the head (age unknown)" : `${Math.round(lagMin / 60)}h behind`} — on-chain holders not used until it catches up`);
+      data.nullReasons = { ...data.nullReasons, holders: `on-chain holder replay ${lagMin == null ? "lags the head by an unknown time" : `is ${Math.round(lagMin / 60)}h behind`} (> 6h): not served as current` };
+    }
+    if (state.complete && supplyRaw && !tooOld) {
       const { top, count } = rankHolders(state.balances, TOP_HOLDERS);
       const unknown = top.filter((h) => !state!.codeKinds[h.address]);
       const codes = await Promise.all(unknown.map((h) => rpc<string>("eth_getCode", [h.address, "latest"], 10_000).catch(() => null)));
@@ -184,10 +230,21 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
       data.holders = holders;
       data.holderCount = count;
       data.holderSource = "onchain";
+      if (lagMin != null && lagMin >= 5) data.staleFields = { ...(data.staleFields ?? {}), holders: lagMin, holderCount: lagMin };
     }
     // Concurrent requests (or the pre-warm script) may have advanced further — never move backwards.
-    const latest = await kvGet<Pick<ReplayState, "scannedTo">>(replayKey(a));
-    if (!latest || latest.scannedTo <= state.scannedTo) await kvSet(replayKey(a), state);
+    // The state is ~1 MB on big tokens (a 5s write): saved after the response where the host allows it.
+    const done = state;
+    const save = async (more: boolean) => {
+      const next = more && done.scannedTo < head ? await advanceReplay(rpc, done, head, { budgetMs: Number(process.env.REPLAY_AFTER_MS || 20_000) }).catch(() => done) : done;
+      const latest = await kvGet<Pick<ReplayState, "scannedTo">>(replayKey(a));
+      if (!latest || latest.scannedTo <= next.scannedTo) await kvSet(replayKey(a), next);
+    };
+    try {
+      after(() => save(true));
+    } catch {
+      await save(false);
+    }
     const pct = replayProgressPct(state, head);
     notes.push(
       state.complete
@@ -204,7 +261,7 @@ export async function robinhoodRpc(address: string, opts: RpcOptions = {}): Prom
     status: {
       id: "rpc",
       label: "Robinhood RPC",
-      state: state?.complete ? "ok" : "partial",
+      state: state?.complete && !tooOld && !readNotes.length ? "ok" : "partial",
       message: [creation ? `deployer ${creation.deployer.slice(0, 8)}…` : "deployer unknown", ...notes].join(" · "),
       ms: Date.now() - t0,
     },

@@ -4,9 +4,9 @@ const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
 const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 /** EVM chains share the 0x address space: an 0x address alone does not say which chain it is on. */
-export const EVM_CHAINS = ["robinhood", "base", "monad"] as const;
+export const EVM_CHAINS = ["robinhood", "base", "monad", "ethereum"] as const;
 export type EvmChain = (typeof EVM_CHAINS)[number];
-export const ALL_CHAINS: Chain[] = ["robinhood", "solana", "base", "monad"];
+export const ALL_CHAINS: Chain[] = ["robinhood", "solana", "base", "monad", "ethereum"];
 
 export const isEvmChain = (c: string | null | undefined): c is EvmChain => !!c && (EVM_CHAINS as readonly string[]).includes(c);
 export const isChain = (c: string | null | undefined): c is Chain => !!c && (ALL_CHAINS as string[]).includes(c);
@@ -34,5 +34,5 @@ export function normalizeAddress(chain: Chain, address: string): string {
   return chain === "solana" ? address.trim() : address.trim().toLowerCase();
 }
 
-export const CHAIN_LABEL: Record<Chain, string> = { robinhood: "Robinhood Chain", solana: "Solana", base: "Base", monad: "Monad" };
-export const CHAIN_ID: Record<Chain, number | null> = { robinhood: 4663, solana: null, base: 8453, monad: 143 };
+export const CHAIN_LABEL: Record<Chain, string> = { robinhood: "Robinhood Chain", solana: "Solana", base: "Base", monad: "Monad", ethereum: "Ethereum" };
+export const CHAIN_ID: Record<Chain, number | null> = { robinhood: 4663, solana: null, base: 8453, monad: 143, ethereum: 1 };

@@ -25,7 +25,8 @@
               "data": [
                 "rpc",
                 "hoodscan",
-                "rugcheck"
+                "rugcheck",
+                "helius"
               ],
               "thresholds": [
                 {
@@ -90,71 +91,60 @@
               "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%)."
             },
             {
-              "id": "accumulator_count",
-              "label": "0-sell accumulators (count)",
-              "weight": 4,
-              "metric": "accumulatorCount",
+              "id": "holder_strength",
+              "label": "Holder Strength",
+              "weight": 10,
+              "metric": "holderStrength",
               "direction": "higher_better",
               "format": "int",
               "source": "hoodtier",
+              "note": "Top-20 non-LP, non-infra holders weighted by share: hold duration, drawdown survival, sell discipline, wallet maturity, dip accumulation and the 0-sell accumulators (which used to be two separate factors). Diamond ≥ 80 · Strong 60–79 · Mixed 40–59 · Weak 20–39 · Paper < 20. Established mode only, Robinhood Chain and Solana (the sets with a holder-conviction group); on Base / Monad it is shown as information.",
               "data": [
-                "hoodscan"
+                "hoodscan",
+                "helius",
+                "geckoterminal"
               ],
               "thresholds": [
                 {
-                  "gte": 5,
+                  "gte": 80,
                   "points": 1
                 },
                 {
-                  "gte": 3,
+                  "gte": 60,
                   "points": 0.75
                 },
                 {
-                  "gte": 1,
-                  "points": 0.45
+                  "gte": 40,
+                  "points": 0.5,
+                  "flag": "info"
                 },
                 {
-                  "points": 0.15,
-                  "flag": "info"
+                  "gte": 20,
+                  "points": 0.25,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "{value} large wallets bought 5+ times and never sold."
-            },
-            {
-              "id": "accumulator_supply",
-              "label": "0-sell accumulators (% supply)",
-              "weight": 4,
-              "metric": "accumulatorSupplyPct",
-              "direction": "higher_better",
-              "format": "pct",
-              "source": "hoodtier",
-              "data": [
-                "hoodscan"
-              ],
-              "thresholds": [
+              "evidenceTemplate": "Holder Strength {value}/100 — {holderStrengthLabel} (top-20 non-LP holders).",
+              "whenMissing": [
                 {
-                  "gte": 5,
-                  "points": 1
-                },
-                {
-                  "gte": 2,
-                  "points": 0.75
-                },
-                {
-                  "gte": 0.5,
-                  "points": 0.45
-                },
-                {
-                  "points": 0.15,
-                  "flag": "info"
+                  "if": {
+                    "holderStrengthPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Holder histories are still being read (they continue in the background) — not counted yet."
                 }
-              ],
-              "evidenceTemplate": "Multi-buy, zero-sell wallets hold {value} of supply."
+              ]
             },
             {
               "id": "early_retention",
               "label": "Early-cohort retention",
-              "weight": 4,
+              "weight": 2,
               "metric": "earlyRetentionPct",
               "direction": "higher_better",
               "format": "pct",
@@ -534,7 +524,6 @@
               "data": [
                 "rh-sim",
                 "scanhood",
-                "rugcheck",
                 "jupiter"
               ],
               "thresholds": [
@@ -1835,7 +1824,7 @@
               "source": "guide",
               "note": "p.34, 47: canonical creator with real socials",
               "data": [
-                "metadata"
+                "rugcheck"
               ],
               "thresholds": [
                 {
@@ -2055,7 +2044,6 @@
               "data": [
                 "rh-sim",
                 "scanhood",
-                "rugcheck",
                 "jupiter"
               ],
               "thresholds": [
@@ -2888,7 +2876,6 @@
               "data": [
                 "rh-sim",
                 "scanhood",
-                "rugcheck",
                 "jupiter"
               ],
               "thresholds": [
@@ -5575,6 +5562,1201 @@
           ]
         }
       ]
+    },
+    "launch_ethereum": {
+      "label": "Launch mode (<72h) · Ethereum",
+      "groups": [
+        {
+          "id": "launch",
+          "label": "Launch mechanics",
+          "weight": 40,
+          "factors": [
+            {
+              "id": "vol_mc",
+              "label": "VOL / MC",
+              "weight": 12,
+              "metric": "volMcVsBar",
+              "direction": "higher_better",
+              "format": "ratio",
+              "source": "guide",
+              "note": "p.25: VOL/MC < 0.8 on a new token is most certainly a bundle; younger tokens need more (<6h 1.5×, <24h 1.2×, <72h 1.0×)",
+              "data": [
+                "dexscreener",
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1,
+                  "points": 1
+                },
+                {
+                  "gte": 0.75,
+                  "points": 0.5,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "24h volume / market cap = {volMcRatio} against an age-adjusted bar of {volMcBar} ({value} of the bar)."
+            },
+            {
+              "id": "launch_retrace",
+              "label": "Launch retrace",
+              "weight": 10,
+              "metric": "launchRetraced30",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.27: a straight-up launch that never retraces ≥ 30% means supply is controlled",
+              "data": [
+                "geckoterminal"
+              ],
+              "labels": {
+                "true": "retraced ≥ 30%",
+                "false": "never retraced"
+              },
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "Price retraced ≥ 30% from the first 15-minute high — normal price discovery."
+                },
+                {
+                  "points": 0,
+                  "flag": "warn",
+                  "note": "Straight-up launch that never retraced 30% from the first 15-minute high — supply looks controlled."
+                }
+              ],
+              "evidenceTemplate": "{note} ({launchWindow})"
+            },
+            {
+              "id": "chart_identical",
+              "label": "Identical-candle bots",
+              "weight": 10,
+              "metric": "identicalCandleSharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.24: identical candles = bots",
+              "data": [
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "lt": 30,
+                  "points": 1
+                },
+                {
+                  "lt": 60,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} of the last 30 candles have a body within ±10% of the same size ({identicalWindow})."
+            },
+            {
+              "id": "chart_staircase",
+              "label": "Staircase chart",
+              "weight": 8,
+              "metric": "staircase",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.24: staircase up-steps with no sells = honeypot pattern",
+              "data": [
+                "geckoterminal"
+              ],
+              "labels": {
+                "true": "staircase",
+                "false": "no staircase"
+              },
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "No staircase pattern."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "≥ 5 consecutive up-steps with no dips — honeypot staircase."
+                }
+              ],
+              "evidenceTemplate": "{note} ({staircaseWindow})"
+            }
+          ]
+        },
+        {
+          "id": "safety",
+          "label": "Contract safety (basics — gates, no points)",
+          "weight": 0,
+          "factors": [
+            {
+              "id": "sellable",
+              "label": "Sellable (honeypot sim)",
+              "weight": 0,
+              "metric": "sellable",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.19: honeypot check",
+              "data": [
+                "ethereum-sim",
+                "goplus"
+              ],
+              "gate": true,
+              "gatePass": {
+                "eq": true
+              },
+              "labels": {
+                "true": "sellable: yes",
+                "false": "sellable: no"
+              },
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "Token can be sold (buy+sell simulation / no freeze, hook or prohibitive fee)."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Honeypot: selling is blocked or taxed away."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "mint_authority",
+              "label": "Mint authority",
+              "weight": 0,
+              "metric": "mintAuthority",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.17-19: mint authority must be disabled",
+              "data": [
+                "goplus"
+              ],
+              "gate": true,
+              "gatePass": {
+                "eq": false
+              },
+              "labels": {
+                "true": "enabled",
+                "false": "disabled"
+              },
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "Mint authority disabled — supply is fixed."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Mint authority enabled — supply can be inflated."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "owner_renounced",
+              "label": "Owner renounced",
+              "weight": 0,
+              "metric": "ownerRenounced",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "hoodtier",
+              "data": [
+                "ethereum-rpc",
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "No active owner (renounced or no owner() function)."
+                },
+                {
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "An owner address still controls the contract."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "upgradeable",
+              "label": "Upgradeable proxy",
+              "weight": 0,
+              "metric": "upgradeable",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "hoodtier",
+              "data": [
+                "ethereum-rpc",
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "Not an EIP-1967 proxy — code cannot be swapped."
+                },
+                {
+                  "points": 0.2,
+                  "flag": "warn",
+                  "note": "EIP-1967 proxy — logic can be upgraded."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "lp_lock",
+              "label": "LP locked / burned (main pool)",
+              "weight": 0,
+              "metric": "lpLockedPct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.16-18: LP must be locked or burned on the main pool",
+              "data": [
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "gte": 95,
+                  "points": 1
+                },
+                {
+                  "gte": 80,
+                  "points": 0.75
+                },
+                {
+                  "gte": 50,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} of main-pool LP is locked or burned.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "isLaunchpad": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "score",
+                  "points": 1,
+                  "flag": "none",
+                  "evidence": "Launchpad-created ({launchpad}) — LP is locked/burned by construction (guide p.16-18)."
+                },
+                {
+                  "mode": "na",
+                  "evidence": "LP lock not verifiable here (v3/v4 positions, or the lookup only runs on young tokens). On an established token liquidity is judged by its 24h/7d history instead — not held against the token."
+                }
+              ],
+              "gateOnly": true
+            }
+          ]
+        },
+        {
+          "id": "holders",
+          "label": "Holder conviction",
+          "weight": 30,
+          "factors": [
+            {
+              "id": "top_holder",
+              "label": "Top holder (non-LP)",
+              "weight": 16,
+              "metric": "top1SharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.22: top holder ≤ 3.5% excluding LP/curve/lockers",
+              "data": [
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "lte": 3.5,
+                  "points": 1
+                },
+                {
+                  "lte": 10,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "lte": 20,
+                  "points": 0.15,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource})."
+            },
+            {
+              "id": "top10_share",
+              "label": "Top-10 holder share",
+              "weight": 14,
+              "metric": "top10SharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "lte": 15,
+                  "points": 1
+                },
+                {
+                  "lte": 25,
+                  "points": 0.8
+                },
+                {
+                  "lte": 40,
+                  "points": 0.55,
+                  "flag": "info"
+                },
+                {
+                  "lte": 60,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+            }
+          ]
+        },
+        {
+          "id": "flow",
+          "label": "Flow & volume",
+          "weight": 30,
+          "factors": [
+            {
+              "id": "buyer_seller_ratio",
+              "label": "Buyer / seller wallets",
+              "weight": 7,
+              "metric": "buyerSellerRatio",
+              "direction": "higher_better",
+              "format": "ratio",
+              "source": "hoodtier",
+              "data": [
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1.2,
+                  "points": 1
+                },
+                {
+                  "gte": 1,
+                  "points": 0.8
+                },
+                {
+                  "gte": 0.75,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "points": 0.1,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "{value} buyers per seller (24h) — {buyersBasis}."
+            },
+            {
+              "id": "sell_count",
+              "label": "Sells happening",
+              "weight": 4,
+              "metric": "sells24h",
+              "direction": "higher_better",
+              "format": "int",
+              "source": "hoodtier",
+              "data": [
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "thresholds": [
+                {
+                  "gte": 5,
+                  "points": 1
+                },
+                {
+                  "gte": 1,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "points": 0,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "{value} sell transactions in 24h (zero sells on an active chart is a honeypot sign)."
+            },
+            {
+              "id": "trend",
+              "label": "Trend structure",
+              "weight": 9,
+              "metric": "trendScore",
+              "direction": "higher_better",
+              "format": "num",
+              "source": "guide",
+              "note": "p.61-71",
+              "data": [
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1,
+                  "points": 1,
+                  "note": "higher highs and higher lows"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.5,
+                  "note": "mixed / ranging structure"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "lower lows and lower highs"
+                }
+              ],
+              "evidenceTemplate": "5m swing structure over the token's life: {note} ({trendWindow})."
+            },
+            {
+              "id": "round_trip_loss",
+              "label": "Round-trip loss",
+              "weight": 10,
+              "metric": "roundTripLossPct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "ethereum-sim"
+              ],
+              "thresholds": [
+                {
+                  "lte": 10,
+                  "points": 1
+                },
+                {
+                  "lte": 20,
+                  "points": 0.75,
+                  "flag": "info"
+                },
+                {
+                  "lte": 35,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Simulated buy→sell loses {value} (fees + tax + slippage)."
+            }
+          ]
+        }
+      ]
+    },
+    "established_ethereum": {
+      "label": "Established mode · Ethereum",
+      "groups": [
+        {
+          "id": "holders",
+          "label": "Holder conviction",
+          "weight": 30,
+          "factors": [
+            {
+              "id": "top10_share",
+              "label": "Top-10 holder share",
+              "weight": 11,
+              "metric": "top10SharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "lte": 15,
+                  "points": 1
+                },
+                {
+                  "lte": 25,
+                  "points": 0.8
+                },
+                {
+                  "lte": 40,
+                  "points": 0.55,
+                  "flag": "info"
+                },
+                {
+                  "lte": 60,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+            },
+            {
+              "id": "top_holder",
+              "label": "Top holder (non-LP)",
+              "weight": 10,
+              "metric": "top1SharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.22: top holder should be ≤ 3.5% excluding LP/curve/lockers",
+              "data": [
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "lte": 3.5,
+                  "points": 1
+                },
+                {
+                  "lte": 10,
+                  "points": 0.5,
+                  "flag": "warn"
+                },
+                {
+                  "lte": 20,
+                  "points": 0.2,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%)."
+            },
+            {
+              "id": "deployer_holding",
+              "label": "Deployer holding",
+              "weight": 9,
+              "metric": "deployerHoldingPct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "ethereum-rpc",
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "lte": 5,
+                  "points": 1
+                },
+                {
+                  "lte": 10,
+                  "points": 0.7
+                },
+                {
+                  "lte": 20,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Deployer wallet holds {value} of supply."
+            }
+          ]
+        },
+        {
+          "id": "flow",
+          "label": "Flow & volume",
+          "weight": 28,
+          "factors": [
+            {
+              "id": "buyer_seller_ratio",
+              "label": "Buyer / seller wallets",
+              "weight": 9,
+              "metric": "buyerSellerRatio",
+              "direction": "higher_better",
+              "format": "ratio",
+              "source": "hoodtier",
+              "data": [
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1.2,
+                  "points": 1
+                },
+                {
+                  "gte": 1,
+                  "points": 0.8
+                },
+                {
+                  "gte": 0.75,
+                  "points": 0.55,
+                  "flag": "info"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0.1,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} buyers per seller (24h) — {buyersBasis}."
+            },
+            {
+              "id": "trades_per_wallet",
+              "label": "Trades per wallet",
+              "weight": 6,
+              "metric": "tradesPerWallet",
+              "direction": "band",
+              "format": "num",
+              "source": "hoodtier",
+              "data": [
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1.5,
+                  "lte": 6,
+                  "points": 1
+                },
+                {
+                  "lt": 1.5,
+                  "points": 0.6,
+                  "flag": "info"
+                },
+                {
+                  "lte": 12,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "points": 0.2,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "{value} trades per active wallet (healthy band 1.5–6)."
+            },
+            {
+              "id": "round_trip_loss",
+              "label": "Round-trip loss",
+              "weight": 13,
+              "metric": "roundTripLossPct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "ethereum-sim"
+              ],
+              "thresholds": [
+                {
+                  "lte": 10,
+                  "points": 1
+                },
+                {
+                  "lte": 20,
+                  "points": 0.75,
+                  "flag": "info"
+                },
+                {
+                  "lte": 35,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Simulated buy→sell loses {value} (fees + tax + slippage)."
+            }
+          ]
+        },
+        {
+          "id": "safety",
+          "label": "Contract safety (basics — gates, no points)",
+          "weight": 0,
+          "factors": [
+            {
+              "id": "sellable",
+              "label": "Sellable (honeypot sim)",
+              "weight": 0,
+              "metric": "sellable",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.19: honeypot check",
+              "data": [
+                "ethereum-sim",
+                "goplus"
+              ],
+              "gate": true,
+              "gatePass": {
+                "eq": true
+              },
+              "labels": {
+                "true": "sellable: yes",
+                "false": "sellable: no"
+              },
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "Token can be sold (buy+sell simulation / no freeze, hook or prohibitive fee)."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Honeypot: selling is blocked or taxed away."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "mint_authority",
+              "label": "Mint authority",
+              "weight": 0,
+              "metric": "mintAuthority",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.17-19: mint authority must be disabled",
+              "data": [
+                "goplus"
+              ],
+              "gate": true,
+              "gatePass": {
+                "eq": false
+              },
+              "labels": {
+                "true": "enabled",
+                "false": "disabled"
+              },
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "Mint authority disabled — supply is fixed."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Mint authority enabled — supply can be inflated."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "verified",
+              "label": "Contract verified",
+              "weight": 0,
+              "metric": "verified",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "hoodtier",
+              "data": [
+                "goplus",
+                "etherscan"
+              ],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1
+                },
+                {
+                  "points": 0
+                }
+              ],
+              "evidenceTemplate": "{value}",
+              "gateOnly": true
+            },
+            {
+              "id": "owner_renounced",
+              "label": "Owner renounced",
+              "weight": 0,
+              "metric": "ownerRenounced",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "hoodtier",
+              "data": [
+                "ethereum-rpc",
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "No active owner (renounced or no owner() function)."
+                },
+                {
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "An owner address still controls the contract."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "upgradeable",
+              "label": "Upgradeable proxy",
+              "weight": 0,
+              "metric": "upgradeable",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "hoodtier",
+              "data": [
+                "ethereum-rpc",
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "Not an EIP-1967 proxy — code cannot be swapped."
+                },
+                {
+                  "points": 0.2,
+                  "flag": "warn",
+                  "note": "EIP-1967 proxy — logic can be upgraded."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "lp_lock",
+              "label": "LP locked / burned (main pool)",
+              "weight": 0,
+              "metric": "lpLockedPct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.16-18: LP must be locked or burned on the main pool",
+              "data": [
+                "goplus"
+              ],
+              "thresholds": [
+                {
+                  "gte": 95,
+                  "points": 1
+                },
+                {
+                  "gte": 80,
+                  "points": 0.75
+                },
+                {
+                  "gte": 50,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} of main-pool LP is locked or burned.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "isLaunchpad": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "score",
+                  "points": 1,
+                  "flag": "none",
+                  "evidence": "Launchpad-created ({launchpad}) — LP is locked/burned by construction (guide p.16-18)."
+                },
+                {
+                  "mode": "na",
+                  "evidence": "LP lock not verifiable here (v3/v4 positions, or the lookup only runs on young tokens). On an established token liquidity is judged by its 24h/7d history instead — not held against the token."
+                }
+              ],
+              "gateOnly": true
+            }
+          ]
+        },
+        {
+          "id": "liquidity",
+          "label": "Liquidity & chart",
+          "weight": 42,
+          "factors": [
+            {
+              "id": "liq_fdv",
+              "label": "Liquidity / FDV",
+              "weight": 13,
+              "metric": "liqFdvPct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "dexscreener",
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 10,
+                  "points": 1
+                },
+                {
+                  "gte": 5,
+                  "points": 0.75
+                },
+                {
+                  "gte": 2,
+                  "points": 0.45,
+                  "flag": "info"
+                },
+                {
+                  "gte": 1,
+                  "points": 0.2,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Active-pool liquidity is {value} of FDV."
+            },
+            {
+              "id": "main_pool_share",
+              "label": "Main-pool share",
+              "weight": 6,
+              "metric": "mainPoolSharePct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "dexscreener",
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 70,
+                  "points": 1
+                },
+                {
+                  "gte": 50,
+                  "points": 0.75
+                },
+                {
+                  "gte": 30,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "points": 0.25,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "The deepest pool holds {value} of active liquidity."
+            },
+            {
+              "id": "liq_change_24h",
+              "label": "Liquidity change 24h",
+              "weight": 5,
+              "metric": "liqChange24hPct",
+              "direction": "higher_better",
+              "format": "signedPct",
+              "source": "hoodtier",
+              "data": [
+                "history"
+              ],
+              "thresholds": [
+                {
+                  "gte": -5,
+                  "points": 1
+                },
+                {
+                  "gte": -15,
+                  "points": 0.6,
+                  "flag": "info"
+                },
+                {
+                  "gte": -30,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Total pool liquidity moved {value} over {liqChange24hWindow}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "liqHistoryPoints": {
+                      "lt": 2
+                    }
+                  },
+                  "mode": "exclude",
+                  "flag": "info",
+                  "evidence": "Collecting liquidity history ({liqHistoryPoints} observation so far) — scored from the next analysis on."
+                }
+              ]
+            },
+            {
+              "id": "liq_change_7d",
+              "label": "Liquidity change 7d",
+              "weight": 8,
+              "metric": "liqChange7dPct",
+              "direction": "higher_better",
+              "format": "signedPct",
+              "source": "hoodtier",
+              "data": [
+                "history"
+              ],
+              "thresholds": [
+                {
+                  "gte": -10,
+                  "points": 1
+                },
+                {
+                  "gte": -25,
+                  "points": 0.6,
+                  "flag": "info"
+                },
+                {
+                  "gte": -40,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Total pool liquidity moved {value} over {liqChange7dWindow}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "liqHistoryPoints": {
+                      "lt": 2
+                    }
+                  },
+                  "mode": "exclude",
+                  "flag": "info",
+                  "evidence": "Collecting liquidity history ({liqHistoryPoints} observation so far) — scored from the next analysis on."
+                }
+              ]
+            },
+            {
+              "id": "pool_count",
+              "label": "Active pool count",
+              "weight": 3,
+              "metric": "poolCount",
+              "direction": "band",
+              "format": "int",
+              "source": "hoodtier",
+              "data": [
+                "dexscreener",
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1,
+                  "lte": 8,
+                  "points": 1
+                },
+                {
+                  "gte": 9,
+                  "lte": 20,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "gt": 20,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} pools with ≥$1k liquidity and recent volume."
+            },
+            {
+              "id": "trend",
+              "label": "Trend structure",
+              "weight": 7,
+              "metric": "trendScore",
+              "direction": "higher_better",
+              "format": "num",
+              "source": "guide",
+              "note": "p.61-71: higher highs + higher lows = uptrend; lower lows + lower highs = downtrend",
+              "data": [
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1,
+                  "points": 1,
+                  "note": "higher highs and higher lows"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.5,
+                  "note": "mixed / ranging structure"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "lower lows and lower highs"
+                }
+              ],
+              "evidenceTemplate": "1h swing structure over 7d: {note} ({trendWindow})."
+            }
+          ]
+        }
+      ]
     }
   },
   "rules": [
@@ -5598,13 +6780,62 @@
       "passLabel": "Sellable"
     },
     {
+      "id": "sell_tax_50",
+      "label": "Sell tax ≥ 50%",
+      "source": "hoodtier",
+      "note": "a round trip that loses half or more is a honeypot in practice, whatever `sellable` says (sources disagree, or a scanner calls it sellable)",
+      "gate": true,
+      "passLabel": "Round trip < 50%",
+      "when": {
+        "roundTripLossPct": {
+          "gte": 50
+        },
+        "liquidityPulled": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "forceF": true,
+      "flag": "danger",
+      "evidenceTemplate": "A buy-then-sell round trip loses {roundTripLossPct} — taxed away, a honeypot in practice. Tier forced to F."
+    },
+    {
+      "id": "sell_tax_25",
+      "label": "Sell tax ≥ 25%",
+      "source": "hoodtier",
+      "when": {
+        "roundTripLossPct": {
+          "gte": 25,
+          "lt": 50
+        }
+      },
+      "capTier": "D",
+      "flag": "danger",
+      "evidenceTemplate": "A buy-then-sell round trip loses {roundTripLossPct} (≥ 25%) — capped at D."
+    },
+    {
+      "id": "sell_tax_10",
+      "label": "Sell tax > 10%",
+      "source": "hoodtier",
+      "when": {
+        "roundTripLossPct": {
+          "gt": 10,
+          "lt": 25
+        }
+      },
+      "capTier": "B",
+      "flag": "warn",
+      "evidenceTemplate": "A buy-then-sell round trip loses {roundTripLossPct} (> 10%) — capped at B."
+    },
+    {
       "id": "liquidity_pulled",
       "label": "Liquidity removed",
       "source": "hoodtier",
       "chains": [
         "robinhood",
         "base",
-        "monad"
+        "monad",
+        "ethereum"
       ],
       "when": {
         "liquidityPulled": {
@@ -5652,10 +6883,12 @@
       "id": "evm_owner_mint",
       "label": "Owner can mint new supply",
       "source": "hoodtier",
-      "note": "EVM reading of the guide's mint-authority rule (p.17-19): GoPlus is_mintable plus a live owner",
+      "note": "EVM reading of the guide's mint-authority rule (p.17-19): a mint function (GoPlus is_mintable; Robinhood: bytecode selector scan) plus a live owner",
       "chains": [
+        "robinhood",
         "base",
-        "monad"
+        "monad",
+        "ethereum"
       ],
       "when": {
         "mintAuthority": {
@@ -5667,7 +6900,7 @@
       },
       "forceF": true,
       "flag": "danger",
-      "evidenceTemplate": "The contract has a mint function (GoPlus) and its owner is not renounced — new supply can be minted. Tier forced to F."
+      "evidenceTemplate": "The contract has a mint function (GoPlus, or its bytecode on Robinhood Chain) and its owner is not renounced — new supply can be minted. Tier forced to F."
     },
     {
       "id": "freeze_enabled",
@@ -5706,6 +6939,27 @@
       "passLabel": "LP locked / launchpad"
     },
     {
+      "id": "lp_unlocked_unproven",
+      "label": "LP unlocked, launchpad not proven",
+      "source": "hoodtier",
+      "note": "lp_unlocked needs isLaunchpad = false, which several adapters never assert; a measured unlocked LP with no launchpad proof is capped instead of passed; same young-only window (< 14 days) as the Base/Monad LP-lock reading in analyze.ts, so an old pool whose LP was never locked is not re-litigated",
+      "when": {
+        "isLaunchpad": {
+          "missing": true
+        },
+        "lpLockedPct": {
+          "lt": 50
+        },
+        "ageHours": {
+          "lt": 336,
+          "orMissing": true
+        }
+      },
+      "capTier": "D",
+      "flag": "danger",
+      "evidenceTemplate": "Only {lpLockedPct} of main-pool LP is locked and no launchpad is proven — capped at D."
+    },
+    {
       "id": "owner_not_renounced",
       "label": "Owner not renounced",
       "source": "hoodtier",
@@ -5714,7 +6968,8 @@
       "chains": [
         "robinhood",
         "base",
-        "monad"
+        "monad",
+        "ethereum"
       ],
       "when": {
         "ownerRenounced": {
@@ -5733,7 +6988,8 @@
       "chains": [
         "robinhood",
         "base",
-        "monad"
+        "monad",
+        "ethereum"
       ],
       "when": {
         "upgradeable": {
@@ -5774,6 +7030,29 @@
       "passLabel": "Dev sold < 50%"
     },
     {
+      "id": "price_collapse",
+      "label": "Price collapse (−60% in 24h, sellers in control)",
+      "source": "hoodtier",
+      "note": "Slow rug / dump: the blind test had −74% and −62% tokens at A, where the 4-point trend factor was the only signal. A fall of 60% or more over 24h (since launch for a younger pair) with net selling caps at C. Net flow unknown counts as selling: a 60% fall is not passed on missing data. A pulled pool is already F (liquidity_pulled).",
+      "gate": true,
+      "when": {
+        "priceChange24hPct": {
+          "lte": -60
+        },
+        "netFlowRatio24h": {
+          "lt": 0,
+          "orMissing": true
+        },
+        "liquidityPulled": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "capTier": "C",
+      "evidenceTemplate": "Price {priceChange24hPct} over {priceChangeWindow}, net 24h flow {netFlowRatio24h} — a collapse with sellers in control. Capped at C.",
+      "passLabel": "No 24h price collapse"
+    },
+    {
       "id": "top_holder_bundle",
       "label": "Top holder > 3.5%",
       "source": "guide",
@@ -5794,12 +7073,20 @@
       "id": "top_holder_20",
       "label": "Top holder > 20%",
       "source": "guide",
-      "note": "p.22 — softened to A for a founder wallet that never sold (top_holder_20_founder)",
+      "note": "p.22 — softened to A for a founder wallet that never sold (top_holder_20_founder); to B for a deployer-funded team wallet that never sold (top_holder_20_team); one tier softer when the largest classified holder is a vesting contract and Holder Strength ≥ 80 (top_holder_20_vesting)",
       "when": {
         "top1SharePct": {
           "gt": 20
         },
         "founderNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "teamNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "vestingDiamond": {
           "ne": true,
           "orMissing": true
         }
@@ -5811,12 +7098,20 @@
       "id": "top_holder_35",
       "label": "Top holder ≥ 35%",
       "source": "guide",
-      "note": "p.22 — softened to B for a founder wallet that never sold (top_holder_35_founder)",
+      "note": "p.22 — softened to B for a founder wallet that never sold (top_holder_35_founder); to C for a deployer-funded team wallet that never sold (top_holder_35_team); one tier softer when the largest classified holder is a vesting contract and Holder Strength ≥ 80 (top_holder_35_vesting)",
       "when": {
         "top1SharePct": {
           "gte": 35
         },
         "founderNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "teamNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "vestingDiamond": {
           "ne": true,
           "orMissing": true
         }
@@ -5868,6 +7163,142 @@
       },
       "flag": "danger",
       "evidenceTemplate": "The deployer's wallet — the largest holder at {top1SharePct} — has started selling: RED FLAG, normal top-holder caps apply."
+    },
+    {
+      "id": "top_holder_20_team",
+      "label": "Team wallet holds > 20%, never sold",
+      "source": "hoodtier",
+      "note": "Largest holder is a team wallet: an EOA the deployer funded (its first tokens by plain transfer from the deployer, or its first native coin from the deployer), token ≥ 30 days old, 0 swap-sells and no transfer to a pool / router over its whole history. One notch weaker than the deployer itself: cap B instead of C.",
+      "when": {
+        "top1SharePct": {
+          "gt": 20
+        },
+        "teamNeverSold": {
+          "eq": true
+        }
+      },
+      "capTier": "B",
+      "evidenceTemplate": "Team wallet (deployer-funded) holds {top1SharePct}, never sold in {teamHoldDays}d — key-person risk: capped at B."
+    },
+    {
+      "id": "top_holder_35_team",
+      "label": "Team wallet holds ≥ 35%, never sold",
+      "source": "hoodtier",
+      "note": "As top_holder_20_team: cap C instead of D.",
+      "when": {
+        "top1SharePct": {
+          "gte": 35
+        },
+        "teamNeverSold": {
+          "eq": true
+        }
+      },
+      "capTier": "C",
+      "evidenceTemplate": "Team wallet (deployer-funded) holds {top1SharePct}, never sold in {teamHoldDays}d — key-person risk: capped at C."
+    },
+    {
+      "id": "team_selling",
+      "label": "Team wallet started selling",
+      "source": "hoodtier",
+      "note": "The largest holder is a deployer-funded team wallet and it has sold (a swap, or a transfer into a pool / router): the normal top-holder caps apply.",
+      "when": {
+        "teamSold": {
+          "eq": true
+        }
+      },
+      "flag": "danger",
+      "evidenceTemplate": "The deployer-funded team wallet — the largest holder at {top1SharePct} — has started selling: RED FLAG, normal top-holder caps apply."
+    },
+    {
+      "id": "top_holder_20_vesting",
+      "label": "Top holder > 20%, vesting-led strong holder base",
+      "source": "hoodtier",
+      "note": "The largest classified holder is a vesting / locked contract and Holder Strength ≥ 80: the > 20% cap softens one tier (C → B). Never for an unlabelled wallet as the largest holder.",
+      "when": {
+        "top1SharePct": {
+          "gt": 20
+        },
+        "vestingDiamond": {
+          "eq": true
+        },
+        "founderNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "teamNeverSold": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "capTier": "B",
+      "evidenceTemplate": "Largest non-LP wallet holds {top1SharePct}; the largest holder overall is locked / vesting and Holder Strength is {holderStrength} — capped at B (one tier softer)."
+    },
+    {
+      "id": "top_holder_35_vesting",
+      "label": "Top holder ≥ 35%, vesting-led strong holder base",
+      "source": "hoodtier",
+      "note": "As top_holder_20_vesting: D → C.",
+      "when": {
+        "top1SharePct": {
+          "gte": 35
+        },
+        "vestingDiamond": {
+          "eq": true
+        },
+        "founderNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "teamNeverSold": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "capTier": "C",
+      "evidenceTemplate": "Largest non-LP wallet holds {top1SharePct}; the largest holder overall is locked / vesting and Holder Strength is {holderStrength} — capped at C (one tier softer)."
+    },
+    {
+      "id": "top10_50",
+      "label": "Top-10 wallets ≥ 50%",
+      "source": "hoodtier",
+      "note": "the top-holder caps read only the largest wallet; splitting supply across wallets dodged them. Counted wallets only (pools, locks, vesting, staking excluded). Not applied when the founder / team / vesting softening of the top-holder caps applies (that decision stands; equal_split still catches a split around it).",
+      "when": {
+        "top10SharePct": {
+          "gte": 50
+        },
+        "founderNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "teamNeverSold": {
+          "ne": true,
+          "orMissing": true
+        },
+        "vestingDiamond": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "capTier": "C",
+      "flag": "danger",
+      "evidenceTemplate": "The 10 largest non-LP wallets hold {top10SharePct} — capped at C."
+    },
+    {
+      "id": "equal_split",
+      "label": "Equal-size wallet cluster",
+      "source": "hoodtier",
+      "note": "≥ 5 of the top-20 wallets within 10% of each other holding ≥ 15%: one holder split into equal parts (derived from the holder list)",
+      "when": {
+        "equalSplitPct": {
+          "gte": 15
+        },
+        "equalSplitCount": {
+          "gte": 5
+        }
+      },
+      "capTier": "C",
+      "flag": "danger",
+      "evidenceTemplate": "{equalSplitCount} top wallets hold near-identical balances, {equalSplitPct} together (derived from holder balances) — reads as one holder split up. Capped at C."
     },
     {
       "id": "vol_mc_bundle",
@@ -6186,8 +7617,10 @@
       "source": "hoodtier",
       "chains": [
         "solana",
+        "robinhood",
         "base",
-        "monad"
+        "monad",
+        "ethereum"
       ],
       "sets": [
         "launch"
@@ -6308,7 +7741,8 @@
       "source": "hoodtier",
       "when": {
         "ageHours": {
-          "gte": 1
+          "gte": 1,
+          "orMissing": true
         }
       },
       "anyOf": [
@@ -6369,6 +7803,11 @@
     "unratedBelowPct": 40,
     "capBBelowPct": 60,
     "topTierMinPct": 80
+  },
+  "hysteresis": {
+    "note": "Schmitt trigger on the score → band step (2026-11-20): a token whose previous analysis (score_history, ≤ maxAgeHours old, same mode) was placed by the score bands keeps that tier while the new score is within ±margin of the line between the two adjacent tiers. Gates, caps, coverage and the S/A requirements still apply after it. Held up, the displayed score shows the bottom of the held band with raw beside it; held down, it is clamped to the top of the held band — so a higher displayed score never means a lower tier.",
+    "margin": 2,
+    "maxAgeHours": 6
   },
   "requirements": [
     {
@@ -6521,6 +7960,30 @@
         }
       },
       "allowMissing": true
+    },
+    {
+      "id": "s_lp",
+      "label": "LP lock or launchpad proven (tokens < 14 days)",
+      "tiers": [
+        "S"
+      ],
+      "anyOf": [
+        {
+          "lpLockedPct": {
+            "gte": 50
+          }
+        },
+        {
+          "isLaunchpad": {
+            "eq": true
+          }
+        },
+        {
+          "ageHours": {
+            "gte": 336
+          }
+        }
+      ]
     }
   ],
   "manualChecks": [
@@ -6745,7 +8208,7 @@
     ]
   },
   "chainSets": {
-    "note": "Chain-specific factor sets: Robinhood launch tokens are scored only on signals Robinhood Chain sources can supply (no pump.fun feed / Helius factors). Base and Monad (v3) have their own launch and established sets, built only from fields their sources fill (docs/chains/<chain>.md); factors no source on the chain provides are absent.",
+    "note": "Chain-specific factor sets: Robinhood launch tokens are scored only on signals Robinhood Chain sources can supply (no pump.fun feed / Helius factors). Base, Monad and Ethereum (v3) have their own launch and established sets, built only from fields their sources fill (docs/chains/<chain>.md); factors no source on the chain provides are absent. Ethereum's sets are the Base sets on the Ethereum sources (ethereum-rpc / ethereum-sim / etherscan) without the launchpad factor: no Ethereum launchpad is registered, so it would be permanently null.",
     "robinhood": {
       "launch": "launch_robinhood"
     },
@@ -6756,6 +8219,10 @@
     "monad": {
       "launch": "launch_monad",
       "established": "established_monad"
+    },
+    "ethereum": {
+      "launch": "launch_ethereum",
+      "established": "established_ethereum"
     }
   },
   "zeroActivity": {

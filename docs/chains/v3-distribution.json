@@ -1,48 +1,6 @@
 {
-  "ranAt": "2026-10-29T17:20:50.773Z",
+  "ranAt": "2026-11-19T15:56:16.487Z",
   "rows": [
-    {
-      "chain": "base",
-      "group": "good",
-      "address": "0x3c5cd672b204ba0fc48e93b98c0922920a87912d",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Honeypot — cannot sell ⇒ F",
-      "fdv": 5054022.384
-    },
-    {
-      "chain": "base",
-      "group": "good",
-      "address": "0x5be75e3b0aff5d1a042a5363ae36acb1d6d755ea",
-      "tier": "D",
-      "score": 39.9,
-      "binding": "cap: Wash-trade heuristic ⇒ D",
-      "fdv": 142633205.181441
-    },
-    {
-      "chain": "base",
-      "group": "good",
-      "address": "0x16493f14e09d4f9dfdec0e0da76475a8ef3c7a08",
-      "rejected": "blue chip — HoodTier scores memecoins only"
-    },
-    {
-      "chain": "base",
-      "group": "good",
-      "address": "0xb2000000000000000000004884b426556b92883d",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GoPlus, GeckoTerminal (43% of weight) ⇒ U",
-      "fdv": 2079330
-    },
-    {
-      "chain": "base",
-      "group": "good",
-      "address": "0x07b3d902783c3c12b077508c3b5c00113d1291d0",
-      "tier": "A",
-      "score": 78.8,
-      "binding": "score 78.8 ⇒ A (no cap binds)",
-      "fdv": 188063971.19146
-    },
     {
       "chain": "base",
       "group": "good",
@@ -50,7 +8,58 @@
       "tier": "B",
       "score": 69.9,
       "binding": "coverage 63% < 80% needed for S/A ⇒ B",
-      "fdv": 1106539.3459386
+      "fdv": 2324401.92598626
+    },
+    {
+      "chain": "base",
+      "group": "good",
+      "address": "0x3c5cd672b204ba0fc48e93b98c0922920a87912d",
+      "tier": "F",
+      "score": 0,
+      "binding": "gate: Honeypot — cannot sell ⇒ F",
+      "fdv": 5033546
+    },
+    {
+      "chain": "base",
+      "group": "good",
+      "address": "0x8b7dde054be9d180c1be7fae0874697374a49832",
+      "rejected": "wrapped / bridged / stable asset — HoodTier scores memecoins only"
+    },
+    {
+      "chain": "base",
+      "group": "good",
+      "address": "0xb20000000000000000000078ee7ce2fe4908108c",
+      "tier": "B",
+      "score": 69.9,
+      "binding": "coverage 57% < 60% ⇒ cap B",
+      "fdv": 8449438.73469456
+    },
+    {
+      "chain": "base",
+      "group": "good",
+      "address": "0xb2000000000000000000004884b426556b92883d",
+      "tier": "B",
+      "score": 69.9,
+      "binding": "coverage 63% < 80% needed for S/A ⇒ B",
+      "fdv": 2024573.77515448
+    },
+    {
+      "chain": "base",
+      "group": "good",
+      "address": "0xb2000000000000000000007b9fcbd005511acbd5",
+      "tier": "U",
+      "score": null,
+      "binding": "sources failed: GoPlus, GeckoTerminal (43% of weight) ⇒ U",
+      "fdv": 3822655
+    },
+    {
+      "chain": "base",
+      "group": "good",
+      "address": "0xb200000000000000000000d9192b6b456483c2e8",
+      "tier": "U",
+      "score": null,
+      "binding": "sources failed: GoPlus, GeckoTerminal (43% of weight) ⇒ U",
+      "fdv": 1856315
     },
     {
       "chain": "base",
@@ -59,229 +68,223 @@
       "tier": "B",
       "score": 69.9,
       "binding": "coverage 63% < 80% needed for S/A ⇒ B",
-      "fdv": 7816904.25300454
+      "fdv": 10225964
     },
     {
       "chain": "base",
       "group": "good",
-      "address": "0xb2000000000000000000008bc8786b856e61707c",
+      "address": "0x311935cd80b76769bf2ecc9d8ab7635b2139cf82",
+      "tier": "D",
+      "score": 39.9,
+      "binding": "cap: Top holder ≥ 35% ⇒ D",
+      "fdv": 23807349
+    },
+    {
+      "chain": "base",
+      "group": "good",
+      "address": "0xb200000000000000000000fd2f87532b90095211",
       "tier": "B",
       "score": 69.9,
-      "binding": "coverage 70% < 80% needed for S/A ⇒ B",
-      "fdv": 4188423
-    },
-    {
-      "chain": "base",
-      "group": "good",
-      "address": "0x60a3e35cc302bfa44cb288bc5a4f316fdb1adb42",
-      "rejected": "stablecoin — HoodTier scores memecoins only"
-    },
-    {
-      "chain": "base",
-      "group": "good",
-      "address": "0xb200000000000000000000d9192b6b456483c2e8",
-      "tier": "B",
-      "score": 69.9,
-      "binding": "coverage 70% < 80% needed for S/A ⇒ B",
-      "fdv": 2918380.20076379
+      "binding": "coverage 50% < 60% ⇒ cap B",
+      "fdv": 1167129
     },
     {
       "chain": "base",
       "group": "junk",
-      "address": "0xc161fe35f44818b2996919f2f7cec702b139bfdc",
+      "address": "0x1edebece5e4e330dd6b86ef8bee5414385bc2ac4",
+      "tier": "U",
+      "score": null,
+      "binding": "sources failed: GeckoTerminal (49% of weight) ⇒ U",
+      "fdv": null
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xf10cb8560b0b38f8b63c22ca5110060bd8ac7f01",
+      "tier": "F",
+      "score": 9.6,
+      "binding": "score 9.6 ⇒ F (no cap binds)",
+      "fdv": 4032.944335
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0x49ece13251a94ea00346c1327ba0a04fd8e6e801",
+      "tier": "F",
+      "score": 15.1,
+      "binding": "score 15.1 ⇒ F (no cap binds)",
+      "fdv": 3982
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0x058d446dd2baff7da7c01c4543ad64042a30eb1a",
+      "tier": "F",
+      "score": 15.1,
+      "binding": "score 15.1 ⇒ F (no cap binds)",
+      "fdv": 1799
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xe088a8838d367ac828e1c9906014ec775b6ff801",
+      "tier": "F",
+      "score": 17.4,
+      "binding": "score 17.4 ⇒ F (no cap binds)",
+      "fdv": 4163.395493
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0x9cd3f694241551f6420f9a87feb7193e5811f95c",
+      "tier": "F",
+      "score": 22.9,
+      "binding": "score 22.9 ⇒ F (no cap binds)",
+      "fdv": 8530.2564368
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0x964599ef3538f1eb4159eb5fc0c3dfbd71e7d92a",
+      "tier": "F",
+      "score": 0,
+      "binding": "gate: Liquidity removed ⇒ F",
+      "fdv": 0.002092485692
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0x29a33fc04e770230535720a2271f4e8e145fb501",
+      "tier": "F",
+      "score": 22.9,
+      "binding": "score 22.9 ⇒ F (no cap binds)",
+      "fdv": 4151
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xb87bad7832bb2bbc8b38b495d73493e8c356aba3",
+      "tier": "F",
+      "score": 17.4,
+      "binding": "score 17.4 ⇒ F (no cap binds)",
+      "fdv": 10921
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xde166a8d0b160a71505205b5f59e98147583cccc",
       "tier": "F",
       "score": 0,
       "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 3420
+      "fdv": 4000
     },
     {
       "chain": "base",
       "group": "junk",
-      "address": "0x47ffc8d339392a3c666fbda9faa50042bf2092bc",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (44% of weight) ⇒ U",
-      "fdv": 23217
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x6c5e7bba7a3360ccaa76420da4a144dc9e34b8ac",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23568.53054
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0xb4b8a4492ca53e720fb031f973ac40c659facd52",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23573.94201
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x2bfdf0fc240480b4099c546e16ccb250c2df7d4f",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (44% of weight) ⇒ U",
-      "fdv": 23236
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0xdc3769b08cb5a4453e4a3c3e1c8a6a3512b8c644",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23573.94201
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0xda257edfbdddeb7ed7509b6e7b8409b6fe106c87",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23573.94201
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x01d3d4370e7a092360d2fb805af1195c26ae59f2",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23573.94201
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x725756782acb4c7a20140e632e022947987d46af",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (44% of weight) ⇒ U",
-      "fdv": 23236
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0xb2000000000000000000001846efe6bf941abe0e",
+      "address": "0xb200000000000000000000576ac56af628fd08c9",
       "tier": "U",
       "score": null,
       "binding": "sources failed: GeckoTerminal, GoPlus (67% of weight) ⇒ U",
-      "fdv": 13647
+      "fdv": 4711
     },
     {
       "chain": "base",
       "group": "junk",
-      "address": "0x2db897ef3ed73eeaecbe720812b0e741ad10957b",
+      "address": "0x388ae920656a5e4f87c517af119565a5e17e927b",
       "tier": "F",
       "score": 0,
       "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 5.398630892e-7
+      "fdv": 71592
     },
     {
       "chain": "base",
       "group": "junk",
-      "address": "0xb2000000000000000000007c454261691fe16601",
+      "address": "0x327d4de09a6384422089d5cffff97ef5f3f5d210",
+      "tier": "F",
+      "score": 15.1,
+      "binding": "score 15.1 ⇒ F (no cap binds)",
+      "fdv": 1803
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0x6733bc22bbcce1f27975e5eda1931e5c4de59501",
+      "tier": "F",
+      "score": 0,
+      "binding": "score 0 ⇒ F (no cap binds)",
+      "fdv": 4004
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xb200000000000000000000723c05845780479b01",
       "tier": "U",
       "score": null,
-      "binding": "sources failed: GeckoTerminal, GoPlus (74% of weight) ⇒ U",
-      "fdv": 3979
+      "binding": "sources failed: GeckoTerminal, GoPlus (67% of weight) ⇒ U",
+      "fdv": 3996
     },
     {
       "chain": "base",
       "group": "junk",
-      "address": "0x49f60ceb2bb6fea7850629224b286628a2ca7a01",
+      "address": "0x91e7f448ebc59603a0498811f72f0cba567b1501",
+      "tier": "F",
+      "score": 22.9,
+      "binding": "score 22.9 ⇒ F (no cap binds)",
+      "fdv": 4166.646179
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xb200000000000000000000355140ea045f69796f",
       "tier": "U",
       "score": null,
-      "binding": "sources failed: GeckoTerminal (44% of weight) ⇒ U",
-      "fdv": 23251
+      "binding": "sources failed: GeckoTerminal, GoPlus (67% of weight) ⇒ U",
+      "fdv": 4881
     },
     {
       "chain": "base",
       "group": "junk",
-      "address": "0x4e3dd9953246b0e108fd02fa3700227927b6c335",
+      "address": "0xb2000000000000000000000974bacb9539335fdd",
+      "tier": "F",
+      "score": 22.9,
+      "binding": "score 22.9 ⇒ F (no cap binds)",
+      "fdv": 1122
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xed0481fe6c1913060c6120e80f860fe2c8a89757",
+      "tier": "F",
+      "score": 15.1,
+      "binding": "score 15.1 ⇒ F (no cap binds)",
+      "fdv": 1816
+    },
+    {
+      "chain": "base",
+      "group": "junk",
+      "address": "0xc0096f11c896741195d60b758b209cbf3926fedc",
       "tier": "F",
       "score": 0,
       "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23581.45793
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x328ec209baec5bfe5767e0c6378f111e7dc1c920",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23581.45793
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0xab10d8010ea1f294c4fcbea2119371e245ae6c37",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Owner can mint new supply ⇒ F",
-      "fdv": 2592538.608
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x6017b13b6758cafef2e8813dacc1c8902ab51404",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23581.45793
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0xc830379fa0266956f53e854f4a659d3859e5d417",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23581.45793
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x24ee376dddb2e9c265bf0372f16af682147705fb",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23580.3556
-    },
-    {
-      "chain": "base",
-      "group": "junk",
-      "address": "0x23f122362d0a6e2f5ff3e7a7d8cc8e45dc6538e5",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Liquidity removed ⇒ F",
-      "fdv": 23581.45793
+      "fdv": 0.007804371557
     },
     {
       "chain": "monad",
       "group": "good",
       "address": "0xaca92e438df0b2401ff60da7e4337b687a2435da",
       "tier": "D",
-      "score": 39.9,
-      "binding": "cap: Micro-cap / illiquid ⇒ D",
-      "fdv": 18044061
+      "score": 39.8,
+      "binding": "score 39.8 ⇒ D (no cap binds)",
+      "fdv": 25170145
     },
     {
       "chain": "monad",
       "group": "good",
       "address": "0x1111b3ded9f1fe1801ad4ebef8e2788183a24111",
-      "tier": "D",
-      "score": 39.9,
-      "binding": "cap: Top holder ≥ 35% ⇒ D",
-      "fdv": 425301.509243036
+      "tier": "C",
+      "score": 54.9,
+      "binding": "cap: Top holder > 20% ⇒ C",
+      "fdv": 364929.70915035
     },
     {
       "chain": "monad",
@@ -292,26 +295,38 @@
     {
       "chain": "monad",
       "group": "good",
-      "address": "0xfc421ad3c883bf9e7c4f42de845c4e4405799e73",
-      "tier": "F",
-      "score": 0,
-      "binding": "gate: Honeypot — cannot sell ⇒ F",
-      "fdv": 5027549.22348163
-    },
-    {
-      "chain": "monad",
-      "group": "good",
       "address": "0x00000000efe302beaa2b3e6e1b18d08d69a9012a",
-      "tier": "B",
-      "score": 69.9,
-      "binding": "cap: Upgradeable proxy ⇒ B",
-      "fdv": 99225436.8272596
+      "tier": "D",
+      "score": 39.2,
+      "binding": "score 39.2 ⇒ D (no cap binds)",
+      "fdv": 78069966
     },
     {
       "chain": "monad",
       "group": "good",
-      "address": "0x4e8aaecce10ad9394e96fe5f2bd4e587a7b04298",
+      "address": "0xe2047ee3bddb5c99ae428ab83df63f8730698e30",
       "rejected": "wrapped / bridged / stable asset — HoodTier scores memecoins only"
+    },
+    {
+      "chain": "monad",
+      "group": "good",
+      "address": "0x6215a58ed045d71f2561aaabe54f4c885c522998",
+      "rejected": "wrapped / bridged / stable asset — HoodTier scores memecoins only"
+    },
+    {
+      "chain": "monad",
+      "group": "good",
+      "address": "0xa8ddb5cd96b5222afe198316e9a57caa642850d5",
+      "rejected": "wrapped / bridged / stable asset — HoodTier scores memecoins only"
+    },
+    {
+      "chain": "monad",
+      "group": "good",
+      "address": "0xfc421ad3c883bf9e7c4f42de845c4e4405799e73",
+      "tier": "D",
+      "score": 39.9,
+      "binding": "cap: Top holder ≥ 35% ⇒ D",
+      "fdv": 26324433.7677658
     },
     {
       "chain": "monad",
@@ -319,211 +334,31 @@
       "address": "0x0bb150dfa86ea5d7742f07fefcd8e8eda81d64ef",
       "tier": "F",
       "score": 0,
-      "binding": "gate: Honeypot — cannot sell ⇒ F",
-      "fdv": 71827484.9077179
+      "binding": "gate: Liquidity removed ⇒ F",
+      "fdv": 56934143.8983598
     },
     {
       "chain": "monad",
       "group": "good",
-      "address": "0xab6e5a0c3799d020c790d34f7b2c02639e238af7",
-      "tier": "B",
-      "score": 69.9,
-      "binding": "coverage 76% < 80% needed for S/A ⇒ B",
-      "fdv": 110184297.010678
-    },
-    {
-      "chain": "monad",
-      "group": "good",
-      "address": "0x1b68626dca36c7fe922fd2d55e4f631d962de19c",
-      "tier": "B",
-      "score": 68,
-      "binding": "score 68 ⇒ B (no cap binds)",
-      "fdv": 7171733.18894448
-    },
-    {
-      "chain": "monad",
-      "group": "good",
-      "address": "0xd18b7ec58cdf4876f6afebd3ed1730e4ce10414b",
+      "address": "0x021b40617982074748c81a19d22046cc2548c3be",
       "rejected": "wrapped / bridged / stable asset — HoodTier scores memecoins only"
     },
     {
       "chain": "monad",
       "group": "junk",
-      "address": "0x8eb525dbac67f0bfebe62b519ec31e1aaa761a2f",
+      "address": "0xb00b7036948efc6ff9d0f37615d89a2a5fcf5c4c",
       "tier": "F",
-      "score": 24.9,
-      "binding": "cap: Dust ⇒ F",
-      "fdv": 21.16414363
+      "score": 12,
+      "binding": "score 12 ⇒ F (no cap binds)",
+      "fdv": 1879.359104
     },
     {
       "chain": "monad",
       "group": "junk",
-      "address": "0xa0bbebbaf789e9d8c49a5175ed6995521469d21b",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
-      "fdv": null
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x6ca080d0a0dc93c803378196b2f41fd6dd8b85af",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.15860363
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0xc4b3e86758e58dc8795ae1da98c717e183d4259c",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.14080364
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x5bcc3e5a63475d0f67f06b7fa9a685008a3f8405",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
-      "fdv": null
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x9746b069d0aaeb7095824a963a4e47997b86bae4",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.11745365
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0xd1e3b02b655966af8a33eb47ddefb8b68079733a",
-      "tier": "F",
-      "score": 24.9,
-      "binding": "cap: Dust ⇒ F",
-      "fdv": 21.10722365
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0xf2fd72c0252529d6ed0a69f988f90fba00e25229",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
-      "fdv": null
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0xc910aafc731fef38f577850607efc43d5f6b4c8d",
-      "tier": "F",
-      "score": 24.9,
-      "binding": "cap: Dust ⇒ F",
-      "fdv": 21.09061365
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0xbe9c88a0fb02df7ae54f22d61354645196e4088e",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
-      "fdv": null
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x24fcc49b7d688ae1e2a8cce7f4e9138136f36e14",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
-      "fdv": null
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x65efa1101af1f2055ad819cfbfd779b200480f96",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.10873365
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x8c8674a6ded5f271df22246708bd854667e8df08",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.13559364
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x2fbf581442c30ebe439c988b69c89ab40b39276c",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
-      "fdv": null
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x9fec92adc1266d628cbf45cd840d4ddd2809c590",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.11314365
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x144ad5dbc71fc0cdf558a1c80c381034a5e63c29",
-      "tier": "F",
-      "score": 24.9,
-      "binding": "cap: Dust ⇒ F",
-      "fdv": 21.11204365
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x8216ed7caa074b1b067983c086fa9bd345ff42fb",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
-      "fdv": null
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x41cc366919f5ea738cf8ec30006dae38c352d4ec",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.14928364
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0x5dd3b36e3eb7f04bb1c6ea36cb9c8770fae42c61",
-      "tier": "F",
-      "score": 0,
-      "binding": "score 0 ⇒ F (no cap binds)",
-      "fdv": 21.13425364
-    },
-    {
-      "chain": "monad",
-      "group": "junk",
-      "address": "0xa8a91d0ce4c0433994789598c28aa95bd5f2af2a",
-      "tier": "U",
-      "score": null,
-      "binding": "sources failed: GeckoTerminal (45% of weight) ⇒ U",
+      "address": "0x3125fbc91db8f988bfe15dde1876880f9cb358fc",
+      "tier": "D",
+      "score": 27.2,
+      "binding": "score 27.2 ⇒ D (no cap binds)",
       "fdv": null
     }
   ]

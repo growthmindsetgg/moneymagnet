@@ -10,7 +10,7 @@ export default function ChainPicker({ address, candidates, suffix = "" }: { addr
         This address is a token on {candidates.length} chains
       </h1>
       <p className="break-all font-mono text-xs text-muted">{address}</p>
-      <ul className="grid gap-3 sm:grid-cols-3">
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {candidates.map((c) => (
           <li key={c.chain}>
             <a href={`/t/${c.chain}/${address}${suffix}`} className="mm-box block p-4 transition-colors hover:bg-[color-mix(in_srgb,var(--neon)_16%,transparent)]" data-testid="chain-option" data-chain={c.chain}>

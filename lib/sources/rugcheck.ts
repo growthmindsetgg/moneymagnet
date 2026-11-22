@@ -112,9 +112,14 @@ export async function rugcheck(mint: string): Promise<AdapterResult> {
   const extFlags = (r.token_extensions ?? {}) as { permanentDelegate?: unknown };
   if (extFlags.permanentDelegate) signals.push({ kind: "other", level: "danger", text: "Token-2022 permanent delegate is set — tokens can be moved out of any wallet", source: "RugCheck" });
 
+  // A field RugCheck omitted is unknown, not "revoked": only a key that is present (null = revoked) counts.
+  const has = (o: object | null | undefined, k: string) => o != null && Object.prototype.hasOwnProperty.call(o, k);
+  const mintKnown = has(r.token, "mintAuthority") || has(r, "mintAuthority");
+  const freezeKnown = has(r.token, "freezeAuthority") || has(r, "freezeAuthority");
   const mintAuth = r.token?.mintAuthority ?? r.mintAuthority ?? null;
   const freezeAuth = r.token?.freezeAuthority ?? r.freezeAuthority ?? null;
-  const feePct = num(r.transferFee?.pct) ?? 0;
+  // Transfer fee: only when RugCheck reported one (a skeletal report has no transferFee block).
+  const feePct = r.transferFee != null ? num(r.transferFee.pct) : null;
   const ext = (r.token_extensions ?? {}) as { transferHook?: { programId?: string | null } | null; nonTransferable?: boolean; permanentDelegate?: unknown };
   // A hook only exists when the extension names a hook program.
   const hasHook = !!ext.transferHook?.programId;
@@ -129,21 +134,49 @@ export async function rugcheck(mint: string): Promise<AdapterResult> {
   // RugCheck names the pump.fun platform authority as "creator" on some mints — never a real creator.
   const creator = r.creator && !PLATFORM_AUTHORITIES.has(r.creator) ? r.creator : null;
   if (r.creator && !creator) nullReasons.deployerAddress = `RugCheck lists the shared platform authority ${r.creator.slice(0, 6)}… as creator`;
-
+  if (!mintKnown) nullReasons.mintAuthority = "RugCheck report has no mintAuthority field";
+  if (!freezeKnown) nullReasons.freezeAuthority = "RugCheck report has no freezeAuthority field";
+  // Spec: Solana sellable = transfer fee < 50% AND no transfer hook AND freeze authority null. Any failing leg
+  // decides "not sellable"; "sellable" needs every leg reported (a missing field is not a pass).
+  const sellable = (freezeKnown && freezeAuth !== null) || hasHook || (feePct != null && feePct >= 50) ? false : freezeKnown && feePct != null ? true : null;
+  if (sellable === null) {
+    nullReasons.sellable = `RugCheck report lacks ${[!freezeKnown ? "freezeAuthority" : "", feePct == null ? "transferFee" : ""].filter(Boolean).join(" and ")} — sellability rule not evaluated`;
+  }
+  // RugCheck runs no swap: its transfer fee taken twice is a derived lower bound, never a simulated round trip.
+  // It is not reported as roundTripLossPct (whose evidence reads "Simulated buy→sell"); a real fee is shown as a signal.
+  const feeRoundTripPct = feePct != null ? feePct * 2 : null;
+  if (feePct != null && feePct > 0) {
+    signals.push({
+      kind: "other",
+      level: feePct >= 10 ? "warn" : "info",
+      text: `Token-2022 transfer fee ${feePct}% per transfer — about ${feeRoundTripPct}% on a buy→sell round trip (derived from RugCheck's fee ×2, not a simulation)`,
+      source: "RugCheck",
+    });
+  }
 
   return {
-    status: { id: "rugcheck", label: "RugCheck", state: "ok", message: `score ${(r as { score?: number }).score ?? "?"}, ${r.risks?.length ?? 0} risks`, ms: Date.now() - t0, url: `https://rugcheck.xyz/tokens/${mint}` },
+    status: {
+      id: "rugcheck",
+      label: "RugCheck",
+      state: "ok",
+      message: [
+        `score ${(r as { score?: number }).score ?? "?"}, ${r.risks?.length ?? 0} risks`,
+        feePct != null ? `transfer fee ${feePct}%` : "no transfer-fee field",
+        r.detectedAt ? `first detected ${r.detectedAt.slice(0, 16)}Z (not the creation time)` : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      ms: Date.now() - t0,
+      url: `https://rugcheck.xyz/tokens/${mint}`,
+    },
     data: {
       name: r.tokenMeta?.name ?? null,
       symbol: r.tokenMeta?.symbol ?? null,
       totalSupply: supply,
       holderCount: num(r.totalHolders),
-      mintAuthority: mintAuth !== null,
-      freezeAuthority: freezeAuth !== null,
-      // Spec: Solana sellable = transfer fee < 50% AND no transfer hook AND freeze authority null.
-      sellable: freezeAuth === null && !hasHook && feePct < 50,
-      // Derived: the token-level transfer fee taken twice (buy + sell); 0% fee ⇒ 0% (no simulation on Solana).
-      roundTripLossPct: feePct * 2,
+      mintAuthority: mintKnown ? mintAuth !== null : null,
+      freezeAuthority: freezeKnown ? freezeAuth !== null : null,
+      sellable,
       insiderSupplyPct,
       isLaunchpad: launchpadName ? true : null,
       launchpad: launchpadName,
@@ -159,7 +192,8 @@ export async function rugcheck(mint: string): Promise<AdapterResult> {
       // Pool vaults, their owners and RugCheck-labelled AMM / locker accounts, so other sources'
       // holder lists (e.g. Helius largest accounts) exclude them too, not only RugCheck's own.
       poolAddresses: [...poolAccounts],
-      createdAt: r.detectedAt ?? null,
+      // `detectedAt` is when RugCheck first saw the token, not its creation: never fed in as createdAt (age disputes
+      // resolve to the youngest reading, so a late detection would put an old token into launch mode). Kept in raw.
       fakeSignals: signals,
       links: [{ label: "RugCheck", url: `https://rugcheck.xyz/tokens/${mint}` }],
     },
@@ -172,6 +206,8 @@ export async function rugcheck(mint: string): Promise<AdapterResult> {
       topHolders: (r.topHolders ?? []).slice(0, 15),
       markets: (r.markets ?? []).map((m) => ({ type: m.marketType, lp: m.lp })),
       transferFee: r.transferFee,
+      derivedFeeRoundTripPct: feeRoundTripPct,
+      detectedAt: r.detectedAt ?? null,
     },
   };
 }

@@ -120,28 +120,49 @@ export function heliusRpc(key: string) {
       return r.result as T;
     });
 
-  /** Batched calls (5 per HTTP request, charged 5 slots), each batch through the queue; results cached per item. */
-  const batch = async <T,>(method: string, paramsList: unknown[]): Promise<T[]> => {
-    const out: T[] = new Array(paramsList.length);
+  /**
+   * Batched calls (5 per HTTP request, charged 5 slots), each batch through the queue. Only real results are
+   * cached per item: an item that came back with an error, with no result, or not at all is reported in
+   * `errors` (by index) and never cached, so the next request asks again instead of replaying the hole.
+   */
+  const batchSettled = async <T,>(method: string, paramsList: unknown[]): Promise<{ values: (T | undefined)[]; errors: Map<number, string> }> => {
+    const values: (T | undefined)[] = new Array(paramsList.length).fill(undefined);
+    const errors = new Map<number, string>();
     const missing: number[] = [];
     paramsList.forEach((p, i) => {
       const hit = cache.get(`${method}:${JSON.stringify(p)}`);
-      if (hit && Date.now() - hit.at < HELIUS_CACHE_MS) {
-        out[i] = hit.value as T;
+      if (hit && Date.now() - hit.at < HELIUS_CACHE_MS && hit.value != null) {
+        values[i] = hit.value as T;
         heliusStats.cacheHits++;
       } else missing.push(i);
     });
     for (let i = 0; i < missing.length; i += BATCH) {
       const idx = missing.slice(i, i + BATCH);
-      const res = await post<{ id: number; result?: T }[]>(idx.map((k) => ({ jsonrpc: "2.0", id: k, method, params: paramsList[k] })), 30_000, idx.length);
-      for (const r of res) {
-        out[r.id] = r.result as T;
-        cache.set(`${method}:${JSON.stringify(paramsList[r.id])}`, { at: Date.now(), value: r.result });
+      const res = await post<{ id: number; result?: T | null; error?: { message?: string; code?: number } }[]>(
+        idx.map((k) => ({ jsonrpc: "2.0", id: k, method, params: paramsList[k] })),
+        30_000,
+        idx.length,
+      );
+      const answered = new Set<number>();
+      for (const r of Array.isArray(res) ? res : []) {
+        if (typeof r?.id !== "number" || !idx.includes(r.id)) continue;
+        answered.add(r.id);
+        if (r.error) {
+          errors.set(r.id, `Helius ${method}: ${(r.error.message ?? "error").slice(0, 100)}${r.error.code === 429 ? " (429)" : ""}`);
+        } else if (r.result == null) {
+          errors.set(r.id, `Helius ${method}: no result`);
+        } else {
+          values[r.id] = r.result;
+          cache.set(`${method}:${JSON.stringify(paramsList[r.id])}`, { at: Date.now(), value: r.result });
+        }
       }
+      for (const k of idx) if (!answered.has(k)) errors.set(k, `Helius ${method}: item missing from the batch response`);
     }
-    return out;
+    return { values, errors };
   };
-  return { call, batch };
+  /** Values only (failed items are undefined); prefer `batchSettled` to see which failed. */
+  const batch = async <T,>(method: string, paramsList: unknown[]): Promise<(T | undefined)[]> => (await batchSettled<T>(method, paramsList)).values;
+  return { call, batch, batchSettled };
 }
 
 /** Test hook. */

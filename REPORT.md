@@ -1,6 +1,721 @@
+# Ethereum + data-audit merge, stalled-index fix (2026-11-22)
+
+**Status:** deployed as `hoodtier-fu18m31dw` (`dpl_BffyCLA7u9uD1k6ZyZhdaefBgnts`), then `hoodtier-kq7jc2axn` (`dpl_E1zyaAaz8ayA8UzMQXH5b8ieRCQt`) with the stale-bound fix. `moneymagnet.vercel.app` points to the latter. The rollback target is `hoodtier-8rgtxeyx4`.
+
+Commits on main:
+- `fc768df`: merge of `claude/ethereum-and-audit-576c16`. Ethereum mainnet plus the data-audit fixes; see the next section, now deployed.
+- `34855b3`: stalled trade index.
+
+## Stalled HoodScan trade index (found while checking the merge)
+**Symptom.** On production, microduck, GIGATENEV, Kolshi, PONS and UHI read **F 0**, "dead — no trades for 16.9h+". The previous deployment gave the same.
+
+**Cause.** HoodScan's newest indexed microduck swap was 16.9h old. DexScreener meanwhile counted trades on 5 pools in the last hour (about $96k/24h). The adapter assumed the index "trails the chain by seconds".
+
+**Fix.**
+- DexScreener now states `lastTradeWithinHours`: the shortest window (1h / 6h / 24h) with at least one trade, given only when every base pair reports that window.
+- When the index's last-trade age is older than that bound, `lastTradeHoursAgo` becomes null, with both readings in the reason.
+- A token with no DexScreener trade in 24h still fires `dead_no_trades`.
+- Tests: `tests/stalled-index.test.ts` (4).
+
+**Limit.** UHI has no DexScreener pair, so nothing contradicts HoodScan and it stays F. If HoodScan's index is stalled, a live token without a DexScreener listing can still read as dead. HoodScan's other swap-derived fields (net flow, swap holders) may also be stale while its index lags; this was not measured.
+
+## Merge checks
+**Review before merging.**
+- No test was deleted or skipped.
+- The e2e changes accept the Ethereum label and the "(age unknown)" suffix.
+- No existing factor weight changed; only the Ethereum sets were added.
+- No factor-specific code was added to `engine.ts`.
+- 12 locally regenerated `docs/screens/*.png` files were backed up to the scratchpad and replaced by the branch's versions.
+
+**LOOP on the final tree** (`34855b3` plus the stale-bound aging fix):
+
+| Check | Result |
+|---|---|
+| lint | ok (2 old warnings) |
+| typecheck | ok |
+| Tests | 625/626 |
+| build | clean (`.next` removed) |
+| verify:api | OK |
+| stability | OK |
+| Playwright | 64 passed, 1 skipped (data-conditional: "three.ws returned no new tokens" / "no gate fired") |
+| Lighthouse (merged build) | home 99, microduck 96, PEEK 97, NVDA 98, BRETT 97, CHOG 96; a11y, best practices and SEO all 100 |
+
+**The one failure** is the live `api.integration` microduck test ("same tier as the previous deployment"). It failed twice: first A locally against production's stalled-index F, then A against B while microduck sat on the 70 line. A direct side-by-side straight after read B 69.3 on production and B 69.9 locally. It was not changed.
+
+**Fixture matrix**, new production vs `hoodtier-8rgtxeyx4`: 15/19 same.
+- All fixed-F fixtures stay F.
+- NVDA and WETH are rejected (422).
+- PEPE (Ethereum) is B 69.9.
+- The 4 that differ read F 0 on the previous deployment at the same moment because of the stalled index:
+
+| Fixture | New | Two days ago |
+|---|---|---|
+| microduck | B 69.9 | B 64.8 |
+| GIGATENEV | A 79.4 | B 61 |
+| Kolshi | D 39.9 | D 37 |
+| PONS | B 69.9 | C 51.9 |
+
+  GIGATENEV and PONS moving up a tier from two days ago is attributed to the audit fixes (zero-default nulls, hold freshness) plus the market. This was not isolated factor by factor.
+
+**Production checks:**
+- PEPE resolves to Ethereum and scores B 69.9 in 13.3s.
+- microduck: 9.1s. The fan-out to four EVM chains caused no slowdown.
+
+## Follow-up checks (advisor review)
+- **Why GIGATENEV and PONS rose (B 61 → A 79, C 52 → B 70).** Both had `liq_change_7d` at about −70%, which fired `liq_drain` (−15). The audit fix nulls it: "no liquidity observation between 7d and 252h ago — the nearest older one is 554h old". The old −70% was a 23-day change labelled 7d. The null is correct, but a real long-term liquidity drain no longer counts. **Owner decision:** add a factor for the change over the available history, labelled with its span?
+- **UHI F is correct.** GeckoTerminal shows 0 trades in 24h on all 19 pools, and the last swap was 32h ago.
+- **Stale upper bound.** `lastTradeWithinHours` now ages on stale refill (added to `TIME_RELATIVE`), so a stale "traded within 1h" cannot suppress a genuine dead F for 6h. There is a test for it.
+- **Engine.** The merge added only generic reads (`nullReasons`, `staleFields`) to `engine.ts`; no factor-specific code.
+- **v3 matrix on the new deployment:** all rows pass (Base, Monad, Ethereum, blue-chip 422s).
+- **Distribution:** partial and **inconclusive**. The run was cut at 10 minutes, while the nad.fun sweep was also hitting nad.fun and GeckoTerminal.
+  - Base junk: 9 rated, 0 A/S.
+  - Base known-good: 0 of 7 A/S. 6 are capped at B by coverage below 60%: GeckoTerminal and GoPlus failed (429), and missing pool figures are now null instead of 0, so they lower coverage.
+  - Monad junk and the summary were not reached.
+  - Rerun when rate limits are quiet. A GeckoTerminal API key would remove most of these coverage caps.
+- **Production deployer reads** sometimes fail with "block range extends beyond current head block" (a lagging RPC endpoint), which nulls `deployer_holding` and `deployer_sold`. Not fixed.
+
+## Env vars (owner)
+- `ETHERSCAN_API_KEY` is not set on Vercel, so the `etherscan` source is skipped on Ethereum (and Base deployer lookups fall back). Set it in the Vercel project env to fill those fields.
+- `ETHEREUM_RPC_URL` is optional. The keyless pool is used without it.
+
+## In progress
+- `nadfun-sweep` session: 94 nad.fun memes. The baseline on the old deployment is done or running; the rerun on this deployment follows. The report goes to `docs/nadfun-sweep-2026-11-22.md`.
+
+# Data audit + Ethereum mainnet (2026-11-20, branch `claude/ethereum-and-audit-576c16`)
+
+**Status:** merged into main (`fc768df`) and deployed as `hoodtier-fu18m31dw` on 2026-11-22; see the section above. The LOOP is green locally (table below).
+
+## How it was run
+- A lead session handed work to subagents and reviewed each result before accepting it.
+- Audit, read-only:
+  - an Opus code audit of every data path: 6 critical, 14 high, 15 medium and 8 low findings;
+  - a Sonnet live audit of 25 production tokens: 7 Robinhood, 8 Solana, 5 Base, 5 Monad.
+- Writers, each on its own set of files:
+  - an Opus agent for Ethereum;
+  - four Opus fix agents: EVM on-chain errors, indexer zero-defaults, Solana sources, and scoring/presentation.
+- Coordinated with the main session:
+  - H1 ("no cap binds" while penalties decide the tier), NIKO (graduated curve pool) and SHEEP (dust AMM pool) were fixed on main and are not redone here.
+  - NIKO's volume showing 0 was the curve-pool bug fixed on main.
+- Full notes, outside the repo, in the shared notes folder: `code-audit.md`, `live-audit.md`, `ethereum-evidence.md`.
+
+## Ethereum mainnet (chain id 1)
+- **Chain setup.** Built on the Base/Monad template:
+  - chain type, labels, and the header "Robinhood Chain · Base · Monad · Ethereum · Solana";
+  - RPC pool `data/ethereum-rpc-endpoints.json` (11 probed keyless endpoints; `ETHEREUM_RPC_URL` is tried first);
+  - registry `data/ethereum-infra.json` (48 contracts checked on-chain);
+  - GoPlus chain 1, DexScreener `ethereum`, GeckoTerminal `eth`;
+  - sell simulation (v2/v3/v4), Etherscan v2 (`chainid=1`), resolver, picker, meme filter, verify metrics, and `docs/chains/ethereum.md`.
+- **Exchange wallets.** `cexWallets` holds 9 exchange wallets that only label holder rows; they stay in the concentration figures. Their names are Etherscan name tags and cannot be proven on-chain; the file says so. GoPlus's own tag, when present, takes priority.
+- **Factor sets.** `launch_ethereum` and `established_ethereum` are the Base sets on Ethereum sources, without `launchpad`: no Ethereum launchpad is registered, so that factor would always be null. The chain-restricted EVM rules now include Ethereum: owner cap, owner mint, proxy cap, liquidity pulled, too early.
+- **Auto-detection.**
+  - An 0x address is checked on all four EVM chains in parallel, each with its own 12 s deadline, so a slow Ethereum RPC can't delay the others. The cache key is now `resolve:v2:`.
+  - When the same address is a token on several chains, the user gets the picker, highest FDV first. Nothing is auto-picked: a CREATE2 twin is a different token.
+  - With no chain hint, the default is still Robinhood Chain.
+  - Live checks: PEPE resolves to Ethereum only; BRETT stays Base only.
+- **Blue-chip rule.** "> $1B FDV and no launchpad ⇒ blue chip" is not applied on Ethereum, because it would refuse PEPE. Ethereum non-memes are refused through the registry instead.
+- **Fixes that apply to every chain, found while adding Ethereum:**
+  - native-ETH v4 pools (`currency0 = 0x0`) were never sell-simulated;
+  - a GoPlus holder list whose shares add up to more than 100% of supply is now refused, with the reason, instead of scored.
+- **Tests.**
+  - `tests/v3-ethereum.test.ts`: 20 tests.
+  - Fixtures PEPE, Mog and PIPI added as new snapshot entries.
+  - `fixture-matrix.mjs` and `v3-matrix.mjs` entries.
+  - `verify:api` now includes PEPE.
+- **Live evidence**, final branch code, local, `fresh`, no Etherscan key:
+
+| Token | Tier | Score (raw) | Coverage | Why / notes |
+|---|---|---|---|---|
+| PEPE `0x6982…1933` | B | 64.4 (61.4 + 3 track record) | 80% | No cap. Sellable through v2, v3 and v4, round trip 0.6–2.3%. Owner renounced. GoPlus: 578,855 holders. GeckoTerminal OHLCV 429, so `trend` is null with that reason. |
+| Mog `0xaaee…1c7a` | C | 54.9 (55.7) | 52% | Capped by "top holder > 20%". GeckoTerminal failed (429). 3 of 12 DexScreener pools have no liquidity figure, so pool totals are null with the partial sum named (see open item 3). |
+| PIPI `0x7bce…47b9` (3h old, native-ETH v4) | D | 39.9 (71.4) | 33% | Capped by "LP unlocked, launchpad not proven". Sellable with 0.19% loss, but only since the v4 fix. GoPlus holder list adds up to 138.6%, so concentration is null with the reason. |
+
+## Audit findings: fixed
+Critical:
+- **C1. Missing indexer figures stored as $0 or 0** (DexScreener, GeckoTerminal, pool sums).
+  - Before: a zero then won the verifier's "min" rule and could force `dead_launch` F, `micro_cap` and `vol_mc_bundle`.
+  - Now the figure is null, and totals name the partial sum.
+  - DexScreener's "last trade ≥ 24h" bound applies only when every pair reports its trade counts.
+  - The verifier ignores null readings and prefers live readings over stale ones (M2).
+- **C2. An RPC timeout on `owner()` read as "owner renounced"** (which cleared the owner cap and the owner-mint F). A timeout on `totalSupply()` read as "not a token".
+  - New `isRevert` / `callOrRevert` in `lib/onchain/rpc.ts`: only a real revert means "function absent".
+  - A transport error now gives null with "owner() read failed: …" and status partial.
+- **C3. Sell-simulation transport errors became revert, blocked, dry or "liquidity removed"**, leading to honeypot verdicts and forced F.
+  - Now they give a new `error` result, which is excluded from the verdict.
+  - If only errors remain, sellable is null with the reason.
+- **C4. Failed LP-lock reads became 0% locked** (forced F through `lp_unlocked`), and a failed `ownerOf` was treated as burned. Now `lockedPct` is null with "LP lock read failed (k of n calls)".
+- **C5. RugCheck missing fields read as passes.** Mint/freeze authority counted as revoked, sellable as true, and the fee ×2 was shown as a "simulated" round trip.
+  - Now each value is set only when its field is present.
+  - The fee becomes a signal labelled "derived, not a simulation".
+  - `round_trip_loss` no longer lists `rugcheck` as a source.
+- **C6 + M1. The tier hold saved stale values as a fresh "complete run".**
+  - Each value now keeps its own fetch time, and values older than 6h are dropped.
+  - The previous tier is held only when the re-score gives the same tier; otherwise the re-score is shown, labelled.
+
+High:
+- **H2. An "insufficient sample" scored 0 points but counted as covered.** It is now n/a, or null when the sample size itself is unknown.
+- **H3/H4. Helius failures were silent.** Batch items that failed were dropped silently and their misses cached; errors that weren't outages were never recorded. A partial curve history now nulls the curve fields with the count of unreadable transactions.
+- **H5. pump.fun creators showed "0 prior mints, 0% rugged" from DAS.** This is now null, because DAS doesn't index those mints under the creator. The KV key moved to `helius:creator:v2:`.
+- **H6. pump.fun feed.** The dev-buy share was 0% when the creator wasn't in the feed's top wallets. "Dev not sold during the observation window" was turned into a lifetime 0% sold.
+- **H7/H12. Zero activity or "dead" from indexer silence alone.** This now needs a source that reads trades to have answered: Helius or the curve on Solana, HoodScan on Robinhood, nad.fun on Monad.
+- **H10. ScanHood's `lp.safe` flag became 100% or 0% locked, and Jupiter's "no sell route" became a 100% loss.** Both are now booleans or null.
+- **H11. Liquidity history recorded stale or partial totals as fresh points.**
+- **H13. DexScreener transaction counts became `uniqueBuyers`.**
+
+Medium and low:
+- M3 (stale label on every scoring path), M5, M7, M8, M10, M13, M14.
+- M10: RugCheck's first-detection time is no longer used as the creation time, and stale refills add their age to time-based fields.
+- L1, L2, L3, L5, L7.
+
+From the live audit:
+- **Monad volume was about 75× too low.** nad.fun's `volume` is already in USD, but the code multiplied it by the MON price.
+- **`liq_change_24h` equalled `liq_change_7d` on 18 of 25 tokens.** Both used the same old reference point. Now a reference must be at most 1.5× the window old. 7d is null until a real 7-day point exists, and the two changes can no longer share a reference.
+- **Robinhood stock token ANT was scored B.** `/api/analyze` now answers 422 whenever `eligibility.meme === false`.
+- **"Main risk: track record ≥ 30 days" named a bonus.** The main risk is now the binding cap, then the largest penalty; bonuses are never picked. Evidence text keeps its capitals and timestamps.
+- **Cached responses looked identical to fresh ones.** The JSON now carries `cache {cached, generatedAt, ageSeconds}`. On a cached answer, stale ages include the time since generation, and the page shows "cached · generated HH:MM UTC (Nm ago)".
+- **The reason text netted penalties against bonuses.** PONS showed "raw 67 − 12": the `liq_drain` penalty of 15 minus the track-record bonus of 3. The reason now lists penalties and bonuses separately.
+
+Last-good snapshots:
+- `STALE_VERSION` was bumped for every adapter whose stored values these fixes change: GeckoTerminal and DexScreener to v3; nad.fun, RugCheck, ScanHood, Helius, GoPlus, rpc, base-rpc and monad-rpc to v2.
+- So values saved before the fixes are never served as stale.
+
+## Audit findings: rejected
+- **M4** proposed counting a factor toward U only when *every* listed source failed. I rejected it. A factor whose providing source failed is missing because of that failure, even if another listed source answered. Under M4, section7 §7e would go from U to B at 22% coverage.
+- The U accounting is unchanged. Skipped sources are now named "not configured" in the reason, separately from failed ones.
+
+## Open (ranked)
+1. **M9: age-conditioned rules. Owner decision.**
+   - The `vol_mc` bar depends on age (`snapshot.ts:299`: 1.5× under 6h, 1.2× under 24h). This is the closest thing to an age penalty.
+   - `lp_unlocked_unproven` applies only under 14 days.
+   - `bot_inflated` and `supply_controlled` apply only under 24h.
+   - `vol_mc_bundle` repeats the launch-set age check.
+   - `micro_cap`, `dead_no_trades` and `too_early` only exempt the youngest tokens, so they never penalise age.
+2. **H8: GoPlus and other short holder lists.** `deriveMetrics` recomputes top-10 from any list, even one with fewer than 10 wallets. Fixing it means a generic "complete list only" rule, which conflicts with `tests/scoring.test.ts:509/523`. Owner decision.
+3. **Pools without a liquidity figure.**
+   - Pool totals are now null instead of a silent partial sum.
+   - On Mog, 3 of 12 DexScreener pools have no figure, which nulls `liq_fdv`, `pool_count`, `main_pool_share` and `liq_change`. Coverage fell from 80% to 52%.
+   - A follow-up could treat a pool with no liquidity *and* no volume as immaterial, with the evidence saying so.
+4. **Robinhood holder shares from the swap index look too low on large tokens** (live: PONS top-10 at 0.4% on a $69M FDV).
+5. **GeckoTerminal 429s.** In the live audit it was ok on only 5 of 25 tokens. A GeckoTerminal API key or a shared rate budget would recover `trend` and the chart factors.
+6. **Smaller items:**
+   - H14: the `all_buyers_exited` evidence basis.
+   - `lib/types.ts`: `rawScore` and `coveragePct` are still typed `number` (a cast covers the nulls).
+   - The LP-lock "first 40 of N" note doesn't reach the evidence when a value was measured.
+   - Liquidity history points recorded before this fix stay in KV until they age out after 30 days.
+
+## Tests replaced (CLAUDE.md: replaced, not weakened)
+- `tests/v24.test.ts`: "insufficient sample is live, 0 points" now asserts n/a (H2).
+- `tests/fixtures.test.ts`: "offline `bundle_score` is live" now asserts n/a on fewer than 50 buyers (H2). The `offline` snapshot: coverage 65 → 63, raw 53.4 → 54.4, bundle and organic score n/a. The tier is unchanged.
+- `tests/dust-pool.test.ts`: the last-good key assertions now expect the bumped versions. The rule is the same: pre-fix keys are never read.
+- `e2e/smoke.spec.ts`: the launch badge may carry the engine's existing "(age unknown)" label. That happens when only RugCheck's detection time exists (M10).
+- `tests/audit-scoring.test.ts`: the M4 cases assert the rule that was kept.
+- New tests:
+  - `tests/audit-evm-errors.test.ts` (19)
+  - `tests/audit-indexers.test.ts` (24)
+  - `tests/audit-solana.test.ts` (26)
+  - `tests/audit-scoring.test.ts` (24)
+  - `tests/v3-ethereum.test.ts` (20)
+
+## LOOP (local, final tree)
+| Check | Result |
+|---|---|
+| lint | 0 errors, the 2 old warnings in `scripts/` |
+| typecheck | ok |
+| test | 621/621 (39 files, including the live `api.integration`) |
+| build | ok |
+| verify:api | OK: 7 addresses including PEPE (B 66.2) |
+| stability | OK: microduck B ×3, plus a simulated HoodScan 503 |
+| Playwright | 64 passed, 1 skipped |
+
+The run against production (`BASE=… stability`) and the fixture matrix against production were not run, because nothing was deployed.
+
+## Sources
+- **Live audit:**
+  - GeckoTerminal: ok 5, partial 10, stale 8, failed 2. Almost every non-ok result was HTTP 429.
+  - ScanHood failed on 3 of 7 Robinhood tokens (timeouts).
+  - `rh-sim` failed on 2 of 7.
+  - Robinhood RPC: "block range beyond head" errors recur.
+  - Helius failed once (35s timeout).
+  - basescan was skipped on all Base tokens (no key).
+- **Ethereum:** RPC, simulation, DexScreener and GoPlus ok. GeckoTerminal was rate-limited. Etherscan was skipped (`ETHERSCAN_API_KEY` not set; the adapter is unit-tested against a mocked API only).
+
+## Factors still null, and why
+- **Ethereum:**
+  - `liq_change_*` until history accrues;
+  - GeckoTerminal-fed factors on 429;
+  - concentration when GoPlus's list is inconsistent;
+  - `lp_lock` n/a at 14 days or older;
+  - Time Machine and social have no Ethereum source.
+- **Everywhere:** values that used to be defaulted, now null with their reasons:
+  - pool totals with figure-less pools;
+  - owner/supply reads that failed in transport;
+  - an incomplete curve history;
+  - creator history for pump.fun creators;
+  - round trip when no route or simulation exists.
+
+## Env vars the owner must set
+- `ETHERSCAN_API_KEY` (recommended; the free Etherscan v2 plan covers chainid 1): Ethereum creation time, creator and verified source. Base falls back to it when `BASESCAN_API_KEY` is unset, and Ethereum falls back to `BASESCAN_API_KEY`.
+- `ETHEREUM_RPC_URL` (optional): a private RPC tried before the public list.
+- Optional, from the live audit: `BASESCAN_API_KEY` (Base is skipped without it), and a paid GeckoTerminal/CoinGecko plan for the 429s.
+
+# NIKO + SHEEP pool fixes (2026-11-20)
+
+**Status:** deployed as `hoodtier-8rgtxeyx4` (`dpl_7GHMRk8fqBvLUtN7oAkJWABPAiuL`). `moneymagnet.vercel.app` is re-pointed to it.
+
+Commits:
+- `4a488c6`: NIKO, from the side session; merged in `9973349`.
+- `6a1df47`: SHEEP.
+- the stale-key version follow-up.
+
+## NIKO (A2MgdY1o…pump): B 66 → D 29.3 → now C 42.7
+**Cause.** NIKO has graduated from its pump.fun curve to a PumpSwap pool. GeckoTerminal listed only the dead curve pool: $0 volume, 0 trades, price frozen at graduation. Those zeros beat DexScreener's live PumpSwap data and fired the VOL/MC bundle penalty (−20).
+
+**Fix.**
+- When Solana RPC says the curve is complete, a source that sees only the curve pool no longer supplies market fields (`dropGraduatedCurveMarket`). The reason is stated, and the source is marked partial.
+- "Why this tier" now names penalties: "score X (raw Y − Z penalties)". Before, it said only "no cap binds" while raw ≠ shown.
+
+**Now.** Volume reads $73k. The remaining −20 VOL/MC is genuine: 0.78 is below the 1.0 bar for a 24–72h token. That bar is the age-scaled one listed as an open item.
+
+## SHEEP (6ppvYhoj…pump, still on the curve): F 23.5 → D 39.9
+**Cause.**
+- Someone opened a $0.65 Meteora pool next to SHEEP's live curve ($57k/24h). `pumpMarket()` treated any AMM pool as graduation, so it read volume 0.23 and liquidity 0.64 from the dust pool. That fired the −20 bundle penalty.
+- The price change came from the dust pool too (−81% instead of −3%), which could have falsely fired the new price-collapse cap.
+
+**Fix.**
+- An AMM pool under $1,000 liquidity that trades less than the live curve is ignored and named in the note. A drained AMM pool next to a dead curve still reads as graduated, so a pulled pool is not hidden.
+- Price change now comes from the most-traded pair, on both DexScreener and GeckoTerminal.
+
+**Follow-up.** After the first deploy, GeckoTerminal returned 429 and the pre-fix $0.23 came back as "stale" (the verifier picks the lowest volume). The GeckoTerminal and DexScreener last-good keys now carry a derivation version (`STALE_VERSION` in `lib/stale.ts`), so snapshots computed by the old logic are never served.
+
+**Now.** Volume reads $58.6k. D is set by the wash heuristic ($58k volume against about $500 of curve SOL reserve) and the micro-cap cap ($3.1K FDV). Both come from measured values.
+
+## Tests and LOOP
+**New tests:**
+- `tests/graduated-curve-pool.test.ts`
+- `tests/dust-pool.test.ts` (5 tests, SHEEP's real pool data)
+
+**LOOP results:**
+
+| Check | Result |
+|---|---|
+| Tests | 505/505 |
+| build | ok |
+| verify:api | OK |
+| stability | OK |
+| Playwright | 65/65 (1 flaky on retry: "recent searches chips", unrelated) |
+| Fixture matrix vs `1d24y7x4o` | 17/17, same tier |
+
+One earlier full run failed the live microduck check: A locally against B on production. It passed on two reruns, so it was the A/B line moving with the market.
+
+**Build cache.** A corrupt webpack build cache crashed the build both locally and on Vercel (`WasmHash … reading 'length'`). It was fixed by deleting `.next` locally and deploying once with `--force` (no Vercel build cache).
+
+## Side sessions
+- The NIKO investigation is done and its worktree removed. An empty folder `.claude/worktrees/graduated-curve-pool` remains, held open by the idle session.
+- The Fable advisor (branch `claude/ethereum-and-audit-576c16`) has rebased onto main. It is working on Ethereum mainnet and audit fixes:
+  - Monad volume about 75× undercounted;
+  - zero-defaults;
+  - EVM owner/sim/LP-lock error handling.
+
+  Not merged and not deployed.
+
+# Price-collapse cap (2026-11-20)
+
+**Status:** deployed as `hoodtier-mgjkbxpql` (`dpl_9bgRNTraPZ9R3wKzz28mDa1RWRp9`). `moneymagnet.vercel.app` is re-pointed to it.
+
+## What it does
+New gate rule `price_collapse` in `factors.json` caps the tier at **C** when all of these hold:
+- the 24h price change is −60% or worse;
+- net 24h flow is negative (selling). If net flow is unknown, the rule still applies: a 60% fall is not passed on missing data;
+- the pool was not pulled (a pulled pool is already F).
+
+This closes REPORT open item 1. The blind test had GATO (−74%) and WASTED (−62%) at A, where the 4-point trend factor was the only signal. A fall that net buyers are absorbing (a dip) is not capped. Age does not gate the rule. For a pair younger than 24h the window is "since launch (Xh)", and the evidence line says so.
+
+## Data
+- New snapshot fields: `priceChange24hPct` and `priceChangeWindow`.
+- Sources: DexScreener `priceChange.h24` and GeckoTerminal `price_change_percentage.h24`, both from the main pair, and only when the token is that pair's base.
+- Cross-checked in `lib/verify/metrics.ts`. If the two disagree by more than 15% (and more than 5 points), the steepest fall is used.
+- If the price change is unknown, the rule shows "not evaluable". It is neither passed nor applied.
+
+## Tests
+- New: `tests/price-collapse.test.ts` (8 tests).
+- `verify.test.ts`: added a covered conservative-direction case for `priceChange24hPct`. Nothing was weakened.
+- Fixture snapshots: only the new rule row was added (pass/unknown). No tier changed.
+- **Replaced** (brief item 4): the live `api.integration` microduck test asserted a fixed S/A. microduck's live tier moves with the market and reads B on both the old and new code. It now asserts the same tier as the previous deployment (`PREV_DEPLOYMENT`, default production), queried in parallel. The recorded fixture still asserts S/A.
+
+## LOOP
+| Check | Result |
+|---|---|
+| lint | 0 errors, 2 old warnings in `scripts/` |
+| typecheck | ok |
+| Tests | 493/493 |
+| build | ok |
+| verify:api | OK |
+| Local stability | OK (B ×3, plus a simulated HoodScan 503) |
+| Playwright | 65/65 |
+| Production stability | OK |
+| Fixture matrix vs `2qvecb2y0` | 17/17, same tier |
+
+Lighthouse was not rerun because no UI changed.
+
+## Sources, nulls, env
+- No new sources and no new env vars.
+- `priceChange24hPct` is null when neither DexScreener nor GeckoTerminal lists a pair with this token as base. GeckoTerminal returned 429 on some runs today; DexScreener covers those runs.
+
+## Open
+- Age-gated penalties (`supply_controlled`, `bot_inflated`, the VOL/MC bar).
+- The backtest.
+- Two side sessions started at the owner's request:
+  - NIKO score-drop investigation (read-only);
+  - a Fable-led data audit plus Ethereum mainnet, on its own branch, not deployed.
+
+# Tier hysteresis (2026-11-20)
+
+**Status:** deployed. Commit `3bcbf6d`, deployment `hoodtier-2qvecb2y0` (`dpl_2Szmu96bUoGLFRg1x6StEi6DYaHC`). `moneymagnet.vercel.app` is re-pointed to it.
+
+## What it does
+A Schmitt trigger on the score → band step. The previous analysis's tier is kept while the new score sits within **±2** of the line between the two tiers. Config is in `factors.json` → `hysteresis` (`margin` 2, `maxAgeHours` 6); the engine stays generic (`hysteresisHold`).
+
+The hold only applies when **all** of these hold:
+- the previous analysis (latest `score_history` entry) was **placed by the score bands**: binding `score` or `hysteresis`. A previous gate, cap, requirement, coverage limit or outage hold never carries over;
+- it was in the **same mode** (launch / established);
+- it is **≤ 6h old** (the stale limit);
+- the two tiers are **adjacent**;
+- the new score is within the margin of their shared line.
+
+**Order of operations.** The hold sits before every gate, cap, coverage rule and S/A requirement, so all of them still apply: a held A with a top holder over 20% is still C. If a later rule moves the tier, the hold is dropped from the report.
+
+**Monotone display.**
+- Held **up**: the number shows the bottom of the held band (e.g. 70.0), with "raw 69.0" and the reason.
+- Held **down**: the number is clamped to the top of the held band (e.g. 69.9), as caps already are.
+- A higher displayed score therefore never means a lower tier.
+
+**Shown on the page.** A muted chip under the score: "held near the 70 line · from 20m ago · alone B". "Why this tier" reads "held A: score 69.0 within ±2 of the 70 line; 20m ago it was A".
+
+**Data.**
+- `score_history` entries now store the binding kind.
+- Entries written before this change have none, so the first analysis after the deploy never holds.
+
+## Why
+- microduck flapped A ↔ B on live net flow during yesterday's stability check (score ~70).
+- The red team found S ↔ C flips in 18–27% of ±2% noise draws next to the 20% top-holder, $10k FDV and 0.8 VOL/MC lines.
+- Hysteresis covers the band lines only. A cap threshold (e.g. 20.00% vs 20.01% top holder) is a rule boundary, which hysteresis deliberately does not override.
+
+## Tests
+- +11 in `tests/hysteresis.test.ts`:
+  - band math (inside / at / beyond the margin);
+  - no hold across two bands, across modes, after 6h, or after a cap / gate / requirement / outage / coverage binding, or to or from U;
+  - held up and held down;
+  - caps and gates after a hold;
+  - monotone display;
+  - a 6-step flap damped to one tier;
+  - `score_history` round trip.
+- No test changed or removed.
+
+## LOOP
+| Step | Result |
+|---|---|
+| lint / typecheck / build | 0 errors (2 old warnings) / ok / ok |
+| unit + integration | **484/484** |
+| `verify:api` / `verify:stability` (local) | OK / OK (B ×3 + simulated outage) |
+| Playwright + axe | **65/65** |
+| production stability (`RUNS=3`) | **OK**, B ×3, 6–13s per analysis |
+| fixture matrix (production vs `ormpuwloh`) | **17/17** same tier (Kolshi reads D on both deployments today, F yesterday: market) |
+| v3 matrix (production) | **15/15** |
+
+## Not covered
+- **Playwright and the chip:** no Playwright test renders the hysteresis chip. Fixture pages score without a previous analysis, and adding a test-only path for one muted chip was not worth it. The engine tests cover the logic.
+
+## Env vars
+None new. Still missing (names only): `NAD_API_KEY`, `ROBINX_WALLET_KEY` (or `ROBINX_API_KEY`); optional `BASE_RPC_URL`, `MONAD_RPC_URL`, `ROBINHOOD_RPC_URL`.
+
+## Next (from the previous section, still open)
+1. A price-collapse / slow-rug cap.
+2. Remove the age-gated penalties under 24h (CLAUDE.md "age never penalises").
+3. The backtest, once `score_history` has ~30 live tokens per tier.
+
+---
+
+# Logic review + six fixes (2026-11-19)
+
+**Status:** deployed. Commit `ca508ce`, deployment `hoodtier-ormpuwloh` (`dpl_6hSBZ57NTefZn9BtZqvDcJ7xdfCy`). `moneymagnet.vercel.app` is re-pointed to it. This also ships the previous run's team-wallet class and Holder Strength (`568f69e`, which had been committed but not deployed).
+
+## 0. State at the start of the run
+- Production was `hoodtier-lkwktssm1` (`dpl_BqbcLRYqvAf1oSXShEPcsJCiuJ9W`, 2026-10-30).
+- **(a)** Top-holder classification was deployed.
+- **(b)** The team-wallet class and **(c)** Holder Strength were committed but **not** deployed.
+- Before deploying, the owner asked to test how good the scoring logic is, using several agents.
+- The backtest (task 3) was **held**. `score_history` holds **58 tokens**, all since 2026-10-29, not 3+ weeks. 5–10 live tokens per tier is too few to read win or rug rates (see §1).
+
+## 1. The four-agent review (read-only)
+| Agent | What it did | Headline |
+|---|---|---|
+| Rule audit | Read `factors.json` + the engine against CLAUDE.md, using a scratch simulator | The engine is generic, monotone, weights sum to 100. But safety and concentration inputs **fail open**: concentration could be hidden in contracts or split wallets; Robinhood had no mint check; an unknown LP lock cost nothing. One hard-rule breach: penalties that apply only under 24h. |
+| Red team | Built 25+ synthetic tokens and probed sensitivity | 0 monotonicity breaks in 3,668 reports. Eight scam patterns reached **A/S**, including a 99% sell tax, an unlocked LP with launchpad unknown, a 3-minute Robinhood token, a slow rug, unflagged wash trading, a micro-cap of unknown age, and sybil holders. Cliffs: 20.00% → 20.01% top holder goes S → C. |
+| Outcome check | Read `score_history` (SELECT only) and took GeckoTerminal/DexScreener outcomes at 24h/72h/now | Dead-at-entry tokens were always F/U. 0 of 8 A tokens rugged. Among *live* tokens, tiers did not separate later rugs (0/2 at 72h, 4/7 by now) or 2× moves. n is 5–10 per tier, and A is confounded with one Monad cohort. |
+| Live blind test | Judged 25 real tokens from outside evidence first, then scored them on production (old build) | 13/25 agree. Every rug and dead token got D/F. Misses: ANT (Robinhood) was rated F as a honeypot on ScanHood alone, while our own simulator said sellable. The Robinhood RPC timed out on every call. Crashing tokens were rated A. Some impossible values were shown as live (snipe ratio 100.4%; a "7d" change from 9 minutes of history). |
+
+The agents' scripts and raw output are in the session scratchpad, not the repo.
+
+## 2. The six fixes (owner: "Fix the top 6 first")
+1. **Sell tax is a gate** (`sell_tax_50` / `_25` / `_10`):
+   - a round trip ≥ 50% forces F, whatever `sellable` says;
+   - ≥ 25% caps at D;
+   - > 10% caps at B;
+   - ≤ 10% is unchanged (the factor already gave full points there).
+2. **Unlocked LP with no launchpad proof** (`lp_unlocked_unproven`). LP measured < 50% locked and `isLaunchpad` unknown caps at D.
+   - The Base, Monad and Solana adapters never assert `isLaunchpad = false`, so the old `lp_unlocked` gate could not fire there.
+   - It uses the same young-only window (< 14 days) that analyze.ts already applies to the Base/Monad LP reading.
+   - New S requirement `s_lp`: the LP lock or the launchpad must be proven for tokens < 14 days.
+   - Also: `micro_cap` now applies when age is unknown (`orMissing`). It used to fail open.
+3. **Robinhood:**
+   - `too_early` (U) now covers Robinhood. A 3-minute token with 5 buyers is U, not S.
+   - `evm_owner_mint` now covers Robinhood, using a bytecode selector scan (`mint(address,uint256)`, `mint(uint256)`, `mintTo`) plus a live `owner()` (`lib/onchain/mintScan.ts`). A proxy reads null, with the reason.
+4. **Hidden concentration:**
+   - An unclassified contract in the top 5 now **counts** like a wallet. Only proven pools, vesting, lockers and staking leave the count.
+   - Unlisted pools are recognised by `token0()`/`token1()` (new class `pool`).
+   - New `top10_50`: the 10 largest counted wallets holding ≥ 50% caps at C. The founder/team/vesting softening the owner chose earlier still applies.
+   - New `equal_split`: ≥ 5 of the top-20 wallets within 10% of each other, holding ≥ 15% together, caps at C. It is derived from the holder list, and the evidence line says so.
+5. **Robinhood sellability and RPC:**
+   - **Our own sell simulations** (`rh-sim`, `base-sim`, `monad-sim`) are on-chain truth for `sellable`, `honeypot` and round-trip loss. A scanner that disagrees is flagged (grey ≠), not obeyed.
+   - ScanHood's self-contradicting `sellable=false` (a completed round trip under 50% with no honeypot flag) is **null** with the reason.
+   - **Why the Robinhood RPC "timed out" on every call:**
+     - Half of all `eth_getLogs` calls went to `rpc-robinhood.globalstake.io`, which takes about 21s per 100k-block range (under 1s on the official RPC). It is now a fallback (`"logs": "fallback"` in `data/rpc-endpoints.json`), and the endpoint pool orders by measured latency.
+     - Replay calls are bounded by the time left.
+     - The replay gets 8s inside the request plus 20s after the response, and its 1.2 MB state is saved after the response.
+     - **microduck's on-chain holder list had been stuck since about 2026-10-23** (20 days, 16M blocks behind) and was served as current. A replay behind the head is now labelled stale (≤ 6h) or not used.
+     - Result: a Robinhood analysis takes **14–25s on production**, down from 36–50s.
+6. **Unmeasured values → null with the reason:**
+   - a liquidity change needs history covering ≥ half its window, or half the token's life for a token younger than the window;
+   - a snipe ratio over 100% is null;
+   - snipe ratio and dev-buy share from < 10 readable curve buyers are null.
+
+Also fixed: the social cron's `due()` ignored the injected clock, which made `social.test.ts` fail by date.
+
+### Tests replaced (none deleted or weakened)
+| Test | Old assertion | New assertion |
+|---|---|---|
+| `holder-class.test.ts` holder math | unclassified contracts leave the count | they join it; a proven pool leaves |
+| `scoring.test.ts` "drops A to B when top-10 ≥ 60%" | B | C via `top10_50`, with the basic requirement still failing beside it |
+| `resilience.test.ts` "labels short histories honestly" | 3h of history scored as the 7d change | null with the reason; 96h is labelled; a young token's whole life counts |
+| `rpc-pool.test.ts` "at least two with full eth_getLogs" | two full-log endpoints | the official RPC is full; a second log endpoint is a fallback |
+
+New tests:
+- **+13** in `tests/logic-fixes.test.ts` (one per hole, reproduced and asserted closed);
+- **+2** in `rpc-pool.test.ts` (fallback only while primaries cool down; a slow endpoint goes behind fast ones).
+
+## 3. LOOP
+| Step | Result |
+|---|---|
+| lint / typecheck / build | 0 errors (2 old warnings in untouched scripts) / ok / ok |
+| unit + integration | **473/473** |
+| scoring snapshots | `fixtures.test.ts.snap`: + the `sell_tax_50` gate row only (tiers and scores unchanged). `v3-fixtures.test.ts.snap`: + `top10_50` in base-rug (F) and the recorded monad-james (D) only. |
+| `verify:api` (local prod server) | OK |
+| `verify:stability` (local) | first two runs **failed**: microduck sat on the A/B line (net flow moved −4.6% → −8.8% between runs; the old production build read A 70.2 at the same moment). Third run OK (B ×3 plus the simulated outage). |
+| Playwright + axe | **65/65** |
+| Lighthouse (production) | home 100 · microduck 96 · PEEK 97 · NVDA 100 · BRETT 99 · CHOG 97 |
+| production stability (`RUNS=3`) | **OK**, B 64.7 ×3, 14–25s per analysis |
+| v3 matrix (production) | **15/15** |
+| fixture matrix (production, new vs previous deployment) | 13/17 same tier; the 4 that moved are explained below |
+| distributions | **Junk (Robinhood / Solana, `pnpm distribution`, fresh sample):** 0/48 rated A/S (bar ≤ 10%) ✓. But the second clause fails: **3 tokens with FDV < $10k sit above D** (Bao $5.8k B, PIPI $2.3k C, YESNO $2.4k C). All three are 0.2–0.3h old, and CLAUDE.md applies the size floor only to tokens ≥ 1h, so the rule and this check disagree for sub-1h tokens. Not changed: owner decision. 52 of 100 were U (launch tokens whose public sources were rate-limited; no Helius key locally). **Junk (Base / Monad, `v3-distribution.ts`):** 0/18 A/S ✓. **Known-good (`v3-known-good.ts`):** 9/15 A/S = 60% (bar ≥ 30%) ✓. (The GeckoTerminal top-pools 'good' sample in `v3-distribution.ts` reads 0/12 A/S, mostly LP-removed / single-holder pools; that bar is not part of the brief, as in previous runs.) |
+
+### Fixture matrix: new (`ormpuwloh`) vs previous (`lkwktssm1`), scored side by side
+| Fixture | Previous | New | Why it moved |
+|---|---|---|---|
+| microduck | A 70.2 | **B 64.7** | Two changes. The holder list is current again: the old build served a 20-day-old replay. And the largest holder is now a counted **unclassified contract** holding 8.2% (`0x267444d0…`, 1,969 B, Ownable2Step, `onERC721Received`, `factory()`; no lock/vesting/pool signature; HoodScan did not answer). Holder Strength 86 Diamond replaces the accumulator factors. |
+| GIGATENEV | C 53.1 | **B 58.2** | Holder Strength 88 (10/10) replaces the accumulators (5.8/8) — the previous run's change, now deployed |
+| PONS | C 53.4 | **B 62.2** | Holder Strength is still reading histories (n/a, not counted). The weak accumulator points are gone, so raw rose 66.6 → 72.2 — the previous run's change |
+| JAMES | D 39.9 | **C 54.9** | Team wallet (deployer-funded) ≥ 35%, never sold ⇒ C, as the brief expected |
+| Kolshi, ELON, UHI, cell, NETANYAHU, PEEK, Pairless, offline, Tolybot, NUZL, YMB, POD | | same | NUZL now also fires `sell_tax_50` beside the honeypot gate |
+| NVDA | 422 | 422 | stock token, rejected |
+
+- **Task 4 (fixtures that move with the market):** `scripts/fixture-matrix.mjs` scores every fixture on the new and the previous deployment.
+  - Market-moving fixtures assert **same tier as the previous deployment**: microduck, GIGATENEV, Kolshi, PONS, ELON, UHI, JAMES, cell, NETANYAHU.
+  - Structural fixtures keep fixed expectations: the F set, and NVDA rejected.
+
+## 4. Sources (this run)
+- **ok:** RPC (all chains), DexScreener, GoPlus, nad.fun, HoodScan, Helius (production), the sell simulators.
+- **Partial or failing:**
+  - GeckoTerminal: 429s on most bursts, served stale where a last-good snapshot exists;
+  - ScanHood: intermittent failures (PONS, UHI, YMB);
+  - `rh-sim`: ELON (dead pools).
+- **HoodScan `get_address`:** did not answer for `0x267444d0…`.
+
+## 5. Still null (new or changed)
+- **Robinhood holders:** while a replay is > 6h behind the head (PONS: 10.7% replayed, ~10M logs), holders come from the swap index. On-chain holders are null with the reason.
+- **Liquidity change:** null until history covers half its window (or half the token's life).
+- **Snipe ratio / dev-buy share:** null when the readable curve history has < 10 buyers.
+- **Robinhood `mintAuthority`:** null on upgradeable proxies, with the reason.
+- **Unchanged:** fees vs mcap, only-huge-candles, Robinhood wallet age before first buy, Robinhood transfer taxes, contract verified; Solana/Base/Monad social mention counts.
+
+## 6. Env vars
+- **New, optional:** `REPLAY_AFTER_MS` (default 20000). `REPLAY_BUDGET_MS` now defaults to 8000.
+- **Still missing (names only):**
+  - `NAD_API_KEY`;
+  - `ROBINX_WALLET_KEY` (or `ROBINX_API_KEY`);
+  - optional `BASE_RPC_URL`, `MONAD_RPC_URL`, `ROBINHOOD_RPC_URL` (a private endpoint would remove the last log-endpoint bottleneck).
+
+## 7. Recommended next (not done in this run)
+1. **Hysteresis at tier boundaries.** Hold the previous tier unless the score leaves the band by about 2 points, with the displayed score clamped so it stays monotone. Evidence: microduck flapped A↔B on live net flow during the stability check, and the red team found S↔C flips in 18–27% of ±2% noise draws next to the 20% top-holder, $10k FDV and 0.8 VOL/MC lines. This is an owner decision, since a held tier is a display rule.
+2. **Price collapse and slow rugs need real weight.** The blind test had GATO (−74%/24h) and WASTED (−62%) at A; the red team had dev-sold 49.9% with liquidity −39% at A. "trend" is worth 4 points. Proposal: a cap at C for a 24h drawdown ≥ 60% with net selling, and a deployer-cluster check on every chain (the team-wallet funding trace already exists).
+3. **Remove the age-gated penalties** (`supply_controlled`, `bot_inflated` under 24h; the age-scaled VOL/MC bar). They break CLAUDE.md's "age never penalises" (the same token scores A 74.8 at 23.9h, S 94.8 at 24.1h). Then **run the backtest** once `score_history` has ~30 live tokens per tier. Today's 58 tokens cannot support weight changes.
+
+---
+
+# Team wallets + Holder Strength (2026-10-30)
+
+**Status:** the previous build (top-holder classification, `6fccb4b`) was **deployed**: `vercel --prod --yes` produced `hoodtier-lkwktssm1`, and `moneymagnet.vercel.app` now points to it. The v3 matrix re-run against production reads **15/15**. This run (team wallets + Holder Strength) is committed below and **not deployed yet**. The owner's approval covered the previous build only.
+
+## 1. Team wallet (deployer-funded)
+
+### What changed
+- **New holder class `team`** (`lib/topHolders.ts`). A top holder over 20% that is not the deployer becomes a "team wallet (deployer-funded)" when an EOA deployer funded it in either way:
+  - **its first tokens came by plain transfer from the deployer.** Checked with the first receipt (archive bisection on Base/Monad, or Transfer logs on Robinhood), and the receipt's tx has no Swap event;
+  - **or its first native coin came from the deployer.** Found by archive bisection on `eth_getBalance`, then the plain transfer in that block. An internal call cannot be attributed and is said so.
+  - **Solana:** the creator sent its first SOL, or its first tokens by plain transfer, in the wallet's first 100 transactions (Helius).
+  - A deployer that is a contract (launchpad / factory) never counts: it funds everyone.
+- **Labelling:** each team wallet carries its funding tx. The page line reads "Largest holder: team wallet (deployer-funded), 61.1%, 0 sells in 116d, funded in tx 0x5c96c6…ebeb". The expanded box links the tx on the chain's explorer.
+- **Scoring** (`factors.json`), one notch weaker than the deployer's own wallet:
+  - `top_holder_35_team` caps at **C** (≥ 35% held, the normal cap is D);
+  - `top_holder_20_team` caps at **B** (> 20% held, the normal cap is C).
+  - Both need the team wallet to have 0 swap-sells and 0 transfers into a pool / router / contract over its whole history, with the token ≥ 30 days old.
+  - Any sell sets `teamSold`. The normal caps then stand, and `team_selling` fires a red con: "Team wallet started selling — red flag".
+- **Whole-history reads, resumable:**
+  - The founder and team histories now take the cheap archive proofs first (nonce 0, or a nonce unchanged since the first receipt).
+  - If those don't settle it, every outbound Transfer log of the wallet is read window by window (`outflowScan`). Stretches where the wallet's nonce did not change are skipped (on JAMES, 87% of the blocks).
+  - Progress is saved in KV and continues after the response (`after`) and on the next analysis. Until the read is complete the value is null with the % read, and the normal caps stand.
+  - **Limitation:** a sell that a relayer executes for the wallet (its nonce unchanged) inside a skipped stretch is not seen. This is the same assumption as the nonce-unchanged proof from the previous run.
+- **Fixed on the way:**
+  - `logsRpc`: Monad / Base log endpoints with failover. It reports the primary endpoint's error.
+  - RPC timeouts are rounded to whole ms. A fractional timeout made `AbortSignal.timeout` throw "delay out of range", which read as a range error.
+  - Cached RPC promises can no longer cause unhandled rejections.
+
+### JAMES `0x43cf…7777`: class and tier
+- **61.1% holder `0xf8baf254…3432`:**
+  - no code (EOA), nonce 1174;
+  - not the deployer (the creation tx was sent by `0x8258cf2e…a10e`; nad.fun's creator is `0xaba951…1544e`).
+- **Class: `team` — "team wallet (deployer-funded)".**
+  - **Funding:** its first tokens came by plain transfer from `0x8258cf…`, 670M tokens in tx `0x5c96c6a1de542fce420aab5f3955abde5d042ec254f39129d6442b7dc456ebeb` (block 85,821,687).
+- **Whole history:**
+  - **0** transfers into pools / routers / contracts;
+  - **153** transfers to wallets;
+  - nad.fun: 3 buys, **0 sells**;
+  - 116 days held.
+- **Tier: D 39.9 → C 54.9** (binding: "Team wallet holds ≥ 35%, never sold ⇒ C"). The fixture `tests/fixtures/holders/monad-james.json` was re-recorded.
+- **Obsolete test, replaced:** `holder-class.test.ts` "the 61.1% holder is an EOA funded by the creation-tx sender, not the deployer: normal caps, D" now asserts the team class, the funding tx and cap C. The e2e JAMES test changed the same way: tier C, `data-class="team"`, and the funding-tx link.
+- **Distribution check after this change** (`v3-distribution.ts`): **junk 0% A/S of 26 rated** (bar ≤ 10%). The top-volume sample reads 15% A/S of 13; that bar was not part of the brief.
+
+## 2. Holder Strength
+
+### What it is
+A 0–100 score for the top-20 non-LP, non-infrastructure holders, weighted by share (`lib/holderStrength.ts` scores; `lib/holderStrengthData.ts` collects). It gets a label (**Diamond ≥ 80 · Strong 60–79 · Mixed 40–59 · Weak 20–39 · Paper < 20**) and the three biggest contributors as sentences.
+
+| Component | Weight | Measure |
+|---|---|---|
+| Hold duration | 20 | supply-weighted median of (days since first buy / receipt ÷ token age); full points at ≥ 70% |
+| Drawdown survival | 20 | the worst 7-day drawdown from daily candles (the first 72h of launch price discovery is left out): share of the supply held at its peak that never sold during it. A drawdown under 20% is n/a ("nothing to survive"), not missing. |
+| Sell discipline | 20 | per wallet: 0 sells over ≥ 30d = 1, under 30d = 0.8; < 25% of the position sold = 0.7; 25–50% = 0.35; > 50% = 0 |
+| Wallet maturity | 15 | wallet age before its first buy, plus distinct tokens held. ≥ 90d and ≥ 5 tokens = 1; < 7d and ≤ 1 token = 0. Where the token count is unavailable, age alone counts, and the evidence says so. |
+| Dip accumulation | 15 | share of top-20 supply held by wallets that bought ≥ 20% under the prior 7-day high; full at ≥ 30%. A priced trade decides by its price. An unpriced one counts only on a day whose **high** was already ≥ 20% under (provable, never estimated). |
+| 0-sell accumulators | 10 | the former `accumulator_count` / `accumulator_supply` factors, now an input here (HoodScan swap index; Robinhood only) |
+
+- **Identity:**
+  - a founder or team wallet that never sold, and vesting / locked supply, count as strong (full marks on the per-wallet components). They are named apart as key-person risk ("team wallet (deployer-funded) 61.1%, never sold, 116d").
+  - Wallets labelled CEX by the source (GoPlus tag, RugCheck known account) are excluded.
+  - A key-person or locked holder can never stand in for the rest. At least 60% of the *other* top-20 supply must have complete histories, or the score is null.
+- **Never estimated:**
+  - fewer than 3 measurable components, or under half the measurable weight, gives null with every missing component's reason;
+  - a still-reading ledger is **pending** (shown "reading holder histories…") and is not counted. It is n/a, so it never lowers coverage.
+
+### Data per chain
+| Chain | Holder ledgers | Wallet age / tokens held | Candles |
+|---|---|---|---|
+| Robinhood | Transfer logs of each wallet, 10M-block windows on the official RPC (one address per query: its OR-filter limit is 100k blocks; 429s back off) | HoodScan `get_trader`: first indexed swap / open positions, labelled as such (no historical RPC state) | GeckoTerminal daily |
+| Base / Monad | Transfer logs, OR-filtered by cohort; span adapts to each endpoint's range cap | archive: first block holding native coin. Token count is null: no keyless token-list API (Blockscout sits behind a browser challenge). | GeckoTerminal daily |
+| Solana | Helius history of each holder's token account for this mint | Helius first tx; token accounts of both token programs | GeckoTerminal daily |
+
+- Ledgers are saved in KV:
+  - EVM: 7 days, resumed;
+  - Solana: complete wallets for 2 hours.
+- Unfinished reads continue after the response. Inside a request, Holder Strength uses only the request budget actually left (52s minus what `collect` and the classification used). With under 1.5s left, the whole read moves after the response.
+
+### Scoring
+- **Established, Robinhood / Solana** (the sets with a holder-conviction group): `holder_strength` is worth **10 points**:
+  - `accumulator_count` (4) and `accumulator_supply` (4) are removed, since they are inputs now;
+  - `early_retention` drops 4 → 2.
+  - The holders group stays at 38.
+  - Thresholds: ≥ 80 → 100%, ≥ 60 → 75%, ≥ 40 → 50%, ≥ 20 → 25%, else 0.
+- **Base / Monad Established:** information only. Their sets have no conviction group to take points from, so the v3 matrices and fixtures are unchanged.
+- **Launch mode (< 72h):** no factor. The tile says "too young to measure".
+- **Caps:** when the largest classified top-5 holder is a vesting / locked contract and Holder Strength ≥ 80, `top_holder_35` / `top_holder_20` soften one tier (`*_vesting`: D → C, C → B).
+  - **Decision:** the founder / team softening (already specified) is not stacked further by Holder Strength; the "soften by one tier" reading applies to vesting.
+  - **Never** when the top holder is an unlabelled wallet (unit-tested at Holder Strength 95 ⇒ still D).
+
+### UI
+- A **HOLDER STRENGTH** tile sits beside Age / Price / FDV / Liquidity. It shows the number, the label chip and a 0–100 bar in the severity colours (Diamond / Strong green, Mixed neutral, Weak orange, Paper red). It is an ARIA `meter`.
+- **Research view:** the three sentences, key-person holders, every component's evidence and the method.
+
+### Results
+- **microduck** (Robinhood, 64d): **81.2 Diamond**. The spec expected Strong/Diamond.
+  - median hold 91% of token age;
+  - 17 of the top wallets bought the dips (84% of top-20 supply);
+  - 11 of 20 never sold;
+  - 5 of 10 holders held through the worst 7d drawdown, which reads −88% from daily candle lows, not the −37% in the spec;
+  - 0-sell accumulators hold 11.6%;
+  - wallet maturity null: HoodScan `get_trader` timed out or failed (it errors on wallets with very many trades).
+- **JAMES** (Monad, 116d), recomputed after classification: **66.6 Strong**, information only.
+  - key person: "team wallet (deployer-funded) 61.1%, never sold, 116d";
+  - the 6 counted wallets all held through the −70% drawdown;
+  - 5 of 6 never sold;
+  - wallet maturity 0: 3 of them were < 7 days old when they bought;
+  - no dip buyers.
+  - **Tier stays C 54.9.**
+- **Fixtures, before → after** (vitest snapshots re-recorded; the Holder Strength fields were added to the recorded snapshots live on 2026-10-30, the rest stays as recorded, and each file carries `holderStrengthRecordedAt`):
+
+| Fixture | Before | After | Why |
+|---|---|---|---|
+| microduck (Robinhood, Established) | A 80.4 · raw 77.4 · coverage 100% | **A 80.9** · raw 77.9 · coverage 100% | the accumulator factors (4+4, both full) are replaced by Holder Strength 81 (10/10); early retention 4 → 2 |
+| fartcoin (Solana, Established) | B 66.5 · raw 63.5 · coverage 85% | **B 66.5** · raw 63.5 · coverage **74%** | Holder Strength null: "Helius key not set — Solana holder histories need it". The fixture was recorded without Helius; production has the key. |
+| offline, peek, pangea-honeypot | F / F / F | unchanged | Launch mode, or gated |
+| v3 Base / Monad fixtures | — | unchanged | information only there |
+
+- **Tests replaced or re-baselined** (none deleted or weakened):
+  - `stability.test.ts`: the production-flap reproduction keeps its shape (A clean, S with OHLCV down, hold to A). Its numbers move 83.9 / 87.2 → 84.3 / 87.7 with the factor change.
+  - `resilience.test.ts`: "stale accumulators" now asserts the stale `accumulatorCount` metric and that the old factor is gone (it is an input to Holder Strength).
+  - `v24.test.ts`: the "basics only" weak token now carries a weak Holder Strength (5), alongside its zero accumulators.
+  - `helpers.ts`: the perfect snapshot carries Holder Strength 88.
+  - +22 new tests in `tests/holder-strength.test.ts`: one synthetic top-20 set per label, drawdown and dip rules, the launch window, n/a vs null, identity / CEX, the key-person coverage guard, scoring, caps, and holder selection.
+- **Distribution re-runs:**
+  - Robinhood / Solana (`pnpm distribution`): **0% A/S of 65 rated** (bar ≤ 10%); no sub-$10k FDV token above D. 35 U rows were launch tokens whose public sources were rate-limited (and no Helius key locally).
+  - Base / Monad (`v3-distribution.ts`, after the team class): **0% A/S of 26 rated**.
+
+### Checks (LOOP)
+| Step | Result |
+|---|---|
+| lint / typecheck / build | 0 errors (2 old warnings in untouched scripts) / ok / ok |
+| unit + integration tests | **458/458** (+6 team-wallet / outflow-scan tests in `holder-class.test.ts`; +22 in `holder-strength.test.ts`). `fixtures.test.ts.snap` re-recorded (microduck, fartcoin; table above). `v3-fixtures.test.ts.snap` unchanged. |
+| `verify:api` / `verify:stability` | OK / OK (A, incl. simulated HoodScan 503) |
+| Playwright | **65/65** (+2: HOLDER STRENGTH tile, label, bar severity, ARIA meter, Research-view sentences, axe AA; Launch-mode "too young to measure") |
+| v3 matrix on production (previous build, after deploy) | **15/15** |
+| distributions | Robinhood / Solana junk 0% A/S of 65; Base / Monad junk 0% A/S of 26 |
+
+### Still null (new)
+- **Wallet maturity — distinct tokens held on Base / Monad:** no keyless token-list API (Blockscout sits behind a browser challenge). Age is scored alone and the evidence says so.
+- **Wallet age on Robinhood:** HoodScan's first indexed swap stands in, labelled. It is null when `get_trader` fails (very active wallets).
+- **0-sell accumulators outside Robinhood:** needs HoodScan's swap index.
+- **Holder Strength on Solana without `HELIUS_API_KEY`:** null, with that reason.
+- **Monad ledgers:** public log endpoints cap windows at 10k blocks, so a 4-month token needs several analyses (background reads in between) before its Holder Strength appears. Until then it shows "reading holder histories…" and isn't counted.
+
+### Env vars
+- **New, optional:** `HOLDER_STRENGTH_BUDGET_MS` (default 10s, inside the request budget).
+- **`HELIUS_API_KEY`:** already set in production; needed for Solana Holder Strength.
+
+### Owner action
+- **Deploy this build:** `vercel --prod --yes`, then `vercel alias set <deployment> moneymagnet.vercel.app`, then `BASE=https://moneymagnet.vercel.app node scripts/v3-matrix.mjs`. It was not run, because the approval given covered the previous build.
+
+---
+
 # Top-holder classification fix (2026-10-29, after v3)
 
-**Status:** committed as `6fccb4b`, **not deployed**. The `vercel --prod --yes` step was refused by this session's permission check. Production still runs `hoodtier-djqef87nn`, the v3 build.
+**Status:** committed as `6fccb4b`. Deployed on 2026-10-30 with the owner's approval: `hoodtier-lkwktssm1`, aliased to moneymagnet.vercel.app; v3 matrix on production 15/15.
 
 ### What changed
 1. **Top-5 non-LP holders are classified on every EVM chain** (`lib/onchain/holderClass.ts`, `lib/topHolders.ts`).

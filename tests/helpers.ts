@@ -30,6 +30,8 @@ export function perfectSnapshot(chain: Chain = "robinhood", overrides: Partial<T
     top1SharePct: 3,
     accumulatorCount: 6,
     accumulatorSupplyPct: 8,
+    holderStrength: 88,
+    holderStrengthLabel: "Diamond",
     earlyRetentionPct: 80,
     earlyExitRatePct: 20,
     bundlersFlushed: true,

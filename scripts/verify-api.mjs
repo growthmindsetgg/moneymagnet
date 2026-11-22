@@ -13,6 +13,8 @@ const ADDRESSES = [
   // v3: a Base and a Monad token (0x, no chain given — resolved across the EVM chains).
   "0x532f27101965dd16442e59d40670faf5ebb142e4",
   "0x350035555e10d9afaf1566aaebfced5ba6c27777",
+  // Ethereum mainnet: PEPE (0x, no chain given — Ethereum is the only chain with the contract).
+  "0x6982508145454ce325ddbe47a25d4ec3d2311933",
 ];
 
 const server = spawn("npx", ["next", "start", "-p", String(PORT)], { shell: true, stdio: ["ignore", "pipe", "pipe"] });

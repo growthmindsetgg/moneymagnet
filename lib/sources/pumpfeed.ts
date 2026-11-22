@@ -89,21 +89,32 @@ export async function pumpfeed(mint: string): Promise<AdapterResult> {
   const key = process.env.PUMPFUN_FEED_KEY;
   const [intel, details, holders] = await Promise.all([
     mcpCall<CoinIntel>(url, "get_coin_intel", { mint, network: "mainnet" }, 20_000, key),
-    mcpCall<TokenDetails>(url, "get_token_details", { mint }, 15_000, key).catch(() => null),
-    mcpCall<FeedHolders>(url, "get_token_holders", { mint, limit: 20, network: "mainnet" }, 15_000, key).catch(() => null),
+    mcpCall<TokenDetails>(url, "get_token_details", { mint }, 15_000, key).catch((e: Error) => ({ failed: e.message.slice(0, 80) })),
+    mcpCall<FeedHolders>(url, "get_token_holders", { mint, limit: 20, network: "mainnet" }, 15_000, key).catch((e: Error) => ({ failed: e.message.slice(0, 80) })),
   ]);
-  const chainData = onchainSlice(details, holders);
+  const failedOf = (x: unknown) => (x && typeof x === "object" && "failed" in x ? String((x as { failed: string }).failed) : null);
+  const detailsErr = failedOf(details);
+  const holdersErr = failedOf(holders);
+  const chainData = onchainSlice(detailsErr ? null : (details as TokenDetails), holdersErr ? null : (holders as FeedHolders));
+  // A failed on-chain read is said, not silently dropped (the fields come from other sources or stay null).
+  const chainReasons: Record<string, string> = {
+    ...(detailsErr ? Object.fromEntries(["mintAuthority", "freezeAuthority", "totalSupply"].map((m) => [m, `three.ws get_token_details failed: ${detailsErr}`])) : {}),
+    ...(holdersErr ? { holders: `three.ws get_token_holders failed: ${holdersErr}` } : {}),
+  };
+  const chainNote = [detailsErr ? `token details failed (${detailsErr})` : "", holdersErr ? `holders failed (${holdersErr})` : ""].filter(Boolean).join(", ");
   if (!intel.found) {
     const reason = "three.ws has no launch observation for this mint (it only records pump.fun launches it watched live)";
     return {
-      status: { id: "pumpfeed", label: "pump.fun intel feed", state: "partial", message: reason, ms: Date.now() - t0, url: "https://three.ws" },
-      data: { ...chainData, nullReasons: Object.fromEntries(FEED_METRICS.map((m) => [m, reason])) },
+      status: { id: "pumpfeed", label: "pump.fun intel feed", state: "partial", message: [reason, chainNote].filter(Boolean).join(" · "), ms: Date.now() - t0, url: "https://three.ws" },
+      data: { ...chainData, nullReasons: { ...chainReasons, ...Object.fromEntries(FEED_METRICS.map((m) => [m, reason])) } },
       raw: intel,
     };
   }
   const window = `three.ws launch observation, first ${intel.observation_seconds ?? "?"}s from ${intel.first_seen_at?.slice(0, 16) ?? "?"}Z`;
   const wallets = Array.isArray(intel.top_wallets) ? intel.top_wallets : [];
-  const creatorBuy = safe(() => wallets.filter((w) => w?.is_creator).reduce((a, w) => a + (num(w.buy_sol) ?? 0), 0)) ?? 0;
+  // The dev's buy is only known when the creator has a row in top_wallets: absent ≠ 0 SOL.
+  const creatorRows = safe(() => wallets.filter((w) => w?.is_creator && num(w.buy_sol) != null)) ?? [];
+  const creatorBuy = creatorRows.length ? creatorRows.reduce((a, w) => a + num(w.buy_sol)!, 0) : null;
   const buyVol = safe(() => num(intel.buy_volume_sol));
   const data: Partial<TokenSnapshot> = {
     ...chainData,
@@ -115,20 +126,23 @@ export async function pumpfeed(mint: string): Promise<AdapterResult> {
     timingEntropy: safe(() => num(intel.timing_entropy)),
     devBuySol: safe(() => num(intel.dev_buy_sol)),
     // Dev share of all SOL spent on buys during the observation.
-    devBuySharePct: buyVol && buyVol > 0 && wallets.length ? (creatorBuy / buyVol) * 100 : null,
+    devBuySharePct: buyVol && buyVol > 0 && creatorBuy != null ? (creatorBuy / buyVol) * 100 : null,
     feedWindow: window,
-    nullReasons: { feesSol: "three.ws intel has no fees field", feesPerMcap15k: "three.ws intel has no fees field" },
+    nullReasons: { ...chainReasons, feesSol: "three.ws intel has no fees field", feesPerMcap15k: "three.ws intel has no fees field" },
   };
   const flags = safe(() => (Array.isArray(intel.risk_flags) ? intel.risk_flags.map(textOf) : [])) ?? [];
   const reasons = safe(() => (Array.isArray(intel.oracle?.reasons) ? intel.oracle!.reasons!.map(textOf) : [])) ?? [];
   const missing = FEED_METRICS.filter((m) => (data as Record<string, unknown>)[m] == null && m !== "feesSol");
   for (const m of missing) (data.nullReasons as Record<string, string>)[m] = "three.ws intel did not return this field";
+  if (data.devBuySharePct == null && buyVol && buyVol > 0 && creatorBuy == null) {
+    data.nullReasons!.devBuySharePct = "creator not among three.ws top_wallets — the dev's share of buys is unknown";
+  }
   return {
     status: {
       id: "pumpfeed",
       label: "pump.fun intel feed",
-      state: "ok",
-      message: `three.ws verdict ${safe(() => textOf(intel.verdict?.label ?? "?")) ?? "?"}${flags.length ? ` · flags: ${flags.join(", ")}` : ""}${reasons.length ? ` · oracle: ${reasons.join("; ").slice(0, 200)}` : ""} · ${window}`,
+      state: chainNote ? "partial" : "ok",
+      message: `three.ws verdict ${safe(() => textOf(intel.verdict?.label ?? "?")) ?? "?"}${flags.length ? ` · flags: ${flags.join(", ")}` : ""}${reasons.length ? ` · oracle: ${reasons.join("; ").slice(0, 200)}` : ""} · ${window}${chainNote ? ` · ${chainNote}` : ""}`,
       ms: Date.now() - t0,
       url: `https://three.ws/oracle?mint=${mint}`,
     },

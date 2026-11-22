@@ -16,7 +16,7 @@ const selector = (sig: string) => bytesToHex(keccak_256(new TextEncoder().encode
 export interface ContractSignature {
   id: string;
   label: string;
-  class: Exclude<HolderClass, "wallet" | "founder" | "treasury" | "contract">;
+  class: Exclude<HolderClass, "wallet" | "founder" | "team" | "treasury" | "pool" | "contract">;
   /** Every one of these functions must be in the bytecode. */
   fns: string[];
 }
@@ -120,7 +120,7 @@ async function safeInfo(rpc: Rpc, address: string): Promise<{ threshold: number;
 }
 
 export interface ContractVerdict {
-  class: "treasury" | "vesting" | "locker" | "staking" | "contract";
+  class: "treasury" | "vesting" | "locker" | "staking" | "pool" | "contract";
   label: string;
   unlocksAt: string | null;
   detail: string | null;
@@ -168,7 +168,14 @@ export async function classifyContract(rpc: Rpc, address: string, token: string,
   const { code: impl, via } = await resolvedCode(rpc, address, code);
   const sig = matchSignature(impl);
   if (!sig) {
-    return { class: "contract", label: "unclassified contract", unlocksAt: null, detail: null, evidence: `contract (${bytes} B${via ? `, ${via}` : ""}); no vesting / locker / staking / multisig signature matched` };
+    // A pool the pool list missed (another DEX, a fresh pair): token0()/token1() name this token.
+    const [t0, t1] = await Promise.all([call(rpc, address, "token0()"), call(rpc, address, "token1()")]);
+    const side = [t0, t1].findIndex((w) => !!w && w.length >= 66 && `0x${w.slice(-40)}`.toLowerCase() === token.toLowerCase());
+    if (side >= 0) {
+      return { class: "pool", label: "liquidity pool (unlisted)", unlocksAt: null, detail: null, evidence: `contract (${bytes} B); token${side}() = this token → an AMM pair, excluded like the listed pools` };
+    }
+    // Not proven a pool, lock, vesting, staking or multisig: counted like a wallet, since anyone can park supply in a contract they control.
+    return { class: "contract", label: "unclassified contract", unlocksAt: null, detail: null, evidence: `contract (${bytes} B${via ? `, ${via}` : ""}); no vesting / locker / staking / multisig / pool signature matched — counted in concentration` };
   }
   const sch = await schedule(rpc, sig, address, token).catch(() => ({ unlocksAt: null, detail: null, note: "schedule read failed" }));
   const kind = sig.class === "staking" ? "staking contract" : sig.class === "locker" ? "locker" : "vesting contract";
@@ -183,7 +190,7 @@ export async function classifyContract(rpc: Rpc, address: string, token: string,
 
 // ── Wallet history (archive state) ────────────────────────────────────────────────────────────────
 
-const SWAP_TOPICS = new Set([
+export const SWAP_TOPICS = new Set([
   "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",
   "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67",
   "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f",
@@ -198,7 +205,7 @@ export interface WalletHistory {
   /** Outbound transfers to wallets (EOA or EIP-7702). */
   transfersOut: number;
   transfersOutRaw: bigint;
-  firstReceipt: { block: number; from: string | null } | null;
+  firstReceipt: { block: number; from: string | null; tx: string | null } | null;
   method: string;
   calls: number;
 }
@@ -212,6 +219,10 @@ export interface HistoryOptions {
   isPool?: (address: string) => boolean;
   /** Stop after the first receipt (who funded the wallet). */
   firstReceiptOnly?: boolean;
+  /** The first receipt when already known (cached): skips its bisection. */
+  knownFirst?: { block: number; from: string | null; tx: string | null } | null;
+  /** Stop after the cheap proofs (nonce 0, nonce unchanged since the first receipt); no balance-change scan. */
+  proofsOnly?: boolean;
 }
 
 /**
@@ -244,14 +255,18 @@ export async function archiveWalletHistory(rpc: Rpc, token: string, wallet: stri
   if (nonceNow === 0) return done({ complete: true, method: "wallet has never sent a transaction (nonce 0)" });
 
   // First receipt: earliest block with a non-zero balance.
-  const found = await kSearch(o.fromBlock, o.head, async (b) => (await bal(b)) > 0n, 16, Math.max(1, Math.floor((max - calls) / 16)));
-  if (found == null) return done({ reason: `archive search stopped after ${calls} calls`, method: "balance search" });
-  const first = found;
-  const inLogs = await r<RpcLog[]>("eth_getLogs", [{ address: token, topics: [TRANSFER_TOPIC, null, wTopic], fromBlock: hex(first), toBlock: hex(first) }]).catch(() => []);
-  out.firstReceipt = { block: first, from: inLogs[0] ? topicAddress(inLogs[0].topics[1]) : null };
+  if (o.knownFirst) out.firstReceipt = o.knownFirst;
+  else {
+    const found = await kSearch(o.fromBlock, o.head, async (b) => (await bal(b)) > 0n, 16, Math.max(1, Math.floor((max - calls) / 16)));
+    if (found == null) return done({ reason: `archive search stopped after ${calls} calls`, method: "balance search" });
+    const inLogs = await r<RpcLog[]>("eth_getLogs", [{ address: token, topics: [TRANSFER_TOPIC, null, wTopic], fromBlock: hex(found), toBlock: hex(found) }]).catch(() => []);
+    out.firstReceipt = { block: found, from: inLogs[0] ? topicAddress(inLogs[0].topics[1]) : null, tx: inLogs[0]?.transactionHash ?? null };
+  }
+  const first = out.firstReceipt.block;
   if (o.firstReceiptOnly) return done({ method: `first receipt at block ${first}` });
   const nonceAtFirst = Number(await r<string>("eth_getTransactionCount", [wallet, hex(first)]));
   if (nonceAtFirst === nonceNow) return done({ complete: true, method: `nonce unchanged (${nonceNow}) since the first receipt at block ${first}: no transaction sent since` });
+  if (o.proofsOnly) return done({ reason: `the wallet sent ${nonceNow - nonceAtFirst} transactions since its first receipt`, method: `first receipt at block ${first}` });
 
   // Every balance change after the first receipt.
   const changes: number[] = [];
@@ -292,6 +307,147 @@ export async function archiveWalletHistory(rpc: Rpc, token: string, wallet: stri
     complete: true,
     method: `archive balance-change scan from block ${first}: ${changes.length} outflow blocks read (an outflow exactly offset by an inflow between two probes is not seen)`,
   });
+}
+
+/**
+ * Who first sent the wallet native coin (ETH / MON): the earliest block with a non-zero native balance
+ * (archive bisection on eth_getBalance), then the plain transfer into it in that block. Null `from`
+ * when the coin arrived through an internal call (a contract paid it) — not attributable without traces.
+ */
+export async function nativeFunder(rpc: Rpc, wallet: string, head: number): Promise<{ block: number; from: string | null; tx: string | null } | null> {
+  const w = wallet.toLowerCase();
+  const bal = async (b: number) => BigInt((await rpc<string>("eth_getBalance", [w, hex(b)])) || "0x0") > 0n;
+  if (!(await bal(head))) return null;
+  const block = await kSearch(0, head, bal, 16, 10);
+  if (block == null) return null;
+  const b = await rpc<{ transactions: { hash: string; from: string; to: string | null; value: string }[] } | null>("eth_getBlockByNumber", [hex(block), true]);
+  const tx = b?.transactions.find((t) => t.to?.toLowerCase() === w && BigInt(t.value) > 0n);
+  return { block, from: tx?.from.toLowerCase() ?? null, tx: tx?.hash ?? null };
+}
+
+/** The same promise, with a no-op rejection handler attached so a later rejection nobody awaits is not "unhandled". */
+function settled<T>(p: Promise<T>): Promise<T> {
+  p.catch(() => undefined);
+  return p;
+}
+
+/** Runs `fn` over `items` with at most `limit` in flight; results in input order. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    }),
+  );
+  return out;
+}
+
+/** Progress of a wallet's outbound-Transfer scan, persisted between requests (past blocks never change). */
+export interface OutflowState {
+  fromBlock: number;
+  /** Every block in [fromBlock, scannedTo] has been read. */
+  scannedTo: number;
+  toPools: number;
+  transfersOut: number;
+  transfersOutRaw: string;
+  /** Up to 5 txs that moved tokens into a pool / router / contract or carried a Swap event. */
+  sellTxs: string[];
+  /** Blocks skipped because the wallet's nonce did not change across them (it sent no transaction). */
+  nonceSkipped?: number;
+}
+
+/**
+ * The wallet's outbound Transfer logs (topic1 = wallet), window by window from `fromBlock`, each
+ * destination checked (code, registered pool / router, Swap event in the tx). Resumable: pass the
+ * saved state back and it continues where it stopped; a window counts only once fully read. Stops at
+ * the first sell (that already decides) or the deadline.
+ */
+export async function outflowScan(
+  rpc: Rpc,
+  token: string,
+  wallet: string,
+  o: { fromBlock: number; head: number; span: number; deadline: number; isPool?: (a: string) => boolean; state?: OutflowState | null; parallel?: number; nonceAt?: (block: number) => Promise<number> },
+): Promise<OutflowState & { complete: boolean; windows: number }> {
+  const st: OutflowState = o.state && o.state.fromBlock <= o.fromBlock ? { ...o.state } : { fromBlock: o.fromBlock, scannedTo: o.fromBlock - 1, toPools: 0, transfersOut: 0, transfersOutRaw: "0", sellTxs: [] };
+  const wTopic = addressTopic(wallet);
+  const codes = new Map<string, Promise<string>>();
+  const swapTxs = new Map<string, Promise<boolean>>();
+  const par = o.parallel ?? 12;
+  let windows = 0;
+  const nonces = new Map<number, Promise<number>>();
+  const nonceAt = (b: number) => (nonces.has(b) ? nonces.get(b)! : (nonces.set(b, settled(o.nonceAt!(b))), nonces.get(b)!));
+  const round = par * o.span;
+  while (st.scannedTo < o.head && st.toPools === 0 && Date.now() < o.deadline) {
+    // Nonce unchanged across a stretch ⇒ the wallet sent no transaction there: skip it without reading logs.
+    // Galloping: try a wide stretch, narrow by 8× until it is one round of windows.
+    if (o.nonceAt) {
+      let chunk = round * 512;
+      try {
+        while (chunk >= round && st.scannedTo < o.head && Date.now() < o.deadline) {
+          const a = st.scannedTo + 1;
+          const b = Math.min(o.head, a + chunk - 1);
+          const [na, nb] = await Promise.all([nonceAt(a - 1), nonceAt(b)]);
+          if (na === nb) {
+            st.nonceSkipped = (st.nonceSkipped ?? 0) + (b - a + 1);
+            st.scannedTo = b;
+          } else chunk = Math.floor(chunk / 8);
+        }
+      } catch {
+        // Archive nonce unavailable: read the logs instead.
+      }
+      if (st.scannedTo >= o.head || Date.now() >= o.deadline) break;
+    }
+    const wins: [number, number][] = [];
+    for (let a = st.scannedTo + 1; wins.length < par && a <= o.head; a += o.span) wins.push([a, Math.min(o.head, a + o.span - 1)]);
+    // Every call is bounded by the time left, so the scan never outlives its deadline.
+    const left = () => Math.max(500, o.deadline - Date.now());
+    const got = await Promise.all(wins.map(([a, b]) => rpc<RpcLog[]>("eth_getLogs", [{ address: token, topics: [TRANSFER_TOPIC, wTopic], fromBlock: hex(a), toBlock: hex(b) }], left()).catch(() => null)));
+    // Only the contiguous run of windows that answered counts; the rest is read next round.
+    const ok = got.findIndex((x) => x === null);
+    const n = ok === -1 ? got.length : ok;
+    if (n === 0) break;
+    // Window by window, so a deadline mid-batch keeps every window already read.
+    let stopped = false;
+    for (let i = 0; i < n && !stopped; i++) {
+      try {
+        const verdicts = await mapLimit(got[i] as RpcLog[], 16, async (l) => {
+          if (Date.now() >= o.deadline) throw new Error("deadline");
+          const to = topicAddress(l.topics[2]);
+          // Cached promises get a handler at once: one that fails after the window was abandoned must not surface
+          // as an unhandled rejection.
+          if (!codes.has(to)) codes.set(to, settled(rpc<string>("eth_getCode", [to, "latest"], left())));
+          if (!swapTxs.has(l.transactionHash))
+            swapTxs.set(l.transactionHash, settled(rpc<{ logs: { topics: string[] }[] } | null>("eth_getTransactionReceipt", [l.transactionHash], left()).then((rc) => rc?.logs.some((x) => SWAP_TOPICS.has(x.topics[0])) ?? false)));
+          const [code, swap] = await Promise.all([codes.get(to)!, swapTxs.get(l.transactionHash)!]);
+          return { l, sell: swap || !!o.isPool?.(to) || codeKind(code) === "contract" };
+        });
+        let raw = BigInt(st.transfersOutRaw);
+        for (const v of verdicts) {
+          if (v.sell) {
+            st.toPools++;
+            if (st.sellTxs.length < 5) st.sellTxs.push(v.l.transactionHash);
+          } else {
+            st.transfersOut++;
+            raw += v.l.data && v.l.data !== "0x" ? BigInt(v.l.data) : 0n;
+          }
+        }
+        st.transfersOutRaw = raw.toString();
+        st.scannedTo = wins[i][1];
+        windows++;
+      } catch {
+        stopped = true;
+        // A failed lookup must not be cached as an answer.
+        codes.clear();
+        swapTxs.clear();
+      }
+    }
+    if (stopped) break;
+  }
+  return { ...st, complete: st.scannedTo >= o.head || st.toPools > 0, windows };
 }
 
 /** Creation block from archive state: the first block where the token has code. */
@@ -352,5 +508,5 @@ export async function creationSender(rpc: Rpc, token: string, block: number): Pr
 }
 
 export function classRow(p: Omit<HolderClassRow, "counted">): HolderClassRow {
-  return { ...p, counted: p.class === "wallet" || p.class === "founder" || p.class === "treasury" };
+  return { ...p, counted: p.class === "wallet" || p.class === "founder" || p.class === "team" || p.class === "treasury" || p.class === "contract" };
 }

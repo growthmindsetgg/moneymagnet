@@ -1,6 +1,6 @@
 {
-  "recordedAt": "2026-10-29T17:00:18.679Z",
-  "note": "JAMES: 61.1% held by an EOA funded by the creation-tx sender (not the deployer); two Safe 6/8 treasuries in the top 5",
+  "recordedAt": "2026-10-30T06:24:10.617Z",
+  "note": "JAMES: 61.1% held by a team wallet — an EOA funded by the creation-tx sender (tokens by plain transfer); two Safe 6/8 treasuries in the top 5",
   "snapshot": {
     "chain": "monad",
     "address": "0x43cf5407bda1400498b8064d50a7e17528d87777",
@@ -10,28 +10,28 @@
     "anchor": null,
     "assetKind": null,
     "tokenExists": true,
-    "priceUsd": 0.001604190051,
-    "fdvUsd": 1604190.051,
-    "liquidityUsd": 82365.72,
-    "volume24hUsd": 28.762728490606936,
+    "priceUsd": 0.001468148982,
+    "fdvUsd": 1468148.982,
+    "liquidityUsd": 76323.7865,
+    "volume24hUsd": 84.04686498373792,
     "poolCount": 1,
-    "mainPoolLiquidityUsd": 82365.72,
+    "mainPoolLiquidityUsd": 76323.7865,
     "mainPoolSharePct": 100,
-    "liqFdvPct": 5.134411595973674,
-    "liqChange24hPct": 1.533135923053789,
-    "liqChange7dPct": 1.533135923053789,
-    "liqChange24hWindow": "4.5h of history",
-    "liqChange7dWindow": "4.5h of history",
-    "liqHistoryPoints": 7,
-    "liquidityTotalUsd": 82545.81,
+    "liqFdvPct": 5.198640426534042,
+    "liqChange24hPct": -5.647460042130692,
+    "liqChange7dPct": -5.647460042130692,
+    "liqChange24hWindow": "18h of history",
+    "liqChange7dWindow": "18h of history",
+    "liqHistoryPoints": 13,
+    "liquidityTotalUsd": 76708.03,
     "poolAddresses": [
       "0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b",
       "0x4b6ce40b0869ff8aa93432439dd0ef8f39657f37",
       "0x9b747bcb4e6be2aa4b8c5fd3e1b1ea22d2a89481"
     ],
     "createdAt": "2026-07-05T19:03:26.000Z",
-    "ageHours": 2781.943299722222,
-    "ageMinutes": 166916.6,
+    "ageHours": 2795.3417447222223,
+    "ageMinutes": 167720.5,
     "totalSupply": 1000000000,
     "holderCount": 2419,
     "top10SharePct": 67.23,
@@ -47,16 +47,17 @@
       {
         "address": "0xf8baf2541defab76f2c344ff10cd6d4ef74d3432",
         "pct": 61.0973,
-        "class": "wallet",
-        "label": "wallet funded by the deployer",
-        "detail": null,
+        "class": "team",
+        "label": "team wallet (deployer-funded)",
+        "detail": "0 sells in 116d",
         "unlocksAt": null,
-        "evidence": "no code (EOA); not the deployer (creation tx sent by 0x8258cf2e72bf252778922cac02f518ee6457a10e, creator 0xaba951acef06a6cf2776609170e30a0ca9a1544e); first tokens received from 0x8258cf2e72bf252778922cac02f518ee6457a10e at block 85821687",
-        "counted": true
+        "evidence": "no code (EOA); not the deployer (creation tx sent by 0x8258cf2e72bf252778922cac02f518ee6457a10e, creator 0xaba951acef06a6cf2776609170e30a0ca9a1544e); first tokens received from 0x8258cf2e72bf252778922cac02f518ee6457a10e at block 85821687; funded by the deployer 0x8258cf2e72bf252778922cac02f518ee6457a10e: first tokens by plain transfer (no Swap event) in tx 0x5c96c6a1de542fce420aab5f3955abde5d042ec254f39129d6442b7dc456ebeb (block 85821687); outbound Transfer logs since the first receipt (block 85821687): 0 into pools / routers / contracts, 153 to wallets (87% of the blocks skipped: the wallet's nonce did not change there, so it sent nothing); nad.fun swap history: 3 buys, 0 sells",
+        "counted": true,
+        "fundingTx": "0x5c96c6a1de542fce420aab5f3955abde5d042ec254f39129d6442b7dc456ebeb"
       },
       {
         "address": "0x167ee78660ddca546b07afa4928563e617675203",
-        "pct": 1.8707999999999998,
+        "pct": 1.8793,
         "class": "contract",
         "label": "unclassified contract",
         "detail": null,
@@ -98,16 +99,20 @@
     "largestHolder": {
       "address": "0xf8baf2541defab76f2c344ff10cd6d4ef74d3432",
       "pct": 61.0973,
-      "class": "wallet",
-      "label": "wallet funded by the deployer",
-      "detail": null,
+      "class": "team",
+      "label": "team wallet (deployer-funded)",
+      "detail": "0 sells in 116d",
       "unlocksAt": null,
-      "evidence": "no code (EOA); not the deployer (creation tx sent by 0x8258cf2e72bf252778922cac02f518ee6457a10e, creator 0xaba951acef06a6cf2776609170e30a0ca9a1544e); first tokens received from 0x8258cf2e72bf252778922cac02f518ee6457a10e at block 85821687",
-      "counted": true
+      "evidence": "no code (EOA); not the deployer (creation tx sent by 0x8258cf2e72bf252778922cac02f518ee6457a10e, creator 0xaba951acef06a6cf2776609170e30a0ca9a1544e); first tokens received from 0x8258cf2e72bf252778922cac02f518ee6457a10e at block 85821687; funded by the deployer 0x8258cf2e72bf252778922cac02f518ee6457a10e: first tokens by plain transfer (no Swap event) in tx 0x5c96c6a1de542fce420aab5f3955abde5d042ec254f39129d6442b7dc456ebeb (block 85821687); outbound Transfer logs since the first receipt (block 85821687): 0 into pools / routers / contracts, 153 to wallets (87% of the blocks skipped: the wallet's nonce did not change there, so it sent nothing); nad.fun swap history: 3 buys, 0 sells",
+      "counted": true,
+      "fundingTx": "0x5c96c6a1de542fce420aab5f3955abde5d042ec254f39129d6442b7dc456ebeb"
     },
     "founderNeverSold": false,
     "founderSold": null,
     "founderHoldDays": null,
+    "teamNeverSold": true,
+    "teamSold": false,
+    "teamHoldDays": 116,
     "deployerSoldPct": 0,
     "deployerHasSold": false,
     "deployerDistributedPct": null,
@@ -121,7 +126,7 @@
         "sells": null,
         "isContract": false,
         "kind": "wallet",
-        "label": "wallet funded by the deployer"
+        "label": "team wallet (deployer-funded)"
       },
       {
         "address": "0xf12536c51b486dfe6cc67aabfaf389037827d178",
@@ -185,8 +190,8 @@
       },
       {
         "address": "0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b",
-        "qty": 25282093.040870886,
-        "pct": 2.5282,
+        "qty": 25678286.736131202,
+        "pct": 2.5678,
         "buys": null,
         "sells": null,
         "isContract": true,
@@ -194,8 +199,8 @@
       },
       {
         "address": "0x167ee78660ddca546b07afa4928563e617675203",
-        "qty": 18707586.402631886,
-        "pct": 1.8707999999999998,
+        "qty": 18793422.597699087,
+        "pct": 1.8793,
         "buys": null,
         "sells": null,
         "isContract": true,
@@ -213,21 +218,30 @@
         "label": "unclassified contract"
       }
     ],
-    "liquidityHeldPct": 14.31,
+    "liquidityHeldPct": 14.35,
     "holderSource": "goplus",
-    "staleFields": {},
-    "netFlowRatio24h": -0.05840296195732997,
-    "netFlowUsd24h": -1.679828537825928,
+    "staleFields": {
+      "deployerSoldPct": 0,
+      "patterns": 1,
+      "staircase": 1,
+      "trendScore": 1,
+      "trendWindow": 1,
+      "upOnlyChart": 1,
+      "brokeHigherLow": 1,
+      "staircaseWindow": 1
+    },
+    "netFlowRatio24h": -0.28681057519799535,
+    "netFlowUsd24h": -24.105529689574126,
     "netFlowRatio7d": null,
     "flowConsistent": null,
-    "buyers24h": 18,
-    "sellers24h": 8,
-    "buyerSellerRatio": 2.25,
+    "buyers24h": 24,
+    "sellers24h": 16,
+    "buyerSellerRatio": 1.5,
     "singleTradeWalletSharePct": null,
-    "tradesPerWallet": 3.0416666666666665,
+    "tradesPerWallet": 2.58974358974359,
     "smartMoneyNetUsd": null,
     "smartBuyers": null,
-    "volLiqRatio": 0.00034920751607109046,
+    "volLiqRatio": 0.0011011883560538224,
     "repeatedSizeSharePct": null,
     "bundleSharePct": null,
     "washFlag": false,
@@ -237,7 +251,7 @@
     "deadCurve": null,
     "deadLaunch": null,
     "lastTradeHoursAgo": null,
-    "launchBuyers": 18,
+    "launchBuyers": 24,
     "zeroActivity": [],
     "roundTripLossPct": 0.59,
     "mintAuthority": false,
@@ -247,9 +261,9 @@
     "upgradeable": false,
     "lpLockedPct": null,
     "isLaunchpad": true,
-    "volMcRatio": 0.0000179297511991657,
+    "volMcRatio": 0.00005724682305009963,
     "volMcBar": 0.8,
-    "volMcVsBar": 0.000022412188998957125,
+    "volMcVsBar": 0.00007155852881262453,
     "feesSol": null,
     "feesPerMcap15k": null,
     "snipeRatioPct": null,
@@ -263,8 +277,8 @@
     "fundingClusterMax": null,
     "clusterSupplyPct": null,
     "bundlerMajority": null,
-    "makersCount": 30,
-    "makersHoldersRatio": 0.012401818933443571,
+    "makersCount": 42,
+    "makersHoldersRatio": 0.017362546506821,
     "creatorPriorMints": null,
     "creatorRugRatePct": null,
     "creatorHasSocials": null,
@@ -273,9 +287,9 @@
     "realSolReserves": null,
     "curveCirculatingPct": null,
     "uniqueBuyers": null,
-    "sells24h": 9,
-    "buyTxs24h": 61,
-    "sellTxs24h": 9,
+    "sells24h": 19,
+    "buyTxs24h": 81,
+    "sellTxs24h": 19,
     "buyersBasis": "unique wallets",
     "allBuyersExited": null,
     "insiderSupplyPct": null,
@@ -288,52 +302,52 @@
     "identicalWindow": null,
     "hugeCandlesOnly": null,
     "staircase": false,
-    "staircaseWindow": "60 × 5m candles, 2026-10-28T10:40Z → 2026-10-29T15:30Z",
+    "staircaseWindow": "60 × 5m candles, 2026-10-29T07:30Z → 2026-10-30T05:55Z",
     "trendScore": 0,
-    "trendWindow": "168 × 1h candles, 2026-10-21T21:00Z → 2026-10-29T15:00Z",
+    "trendWindow": "168 × 1h candles, 2026-10-22T10:00Z → 2026-10-30T05:00Z",
     "brokeHigherLow": false,
     "upOnlyChart": false,
     "honeypotPattern": false,
     "patterns": [
       {
         "id": "staircase",
-        "result": false,
+        "to": "2026-10-30T05:55:00.000Z",
+        "from": "2026-10-29T07:30:00.000Z",
         "detail": "Longest step–plateau run with no red candle: 1 steps (flag at 5).",
-        "timeframe": "5m",
-        "from": "2026-10-28T10:40:00.000Z",
-        "to": "2026-10-29T15:30:00.000Z",
-        "candles": 60
+        "result": false,
+        "candles": 60,
+        "timeframe": "5m"
       },
       {
         "id": "trend",
+        "to": "2026-10-30T05:00:00.000Z",
+        "from": "2026-10-22T10:00:00.000Z",
+        "detail": "Swing highs 0.001650 → 0.001527 (LH), lows 0.001579 → 0.001335 (LL); last close 0.001468.",
         "result": 0,
-        "detail": "Swing highs 0.001680 → 0.001670 (LH), lows 0.001620 → 0.001566 (LL); last close 0.001604.",
-        "timeframe": "1h",
-        "from": "2026-10-21T21:00:00.000Z",
-        "to": "2026-10-29T15:00:00.000Z",
-        "candles": 168
+        "candles": 168,
+        "timeframe": "1h"
       },
       {
         "id": "up_only",
+        "to": "2026-10-30T05:55:00.000Z",
+        "from": "2026-10-24T00:10:00.000Z",
+        "detail": "Max drawdown from running peak 26.3%.",
         "result": false,
-        "detail": "Max drawdown from running peak 14.3%.",
-        "timeframe": "5m",
-        "from": "2026-10-23T07:10:00.000Z",
-        "to": "2026-10-29T15:30:00.000Z",
-        "candles": 288
+        "candles": 288,
+        "timeframe": "5m"
       }
     ],
     "tmWinnerSimilarity": null,
     "tmRugSimilarity": null,
     "nullReasons": {
       "deployerAddress": "GoPlus returns no creator for chain 143",
-      "identicalCandleSharePct": "1m candles are only checked for launch-mode (< 72h) tokens",
-      "launchRetraced30": "token is ≥ 72h old — launch window not fetched",
-      "launchPriceUsd": "first daily candle not available from GeckoTerminal",
-      "hugeCandlesOnly": "GeckoTerminal candles carry no per-candle trade count (guide rule needs < 20 trades/candle)",
+      "identicalCandleSharePct": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "launchRetraced30": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "launchPriceUsd": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
+      "hugeCandlesOnly": "GeckoTerminal OHLCV failed: rate limited (HTTP 429)",
       "devBuySharePct": "nad.fun: the dev's share of the first-10-minute buys needs the full launch trade list (not read within the 10 req/min budget)",
       "lpLockedPct": "token is ≥ 14 days old — the LP-lock check applies to young tokens (as on Robinhood Chain)",
-      "founderSold": "largest holder is not the deployer"
+      "founderSold": "largest holder is a team wallet, not the deployer"
     },
     "provenance": {
       "honeypot": [
@@ -341,14 +355,14 @@
           "source": "monad-sim",
           "label": "Monad sell simulation",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "goplus",
           "label": "GoPlus",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -357,14 +371,14 @@
           "source": "monad-sim",
           "label": "Monad sell simulation",
           "value": true,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "goplus",
           "label": "GoPlus",
           "value": true,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -373,7 +387,7 @@
           "source": "monad-sim",
           "label": "Monad sell simulation",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -382,7 +396,7 @@
           "source": "monad-sim",
           "label": "Monad sell simulation",
           "value": 0.59,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -391,14 +405,14 @@
           "source": "monad-rpc",
           "label": "Monad RPC",
           "value": 1000000000,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": true
         },
         {
           "source": "nadfun",
           "label": "nad.fun",
           "value": 1000000000,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -407,7 +421,7 @@
           "source": "monad-rpc",
           "label": "Monad RPC",
           "value": 0,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": true
         }
       ],
@@ -416,7 +430,7 @@
           "source": "monad-rpc",
           "label": "Monad RPC",
           "value": true,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": true
         }
       ],
@@ -425,14 +439,14 @@
           "source": "monad-rpc",
           "label": "Monad RPC",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": true
         },
         {
           "source": "goplus",
           "label": "GoPlus",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -440,22 +454,22 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 28.762728490606936,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 84.04686498373792,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 1363.7399999999998,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 4180.620000000001,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 1507.0060103183002,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 4337.7101152001,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -464,7 +478,7 @@
           "source": "nadfun",
           "label": "nad.fun",
           "value": "2026-07-05T19:03:26.000Z",
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -472,8 +486,8 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 2781.9420605555556,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 2795.3405608333333,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -482,14 +496,14 @@
           "source": "nadfun",
           "label": "nad.fun",
           "value": 2419,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "goplus",
           "label": "GoPlus",
-          "value": 2420,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 2419,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -498,7 +512,7 @@
           "source": "nadfun",
           "label": "nad.fun",
           "value": "0xaba951acef06a6cf2776609170e30a0ca9a1544e",
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -507,8 +521,9 @@
           "source": "nadfun",
           "label": "nad.fun",
           "value": 0,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
-          "onchain": false
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
+          "onchain": false,
+          "stale": true
         }
       ],
       "deployerHasSold": [
@@ -516,16 +531,17 @@
           "source": "nadfun",
           "label": "nad.fun",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
-          "onchain": false
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
+          "onchain": false,
+          "stale": true
         }
       ],
       "netFlowRatio24h": [
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": -0.05840296195732997,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": -0.28681057519799535,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -533,8 +549,8 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": -1.679828537825928,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": -24.105529689574126,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -542,15 +558,15 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 22,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 26,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 18,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 24,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -558,15 +574,15 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 8,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 16,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 6,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 15,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -574,15 +590,15 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 2.75,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 1.625,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 3,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 1.6,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -591,7 +607,7 @@
           "source": "nadfun",
           "label": "nad.fun",
           "value": true,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -599,8 +615,8 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 30,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 42,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -608,22 +624,22 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 9,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 19,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 20,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 30,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 10,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 19,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -631,15 +647,15 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 61,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 81,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 89,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 108,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -647,15 +663,15 @@
         {
           "source": "nadfun",
           "label": "nad.fun",
-          "value": 9,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 19,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 20,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 30,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -663,15 +679,15 @@
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 0.001628,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 0.001485,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 0.001604190051,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 0.001468148982,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -679,15 +695,15 @@
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 1497519,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 1365535,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 1604190.051,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 1468148.982,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -695,15 +711,15 @@
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 82365.72,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 76535.98,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 83307.3129,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 76323.7865,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -712,14 +728,14 @@
           "source": "dexscreener",
           "label": "DexScreener",
           "value": 1,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
           "value": 1,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -727,15 +743,15 @@
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 82365.72,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 76535.98,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 83307.3129,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 76323.7865,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -744,14 +760,14 @@
           "source": "dexscreener",
           "label": "DexScreener",
           "value": 100,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
           "value": 100,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -759,15 +775,15 @@
         {
           "source": "dexscreener",
           "label": "DexScreener",
-          "value": 82545.81,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 76708.03,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 88994.6382,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 81957.26020000002,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -775,8 +791,8 @@
         {
           "source": "geckoterminal",
           "label": "GeckoTerminal",
-          "value": 3.0416666666666665,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 2.58974358974359,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -785,8 +801,9 @@
           "source": "geckoterminal",
           "label": "GeckoTerminal",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
-          "onchain": false
+          "fetchedAt": "2026-10-30T06:22:52.019Z",
+          "onchain": false,
+          "stale": true
         }
       ],
       "trendScore": [
@@ -794,8 +811,9 @@
           "source": "geckoterminal",
           "label": "GeckoTerminal",
           "value": 0,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
-          "onchain": false
+          "fetchedAt": "2026-10-30T06:22:52.019Z",
+          "onchain": false,
+          "stale": true
         }
       ],
       "brokeHigherLow": [
@@ -803,8 +821,9 @@
           "source": "geckoterminal",
           "label": "GeckoTerminal",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
-          "onchain": false
+          "fetchedAt": "2026-10-30T06:22:52.019Z",
+          "onchain": false,
+          "stale": true
         }
       ],
       "upOnlyChart": [
@@ -812,8 +831,9 @@
           "source": "geckoterminal",
           "label": "GeckoTerminal",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
-          "onchain": false
+          "fetchedAt": "2026-10-30T06:22:52.019Z",
+          "onchain": false,
+          "stale": true
         }
       ],
       "top10SharePct": [
@@ -821,14 +841,14 @@
           "source": "goplus",
           "label": "GoPlus",
           "value": 64.23,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "holder-class",
           "label": "Holder classification (derived)",
           "value": 67.23,
-          "fetchedAt": "2026-10-29T17:00:17.849Z",
+          "fetchedAt": "2026-10-30T06:24:03.722Z",
           "onchain": true
         }
       ],
@@ -837,14 +857,14 @@
           "source": "goplus",
           "label": "GoPlus",
           "value": 61.0973,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         },
         {
           "source": "holder-class",
           "label": "Holder classification (derived)",
           "value": 61.0973,
-          "fetchedAt": "2026-10-29T17:00:17.849Z",
+          "fetchedAt": "2026-10-30T06:24:03.722Z",
           "onchain": true
         }
       ],
@@ -852,8 +872,8 @@
         {
           "source": "goplus",
           "label": "GoPlus",
-          "value": 17.31,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "value": 17.35,
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -862,7 +882,7 @@
           "source": "goplus",
           "label": "GoPlus",
           "value": false,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -871,7 +891,7 @@
           "source": "goplus",
           "label": "GoPlus",
           "value": true,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ],
@@ -880,7 +900,7 @@
           "source": "goplus",
           "label": "GoPlus",
           "value": 0,
-          "fetchedAt": "2026-10-29T16:59:57.418Z",
+          "fetchedAt": "2026-10-30T06:23:52.019Z",
           "onchain": false
         }
       ]
@@ -902,22 +922,22 @@
       "id": "monad-sim",
       "label": "Monad sell simulation",
       "state": "ok",
-      "message": "sellable via pool 0x48c3bb34… (v2, fee 0.3%) · transfer probe from 0x804271…: ok · pool 0x48c3bb34… (v2, fee 0.3%): 0.59% loss (computed from reserves, 0.3% fee) · pool 0x2b7caabc… (v4, no hook, fee 65%): 88.00% round-trip loss (V4Quoter, buy then sell) · pool 0x3d3591e5… (v4, no hook, fee 4%): buy quote failed (NotEnoughLiquidity — the pool cannot absorb the trade) — no usable liquidity · pool 0x99143565… (v4, no hook, fee 30%): 53.15% round-trip loss (V4Quoter, buy then sell) · pool 0x8986c8fd… (v2): 3.17% round-trip loss (nad.fun V2 DEX router: quote 10 MON buy, then a real sell(…) in eth_c",
-      "ms": 4768
+      "message": "sellable via pool 0x48c3bb34… (v2, fee 0.3%) · transfer probe from 0x804271…: ok · pool 0x48c3bb34… (v2, fee 0.3%): 0.59% loss (computed from reserves, 0.3% fee) · pool 0x2b7caabc… (v4, no hook, fee 65%): 88.00% round-trip loss (V4Quoter, buy then sell) · pool 0x3d3591e5… (v4, no hook, fee 4%): buy quote failed (NotEnoughLiquidity — the pool cannot absorb the trade) — no usable liquidity · pool 0x99143565… (v4, no hook, fee 30%): 53.32% round-trip loss (V4Quoter, buy then sell) · pool 0x8986c8fd… (v2): 3.17% round-trip loss (nad.fun V2 DEX router: quote 10 MON buy, then a real sell(…) in eth_c",
+      "ms": 3935
     },
     {
       "id": "monad-rpc",
       "label": "Monad RPC",
       "state": "ok",
       "message": "supply 1,000,000,000 · EIP-1167 clone (immutable implementation) · no owner() function",
-      "ms": 1853
+      "ms": 1696
     },
     {
       "id": "nadfun",
       "label": "nad.fun",
-      "state": "ok",
-      "message": "V2 V2_DEX (graduated) · 2419 holders · 24h: 22 buyers / 8 sellers · creator sold 0.0% of what they bought (swaps)",
-      "ms": 452,
+      "state": "stale",
+      "message": "stale (0m old) for 1 fields — V2 V2_DEX (graduated) · 2419 holders · 24h: 26 buyers / 16 sellers",
+      "ms": 446,
       "url": "https://nad.fun/tokens/0x43cf5407bda1400498b8064d50a7e17528d87777"
     },
     {
@@ -925,23 +945,23 @@
       "label": "DexScreener",
       "state": "ok",
       "message": "3 pairs",
-      "ms": 423,
+      "ms": 443,
       "url": "https://dexscreener.com/monad/0x48c3bb34227aebe5205ebeaa1b960c53d7edb17b"
     },
     {
       "id": "geckoterminal",
       "label": "GeckoTerminal",
-      "state": "ok",
-      "message": "20 pools + OHLCV",
-      "ms": 1376,
+      "state": "stale",
+      "message": "stale (1m old) for 7 fields — 20 pools · OHLCV failed: HTTP 429: {\"status\":{\"error_code\":429,\"error_message\":\"You've exceeded the Rate Limit. Please visit https:",
+      "ms": 4878,
       "url": "https://www.geckoterminal.com/monad/tokens/0x43cf5407bda1400498b8064d50a7e17528d87777"
     },
     {
       "id": "goplus",
       "label": "GoPlus",
       "state": "ok",
-      "message": "2420 holders · honeypot: no (GoPlus) · sell tax 0%",
-      "ms": 275,
+      "message": "2419 holders · honeypot: no (GoPlus) · sell tax 0%",
+      "ms": 173,
       "url": "https://gopluslabs.io/token-security/143/0x43cf5407bda1400498b8064d50a7e17528d87777"
     }
   ]

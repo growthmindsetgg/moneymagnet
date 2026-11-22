@@ -1,6 +1,7 @@
 import rpcEndpoints from "@/data/rpc-endpoints.json";
 import baseRpcEndpoints from "@/data/base-rpc-endpoints.json";
 import monadRpcEndpoints from "@/data/monad-rpc-endpoints.json";
+import ethereumRpcEndpoints from "@/data/ethereum-rpc-endpoints.json";
 import type { EvmChain } from "../chain";
 
 /** The official endpoint (the pool in makeRpc() covers every public one). */
@@ -19,6 +20,37 @@ export class RpcError extends Error {
     public data?: string,
   ) {
     super(message);
+  }
+}
+
+/**
+ * A real EVM revert (the call ran and the contract rejected it), as opposed to a transport failure
+ * (timeout, 429, HTTP 5xx, network). Only a revert may be read as "function absent" / "sell blocked".
+ * Reverts come back as a JSON-RPC error with revert data, code 3, or an "execution reverted" message.
+ * Anything else (no RpcError, an HTTP status, a JSON-RPC error without revert data) is a failed read.
+ */
+export function isRevert(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  // post() puts the HTTP status in `code` for non-2xx responses: never a revert.
+  if (/^RPC HTTP \d+/.test(err.message)) return false;
+  if (err instanceof RpcError && (err.data !== undefined || err.code === 3)) return true;
+  // The node's own wording (wrappers may rethrow it as a plain Error). Out of gas / invalid opcode are
+  // execution outcomes of the call too (a gas-burning hook), not transport.
+  return /execution reverted|\brevert|out of gas|invalid opcode/i.test(err.message);
+}
+
+/** Short text of a failed call, for "owner() read failed: …" reasons. */
+export const errText = (err: unknown) => (err instanceof Error ? err.message || err.name : String(err)).slice(0, 100);
+
+/**
+ * eth_call that tells a revert from a transport failure: `{ value }` on success, `{ value: null }` on a
+ * revert (e.g. no owner() function), `{ value: null, error }` when the read itself failed.
+ */
+export async function callOrRevert(rpc: Rpc, to: string, data: string, timeoutMs = 10_000): Promise<{ value: string | null; error?: string }> {
+  try {
+    return { value: await rpc<string>("eth_call", [{ to, data }, "latest"], timeoutMs) };
+  } catch (err) {
+    return isRevert(err) ? { value: null } : { value: null, error: errText(err) };
   }
 }
 
@@ -44,7 +76,8 @@ async function post<T>(url: string, method: string, params: unknown[], timeoutMs
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(timeoutMs),
+    // AbortSignal.timeout needs a whole number of ms (a computed share of a deadline can be fractional).
+    signal: AbortSignal.timeout(Math.max(1, Math.round(timeoutMs))),
     cache: "no-store",
   });
   if (!res.ok) throw new RpcError(`RPC HTTP ${res.status}`, res.status);
@@ -57,6 +90,10 @@ interface Endpoint {
   url: string;
   /** Serves eth_getLogs over wide ranges. */
   logs: boolean;
+  /** Serves eth_getLogs, but slowly (probed): used only while every primary log endpoint is cooling down. */
+  logsFallback: boolean;
+  /** Smoothed latency of successful calls (ms); a slow endpoint goes behind fast ones. */
+  ewmaMs: number | null;
   /** Supports eth_call state overrides (the sell simulation needs them). */
   override: boolean;
   coolUntil: number;
@@ -70,14 +107,33 @@ const ENDPOINTS: Record<EvmChain, { list: { endpoints: unknown[] }; env: string 
   robinhood: { list: rpcEndpoints, env: "ROBINHOOD_RPC_URL" },
   base: { list: baseRpcEndpoints, env: "BASE_RPC_URL" },
   monad: { list: monadRpcEndpoints, env: "MONAD_RPC_URL" },
+  ethereum: { list: ethereumRpcEndpoints, env: "ETHEREUM_RPC_URL" },
 };
+
+/** The chain's endpoint list as probed (data/<chain>-rpc-endpoints.json). */
+export function endpointList(chain: EvmChain): { url: string; logs: string | boolean; logsMaxSpan?: number; historical?: boolean | null }[] {
+  return ENDPOINTS[chain].list.endpoints as { url: string; logs: string | boolean; logsMaxSpan?: number; historical?: boolean | null }[];
+}
+
+/** Widest eth_getLogs span the chain's log-capable public endpoints serve (Robinhood: MAX_SPAN). */
+export function chainLogSpan(chain: EvmChain): number {
+  if (chain === "robinhood") return MAX_SPAN;
+  return Math.max(...endpointList(chain).filter((e) => e.logs === true || e.logs === "full").map((e) => e.logsMaxSpan ?? 0), 1_000);
+}
 
 function endpointPool(chain: EvmChain = "robinhood"): Endpoint[] {
   const { list: file, env } = ENDPOINTS[chain];
-  const list: Endpoint[] = (file.endpoints as { url: string; logs: string | boolean; override: boolean }[]).map((e) => ({ url: e.url, logs: e.logs === "full" || e.logs === true, override: e.override, coolUntil: 0 }));
+  const list: Endpoint[] = (file.endpoints as { url: string; logs: string | boolean; override: boolean }[]).map((e) => ({
+    url: e.url,
+    logs: e.logs === "full" || e.logs === true,
+    logsFallback: e.logs === "fallback",
+    override: e.override,
+    coolUntil: 0,
+    ewmaMs: null,
+  }));
   const own = process.env[env];
   // ROBINHOOD_RPC_URL (e.g. a private endpoint) goes first and is assumed fully capable.
-  return own ? [{ url: own, logs: true, override: true, coolUntil: 0 }, ...list.filter((e) => e.url !== own)] : list;
+  return own ? [{ url: own, logs: true, logsFallback: false, override: true, coolUntil: 0, ewmaMs: null }, ...list.filter((e) => e.url !== own)] : list;
 }
 const pools: Partial<Record<EvmChain, Endpoint[]>> = {};
 let turn = 0;
@@ -104,18 +160,27 @@ export function makeRpc(url?: string, retryDelays = [500, 1000, 2000], chain: Ev
   }
   const endpoints = (pools[chain] ??= endpointPool(chain));
   return async <T,>(method: string, params: unknown[], timeoutMs = 25_000): Promise<T> => {
-    const fits = endpoints.filter((e) => (method === "eth_getLogs" ? e.logs : true) && (method === "eth_call" && params.length >= 3 ? e.override : true));
+    const fits = endpoints.filter((e) => (method === "eth_getLogs" ? e.logs || e.logsFallback : true) && (method === "eth_call" && params.length >= 3 ? e.override : true));
     let lastErr: unknown = null;
     for (let round = 0; round < 3; round++) {
       const now = Date.now();
       const start = turn++ % fits.length;
-      const order = [...fits.slice(start), ...fits.slice(0, start)].sort((a, b) => Number(a.coolUntil > now) - Number(b.coolUntil > now));
+      // Round-robin spreads load; healthy before cooling, primary log endpoints before fallbacks, and an endpoint
+      // measured slow (> 4s smoothed, > 3× the fastest) behind the fast ones.
+      const best = Math.min(...fits.map((e) => e.ewmaMs ?? Infinity));
+      const slow = (e: Endpoint) => e.ewmaMs != null && e.ewmaMs > 4_000 && e.ewmaMs > 3 * best;
+      const rank = (e: Endpoint) => (e.coolUntil > now ? 4 : 0) + (method === "eth_getLogs" && !e.logs ? 2 : 0) + (slow(e) ? 1 : 0);
+      const order = [...fits.slice(start), ...fits.slice(0, start)].sort((a, b) => rank(a) - rank(b));
       for (const e of order) {
         if (e.coolUntil > Date.now() && order.some((x) => x.coolUntil <= Date.now())) continue;
         const st = (rpcStats[e.url] ??= { calls: 0, r429: 0, faults: 0 });
         st.calls++;
+        const t0 = Date.now();
         try {
-          return await post<T>(e.url, method, params, timeoutMs);
+          const out = await post<T>(e.url, method, params, timeoutMs);
+          const ms = Date.now() - t0;
+          e.ewmaMs = e.ewmaMs == null ? ms : Math.round(e.ewmaMs * 0.7 + ms * 0.3);
+          return out;
         } catch (err) {
           if (!endpointFault(err)) throw err;
           lastErr = err;
@@ -132,12 +197,12 @@ export function makeRpc(url?: string, retryDelays = [500, 1000, 2000], chain: Ev
   };
 }
 
-/** The endpoint pool for one EVM chain (Robinhood Chain, Base, Monad). */
+/** The endpoint pool for one EVM chain (Robinhood Chain, Base, Monad, Ethereum). */
 export const chainRpc = (chain: EvmChain): Rpc => makeRpc(undefined, undefined, chain);
 
 /**
  * Endpoints that serve state at old blocks (`historical: true` in the chain's endpoint file), tried in
- * order. Robinhood Chain has none (its RPC keeps no historical state): null. BASE_RPC_URL / MONAD_RPC_URL go first.
+ * order. Robinhood Chain has none (its RPC keeps no historical state): null. BASE_RPC_URL / MONAD_RPC_URL / ETHEREUM_RPC_URL go first.
  */
 export function archiveUrls(chain: EvmChain): string[] {
   const { list, env } = ENDPOINTS[chain];
@@ -165,6 +230,32 @@ export function archiveRpc(chain: EvmChain): Rpc | null {
       }
     }
     throw last ?? new RpcError(`no ${chain} archive endpoint available`);
+  };
+}
+
+/**
+ * eth_getLogs against the chain's log-capable endpoints only, in file order (private endpoint first),
+ * moving to the next on ANY error — public endpoints tighten their range caps without notice, and a
+ * range error from one is not an answer about the logs.
+ */
+export function logsRpc(chain: EvmChain): Rpc {
+  const { list, env } = ENDPOINTS[chain];
+  const listed = (list.endpoints as { url: string; logs: string | boolean }[]).filter((e) => e.logs === true || e.logs === "full").map((e) => e.url);
+  const own = process.env[env];
+  const urls = own ? [own, ...listed.filter((u) => u !== own)] : listed;
+  const single = urls.map((u) => makeRpc(u, [400], chain));
+  return async <T,>(method: string, params: unknown[], timeoutMs = 15_000): Promise<T> => {
+    // The first endpoint's error is the one reported: a fallback with a tighter range cap must not make a
+    // transient failure of the primary look like "range too wide".
+    let first: unknown = null;
+    for (const call of single) {
+      try {
+        return await call<T>(method, params, timeoutMs);
+      } catch (err) {
+        first ??= err;
+      }
+    }
+    throw first ?? new RpcError(`no ${chain} log endpoint available`);
   };
 }
 

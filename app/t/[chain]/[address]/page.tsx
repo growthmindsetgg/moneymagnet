@@ -11,7 +11,7 @@ import { analyzeCached, InvalidAddressError, NotAMemeError, peekReport, type Ana
 import { addressKind, detectChain, isEvmChain, normalizeAddress } from "@/lib/chain";
 import { resolveEvmChain } from "@/lib/resolveChain";
 import { logError, newErrorId } from "@/lib/errorId";
-import { normalizeReport, ReportShapeError } from "@/lib/normalizeReport";
+import { ageCachedReport, normalizeReport, ReportShapeError, type CacheMarker } from "@/lib/normalizeReport";
 import { knownNonMeme, stockRegistry } from "@/lib/memeFilter";
 
 export const dynamic = "force-dynamic";
@@ -103,12 +103,16 @@ export default async function TokenPage({ params, searchParams }: { params: Para
     return <Failed err={err} where={`page /t/${chain}/${normalized}`} />;
   }
   try {
-    const report = normalizeReport(result.report);
+    const normalized = normalizeReport(result.report);
+    // A cached result says so with its age, and its stale ages count from the fetch (same marker as /api/analyze).
+    const aged = result.cached ? ageCachedReport(normalized) : null;
+    const report = aged?.report ?? normalized;
+    const cache: CacheMarker = aged?.cache ?? { cached: false, generatedAt: normalized.generatedAt, ageSeconds: 0 };
     const previous = result.previous ? normalizeReport(result.previous) : undefined;
     return (
       <div className="space-y-10">
         <AnalyzeForm compact />
-        <Report report={report} cached={result.cached} previous={previous} />
+        <Report report={report} cached={cache.cached} cacheAgeSeconds={cache.ageSeconds} previous={previous} />
       </div>
     );
   } catch (err) {

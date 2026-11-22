@@ -1,4 +1,4 @@
-import type { Chain, ScoreReport, Tier } from "./types";
+import type { Chain, PreviousTier, ScoreReport, Tier } from "./types";
 import { kvGet, kvSet } from "./kv";
 
 /** One scoring of a token, as appended to `score_history`. */
@@ -9,6 +9,8 @@ export interface ScoreEntry {
   rawScore: number;
   coveragePct: number;
   mode: ScoreReport["mode"];
+  /** What placed the tier (gate, cap, score bands, hysteresis…); hysteresis only follows a band-placed tier. */
+  bindingKind?: string;
   /** Gates that failed. */
   firedGates: string[];
   /** Every fired rule (gates, caps, penalties, bonuses). */
@@ -52,6 +54,7 @@ export function entryOf(r: ScoreReport): ScoreEntry {
     rawScore: r.rawScore,
     coveragePct: r.coveragePct,
     mode: r.mode,
+    ...(r.binding ? { bindingKind: r.binding.kind } : {}),
     firedGates: r.gates.filter((g) => g.state === "fail").map((g) => g.id),
     firedRules: r.rules.filter((x) => x.state === "fired").map((x) => x.id),
     factors: Object.fromEntries(r.groups.flatMap((g) => g.factors).map((f) => [f.id, f.applicable && !f.missing ? Math.round(f.points * 100) / 100 : null])),
@@ -78,6 +81,13 @@ export function diffEntries(a: ScoreEntry, b: ScoreEntry, labels: Record<string,
     rulesFired: b.firedRules.filter((r) => !a.firedRules.includes(r)),
     rulesCleared: a.firedRules.filter((r) => !b.firedRules.includes(r)),
   };
+}
+
+/** The token's latest scoring, as hysteresis reads it (null when none). */
+export async function previousTier(chain: Chain, address: string): Promise<PreviousTier | null> {
+  const entries = await kvGet<ScoreEntry[]>(historyKey(chain, address));
+  const last = entries?.at(-1);
+  return last ? { tier: last.tier, at: last.at, mode: last.mode, bindingKind: last.bindingKind } : null;
 }
 
 /** Appends this scoring to the token's history and returns the history with the latest diff. */

@@ -14,7 +14,7 @@ export interface OfficialLinks {
   nullReasons: Record<string, string>;
 }
 
-const GT_NET: Record<Chain, string> = { robinhood: "robinhood", solana: "solana", base: "base", monad: "monad" };
+const GT_NET: Record<Chain, string> = { robinhood: "robinhood", solana: "solana", base: "base", monad: "monad", ethereum: "eth" };
 
 interface DsPair {
   info?: { websites?: { url: string }[]; socials?: { type?: string; url: string }[] };

@@ -86,12 +86,22 @@ export async function nadfun(address: string): Promise<AdapterResult> {
     data.sells24h = d1.transactions.sell;
     data.makersCount = d1.makers.total;
     data.netFlowRatio24h = vb != null && vs != null && vb + vs > 0 ? (vb - vs) / (vb + vs) : null;
-    const native = n(m?.native_price);
-    if (vb != null && vs != null && native != null) {
-      data.netFlowUsd24h = (vb - vs) * native;
-      data.volume24hUsd = (vb + vs) * native;
+    // metrics[1D].volume.{buy,sell} are already USD (decimal strings), not MON: checked live 2026-11-20 on CHOG,
+    // 1D total 3,650.86 vs DexScreener's $3,649 for the same pool, while market.native_price (0.01334) is the
+    // MON/USD rate. Multiplying by it read volume ~75× too low (CHOG 48.6, JAMES 31).
+    if (vb != null && vs != null) {
+      data.netFlowUsd24h = vb - vs;
+      data.volume24hUsd = vb + vs;
+    } else {
+      const why = "nad.fun metrics: 1D buy/sell volume missing from the response";
+      nullReasons.volume24hUsd = why;
+      nullReasons.netFlowUsd24h = why;
     }
-  } else failed.push("buyers24h", "sellers24h", "netFlowRatio24h");
+  } else {
+    failed.push("buyers24h", "sellers24h", "netFlowRatio24h");
+    // Not refilled from the last good run: snapshots saved before the unit fix hold volume in the wrong unit.
+    nullReasons.volume24hUsd = nullReasons.netFlowUsd24h = "nad.fun metrics call failed";
+  }
   // Dev sold = swaps only (§7): the creator's SELL token amount over their BUY amount on nad.fun.
   if (creatorSwaps?.swaps) {
     const sum = (t: "BUY" | "SELL") => creatorSwaps.swaps!.filter((s) => s.swap_info.event_type === t).reduce((x, s) => x + (n(s.swap_info.token_amount) ?? 0), 0);
@@ -99,8 +109,12 @@ export async function nadfun(address: string): Promise<AdapterResult> {
     const sold = sum("SELL");
     if ((creatorSwaps.total_count ?? creatorSwaps.swaps.length) > creatorSwaps.swaps.length) nullReasons.deployerSoldPct = `creator has ${creatorSwaps.total_count} swaps; only the latest 100 were read`;
     else {
-      data.deployerSoldPct = bought > 0 ? Math.min(100, (sold / bought) * 100) : 0;
       data.deployerHasSold = sold > 0;
+      if (bought > 0) data.deployerSoldPct = Math.min(100, (sold / bought) * 100);
+      else if (sold > 0)
+        // Tokens reached the creator another way (launch allocation, transfer): a share of "what they bought" does not exist.
+        nullReasons.deployerSoldPct = "creator sold on nad.fun but never bought there (tokens came from elsewhere) — sold share of buys undefined";
+      else data.deployerSoldPct = 0; // never swapped either way: sold nothing.
     }
   } else if (creator) failed.push("deployerSoldPct");
   nullReasons.devBuySharePct = "nad.fun: the dev's share of the first-10-minute buys needs the full launch trade list (not read within the 10 req/min budget)";

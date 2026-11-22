@@ -153,16 +153,24 @@ export async function helius(mint: string): Promise<AdapterResult> {
   }
   const t0 = Date.now();
   // One global queue (≤ 2 in flight, 100ms spacing, 429 backoff, 2-minute cache) for every Helius call.
-  const { call: queuedCall, batch } = heliusRpc(key);
+  const { call: queuedCall, batchSettled } = heliusRpc(key);
   const call = <T,>(method: string, params: unknown) => queuedCall<T>(method, params, 15_000);
 
   const notes: string[] = [];
   const data: Partial<TokenSnapshot> = {};
   const nullReasons: Record<string, string> = {};
-  // Fields whose call hit an outage (429 / 5xx / timeout): not answers, so they may come back stale.
+  // Every field whose producing call failed, with the real error text: those fields are null, never a value.
   const failed = new Map<string, string>();
+  // The subset lost to an outage (429 / 5xx / timeout): only these may come back stale from the last good run.
+  const outage = new Set<string>();
+  const markFailed = (fields: readonly string[], reason: string, isOut: boolean) => {
+    for (const f of fields) {
+      if (!failed.has(f)) failed.set(f, reason);
+      if (isOut) outage.add(f);
+    }
+  };
   const lost = (fields: readonly string[]) => (e: unknown) => {
-    if (isOutage(e)) for (const f of fields) if (!failed.has(f)) failed.set(f, `Helius call failed: ${(e as Error).message.slice(0, 80)}`);
+    markFailed(fields, `Helius call failed: ${(e as Error).message.slice(0, 80)}`, isOutage(e));
     return null;
   };
 
@@ -204,6 +212,7 @@ export async function helius(mint: string): Promise<AdapterResult> {
   // when they are not a shared platform authority; pump.fun metadata never names the real creator.
   // The creation tx (oldest mint signature) is also the on-chain truth for the token's age.
   let creator: string | null = asset.creators?.map((c) => c.address).find((a) => !PLATFORM_AUTHORITIES.has(a)) ?? null;
+  const creatorFromDas = creator != null;
   // The creation tx straight from Helius' oldest-first history (works however long the history is).
   const firstPage = await call<{ data: ParsedTx[] }>("getTransactionsForAddress", [mint, { sortOrder: "asc", limit: 1, transactionDetails: "full", encoding: "jsonParsed", maxSupportedTransactionVersion: 1 }]).catch(lost(["createdAt"]));
   let createTx: ParsedTx | null = firstPage?.data?.[0] ?? null;
@@ -230,11 +239,22 @@ export async function helius(mint: string): Promise<AdapterResult> {
   } else if (sigs.length >= 1000 || ok.length > MAX_TRADE_TXS) {
     for (const m of ["allBuyersExited", "uniqueBuyers", "makersCount", "devBuySharePct", "devBuySol", "snipeRatioPct"]) nullReasons[m] = `curve history too long to replay per request (> ${MAX_TRADE_TXS} trades)`;
   } else {
-    const txs = await batch<ParsedTx>(
+    const { values: txs, errors } = await batchSettled<ParsedTx>(
       "getTransaction",
       ok.map((s) => [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 1 }]),
     );
-    const t = parseCurveTrades(txs.filter(Boolean), mint, curve, creator);
+    const unreadable = txs.filter((x) => x == null).length;
+    if (unreadable) {
+      // A partial history would undercount buyers and could miss a dev sell: none of it is reported.
+      const first = [...errors.values()][0] ?? "no result";
+      const reason = `curve history incomplete (${unreadable} of ${txs.length} transactions unreadable: ${first.slice(0, 80)})`;
+      markFailed(CURVE_FIELDS, reason, [...errors.values()].some((m) => isOutage(new Error(m))));
+      for (const m of CURVE_FIELDS) nullReasons[m] = reason;
+    } else replayCurve(txs as ParsedTx[]);
+  }
+
+  function replayCurve(txs: ParsedTx[]) {
+    const t = parseCurveTrades(txs, mint, curve, creator);
     if (graduated) nullReasons.uniqueBuyers = "graduated — curve buyers are only the pre-graduation subset (AMM buyers not counted)";
     else data.uniqueBuyers = t.uniqueBuyers;
     data.makersCount = t.makers;
@@ -247,6 +267,19 @@ export async function helius(mint: string): Promise<AdapterResult> {
     if (creator && t.creatorBought > 0n) data.deployerSoldPct = Math.min(100, Number((t.creatorSold * 10_000n) / t.creatorBought) / 100);
     else if (creator) data.deployerSoldPct = 0; // the creator never bought on the curve: nothing sold
     if (supplyRaw) data.snipeRatioPct = Number((t.snipedInFirstSlots * 10_000n) / supplyRaw) / 100;
+    // A share over 100% cannot be a measurement (supply and curve history disagree), and a readable history of
+    // under 10 buyers makes both shares ~100% by construction (e.g. 4 curve trades read for a 133k-trade token).
+    if (data.snipeRatioPct != null && data.snipeRatioPct > 100) {
+      nullReasons.snipeRatioPct = `computed ${data.snipeRatioPct}% of supply (> 100%) — curve history and supply disagree, not a measurement`;
+      delete data.snipeRatioPct;
+    }
+    if (t.uniqueBuyers < 10) {
+      const why = `only ${t.uniqueBuyers} buyers in the readable curve history (${ok.length} trades) — this share is ~100% by construction`;
+      for (const m of ["devBuySharePct", "snipeRatioPct"] as const) {
+        if (data[m] != null) delete data[m];
+        nullReasons[m] = why;
+      }
+    }
     const holding = [...t.buyers].filter((b) => (t.lastBalance.get(b) ?? 0n) > 0n);
     // Current on-chain balances decide when we have them: the largest token accounts right now.
     // No wallet (on-curve key) holding anything ⇒ every buyer is out, whatever the trade log says.
@@ -322,14 +355,22 @@ export async function helius(mint: string): Promise<AdapterResult> {
   }
 
   // Creator history: prior mints (DAS) and how many of them are dead on DexScreener — cached 24h per creator.
-  if (creator) {
-    const historyKey = `helius:creator:v1:${creator}`;
+  // DAS indexes assets by their metadata creators; pump.fun metadata names only the platform authority, so a creator
+  // taken from the creation tx has no DAS history to read: "0 prior mints" would be unproven, not a measurement.
+  if (creator && !creatorFromDas) {
+    nullReasons.creatorPriorMints = nullReasons.creatorRugRatePct =
+      "creator taken from the creation tx — Helius DAS does not index pump.fun mints under their real creator, so prior mints are unproven";
+  } else if (creator) {
+    const historyKey = `helius:creator:v2:${creator}`;
     let hist = await kvGet<{ prior: number; rugRatePct: number | null; reason?: string }>(historyKey);
+    let unproven: string | null = null;
     if (!hist) {
       const assets = await call<{ items: { id: string }[] }>("getAssetsByCreator", { creatorAddress: creator, onlyVerified: false, page: 1, limit: 50 }).catch(lost(["creatorPriorMints", "creatorRugRatePct"]));
       const prior = (assets?.items ?? []).map((a) => a.id).filter((id) => id !== mint).slice(0, 30);
       if (!assets) hist = null;
-      else if (!prior.length) hist = { prior: 0, rugRatePct: 0 }; // no prior mints: 0 rugged (zero is data)
+      // DAS returned nothing at all — not even this mint, which names this creator: the index does not cover it.
+      else if (!assets.items?.length) unproven = "Helius DAS returned no assets for this creator (not even this mint) — prior mints unproven";
+      else if (!prior.length) hist = { prior: 0, rugRatePct: 0 }; // DAS lists this mint and nothing else: 0 prior mints (zero is data)
       else {
         const pairs = await fetchJson<{ baseToken: { address: string }; liquidity?: { usd?: number } }[]>(`https://api.dexscreener.com/tokens/v1/solana/${prior.join(",")}`).catch(() => null);
         if (pairs) {
@@ -340,7 +381,8 @@ export async function helius(mint: string): Promise<AdapterResult> {
       }
       if (hist && hist.rugRatePct != null) await kvSet(historyKey, hist, 86_400);
     }
-    if (!hist) nullReasons.creatorPriorMints = nullReasons.creatorRugRatePct = "Helius DAS getAssetsByCreator failed";
+    if (unproven) nullReasons.creatorPriorMints = nullReasons.creatorRugRatePct = unproven;
+    else if (!hist) nullReasons.creatorPriorMints = nullReasons.creatorRugRatePct = failed.get("creatorRugRatePct") ?? "Helius DAS getAssetsByCreator failed";
     else {
       data.creatorPriorMints = hist.prior;
       if (hist.rugRatePct != null) data.creatorRugRatePct = hist.rugRatePct;
@@ -356,15 +398,23 @@ export async function helius(mint: string): Promise<AdapterResult> {
     nullReasons.uniqueBuyers = failed.get("uniqueBuyers")!;
   }
   for (const [m, reason] of failed) if ((data as Record<string, unknown>)[m] == null) nullReasons[m] ??= reason;
-  const failedFields = [...failed.keys()].filter((m) => (data as Record<string, unknown>)[m] == null);
+  const lostFields = [...failed.keys()].filter((m) => (data as Record<string, unknown>)[m] == null);
+  // Only outage losses are stale-eligible; other errors stay null with their error text.
+  const failedFields = lostFields.filter((m) => outage.has(m));
 
   data.nullReasons = nullReasons;
   return {
     status: {
       id: "helius",
       label: "Helius",
-      state: failedFields.length ? "partial" : "ok",
-      message: [notes.join(" · ") || "holders, wallet age, funding, creator history", failedFields.length ? `${failedFields.length} fields lost to a Helius outage` : ""].filter(Boolean).join(" · "),
+      state: lostFields.length ? "partial" : "ok",
+      message: [
+        notes.join(" · ") || "holders, wallet age, funding, creator history",
+        failedFields.length ? `${failedFields.length} fields lost to a Helius outage` : "",
+        lostFields.length > failedFields.length ? `${lostFields.length - failedFields.length} fields null after a Helius error` : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
       ms: Date.now() - t0,
     },
     data,

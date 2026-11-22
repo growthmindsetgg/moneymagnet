@@ -20,7 +20,8 @@ const H = 60 * MIN;
 const R429 = "GeckoTerminal OHLCV failed: rate limited (HTTP 429)";
 const base = fx.snapshot as unknown as TokenSnapshot;
 const sources = fx.sources as unknown as SourceStatus[];
-/** microduck as production saw it on the flapping runs (buyers = sellers): A 83.9 clean, S 87.2 with OHLCV down. */
+/** microduck as production saw it on the flapping runs (buyers = sellers): A 83.9 clean, S 87.2 with OHLCV down
+ * (84.3 / 87.7 since Holder Strength replaced the two accumulator factors, 2026-10-30; the flap is the same). */
 const flapping: TokenSnapshot = { ...base, buyers24h: base.sellers24h, buyerSellerRatio: 1, smartMoneyNetUsd: 0 };
 
 const factor = (r: ScoreReport, metric: string) => r.groups.flatMap((g) => g.factors).find((f) => f.metric === metric)!;
@@ -155,8 +156,8 @@ describe("tier hold: a factor still null after the stale fallback cannot move th
   const score = (s: TokenSnapshot) => scoreSnapshot(s, sources);
 
   it("reproduces the production flap without the hold (A clean, S with OHLCV down)", () => {
-    expect(score(flapping)).toMatchObject({ tier: "A", score: 83.9 });
-    expect(score(downSnap())).toMatchObject({ tier: "S", score: 87.2 });
+    expect(score(flapping)).toMatchObject({ tier: "A", score: 84.3 });
+    expect(score(downSnap())).toMatchObject({ tier: "S", score: 87.7 });
     expect(outageNulls(score(downSnap())).map((f) => f.metric)).toEqual(["trendScore"]);
   });
 
@@ -167,8 +168,8 @@ describe("tier hold: a factor still null after the stale fallback cannot move th
     // Three runs while GeckoTerminal is down: the same tier every time.
     for (const m of [5, 10, 15]) {
       const held = await holdTier(score(downSnap()), downSnap(), sources, t0 + m * MIN);
-      expect(held).toMatchObject({ tier: "A", score: 83.9, verdict: clean.verdict });
-      expect(held.hold).toMatchObject({ liveTier: "S", liveScore: 87.2, minutesAgo: m, factors: ["Bundlers flushed out", "Trend structure"] });
+      expect(held).toMatchObject({ tier: "A", score: 84.3, verdict: clean.verdict });
+      expect(held.hold).toMatchObject({ liveTier: "S", liveScore: 87.7, minutesAgo: m, factors: ["Bundlers flushed out", "Trend structure"] });
       expect(held.binding).toEqual({ kind: "held", text: `unchanged (source down): Bundlers flushed out, Trend structure missing ⇒ A from ${m}m ago` });
     }
     // The factor is back: the live tier, no hold.

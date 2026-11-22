@@ -1,29 +1,55 @@
 import type { AdapterResult, Chain, HolderClassRow, HolderRow, TokenSnapshot } from "./types";
+import { equalSplit } from "./snapshot";
 import { isEvmChain, type EvmChain } from "./chain";
-import { archiveRpc, chainRpc, codeKind, makeRpc, MAX_SPAN, TRANSFER_TOPIC, addressTopic, hex, topicAddress, windowsBackward, type Rpc, type RpcLog } from "./onchain/rpc";
-import { archiveWalletHistory, classifyContract, classRow, creationBlockByCode, creationSender, mintNear, monthOf, type WalletHistory } from "./onchain/holderClass";
+import { after } from "next/server";
+import { archiveRpc, chainLogSpan, chainRpc, codeKind, logsRpc, makeRpc, MAX_SPAN, TRANSFER_TOPIC, addressTopic, hex, topicAddress, windowsBackward, type Rpc, type RpcLog } from "./onchain/rpc";
+import { archiveWalletHistory, classifyContract, classRow, creationBlockByCode, creationSender, mintNear, monthOf, nativeFunder, outflowScan, SWAP_TOPICS, type OutflowState, type WalletHistory } from "./onchain/holderClass";
 import { infraEntry } from "./onchain/infra";
-import { chainInfraEntry } from "./onchain/chainInfra";
+import { chainCexLabel, chainInfraEntry } from "./onchain/chainInfra";
 import { fetchJson } from "./sources/http";
 import { solanaRpcUrl } from "./sources/solanaCurve";
 import { isProgramAddress, heliusClient } from "./timemachine/solana";
 import { kvGet, kvSet } from "./kv";
-import baseRpcEndpoints from "@/data/base-rpc-endpoints.json";
-import monadRpcEndpoints from "@/data/monad-rpc-endpoints.json";
 
-/** Who first sent the wallet tokens (archive search; immutable, cached for 30 days). */
-async function firstReceipt(chain: EvmChain, archive: Rpc, token: string, wallet: string, fromBlock: number, head: number, deadline: number): Promise<{ block: number; from: string | null } | null> {
-  const key = `first-receipt:v1:${chain}:${token}:${wallet}`;
-  const hit = await kvGet<{ block: number; from: string | null }>(key).catch(() => null);
+const firstReceiptKey = (chain: Chain, token: string, wallet: string) => `first-receipt:v2:${chain}:${token}:${wallet}`;
+
+/** Who first sent the wallet tokens, and in which tx (archive search; immutable, cached for 30 days). */
+async function firstReceipt(chain: EvmChain, archive: Rpc, token: string, wallet: string, fromBlock: number, head: number, deadline: number, cached?: Promise<{ block: number; from: string | null; tx: string | null } | null>): Promise<{ block: number; from: string | null; tx: string | null } | null> {
+  const key = firstReceiptKey(chain, token, wallet);
+  const hit = await (cached ?? kvGet<{ block: number; from: string | null; tx: string | null }>(key).catch(() => null));
   if (hit) return hit;
   const h = await archiveWalletHistory(archive, token, wallet, { fromBlock, head, maxCalls: 130, deadline: deadline - 1_000, firstReceiptOnly: true }).catch(() => null);
   if (h?.firstReceipt) await kvSet(key, h.firstReceipt, 30 * 86_400).catch(() => undefined);
   return h?.firstReceipt ?? null;
 }
 
+/** Who first sent the wallet native coin (archive search; immutable, cached for 30 days). */
+async function firstNative(chain: EvmChain, archive: Rpc, wallet: string, head: number): Promise<{ block: number; from: string | null; tx: string | null } | null> {
+  const key = `first-native:v1:${chain}:${wallet}`;
+  const hit = await kvGet<{ block: number; from: string | null; tx: string | null }>(key).catch(() => null);
+  if (hit) return hit;
+  const out = await nativeFunder(archive, wallet, head).catch(() => null);
+  if (out) await kvSet(key, out, 30 * 86_400).catch(() => undefined);
+  return out;
+}
+
+/** A Transfer from the deployer is a plain transfer, not a swap, when its tx has no Swap event. */
+async function isPlainTransfer(rpc: Rpc, tx: string | null): Promise<boolean> {
+  if (!tx) return false;
+  const receipt = await rpc<{ logs: { topics: string[] }[] } | null>("eth_getTransactionReceipt", [tx]).catch(() => null);
+  return !!receipt && !receipt.logs.some((l) => SWAP_TOPICS.has(l.topics[0]));
+}
+
+/** Funders count only as an externally owned deployer (a launchpad / factory contract funds everyone). */
+async function isEoa(rpc: Rpc, address: string): Promise<boolean> {
+  const code = await rpc<string>("eth_getCode", [address, "latest"]).catch(() => null);
+  return code != null && codeKind(code) === "wallet";
+}
+
+const TEAM_LABEL = "team wallet (deployer-funded)";
+
 /** Widest eth_getLogs span the chain's log-capable public endpoints serve. */
-const logSpan = (chain: EvmChain) =>
-  chain === "robinhood" ? MAX_SPAN : Math.max(...((chain === "base" ? baseRpcEndpoints : monadRpcEndpoints).endpoints as { logs: boolean; logsMaxSpan: number }[]).filter((e) => e.logs).map((e) => e.logsMaxSpan), 1_000);
+const logSpan = (chain: EvmChain) => chainLogSpan(chain);
 
 /** Creation block and creation-tx sender from archive state — immutable, cached for 30 days. */
 async function archiveCreation(chain: EvmChain, archive: Rpc, token: string, head: number, createdAt: string | null): Promise<{ block: number; sender: string | null } | null> {
@@ -69,6 +95,8 @@ interface Ctx {
   s: TokenSnapshot;
   results: AdapterResult[];
   deadline: number;
+  /** The archive creation lookup, shared by the classification and the history steps of one run. */
+  creation?: Promise<{ block: number; sender: string | null } | null>;
 }
 
 const rawOf = <T,>(results: AdapterResult[], id: string) => results.find((r) => r.status.id === id)?.raw as T | undefined;
@@ -118,11 +146,18 @@ export async function classifyTopHolders(chain: Chain, token: string, s: TokenSn
   applyHolderClasses(s, rows);
   const largest = s.holders[0] ? rows.find((r) => r.address === key(s.holders[0].address)) ?? null : null;
   s.largestHolder = largest;
-  if (largest?.class === "founder" && (largest.pct ?? 0) > FOUNDER_MIN_PCT) await founderHistory(ctx, largest);
-  else if (largest) {
-    // Not the deployer (or below the founder rules' 20%): the normal caps apply.
+  const role = largest?.class === "founder" || largest?.class === "team" ? largest.class : null;
+  if (largest && role && (largest.pct ?? 0) > FOUNDER_MIN_PCT) {
+    if (role === "founder") s.teamNeverSold = false;
+    else s.founderNeverSold = false;
+    s.nullReasons = { ...s.nullReasons, [role === "founder" ? "teamSold" : "founderSold"]: role === "founder" ? "largest holder is the deployer itself" : "largest holder is a team wallet, not the deployer" };
+    await keyHolderHistory(ctx, largest, role);
+  } else if (largest) {
+    // Not the deployer nor a deployer-funded wallet (or below the 20% the rules start at): the normal caps apply.
     s.founderNeverSold = false;
-    s.nullReasons = { ...s.nullReasons, founderSold: largest.class === "founder" ? `founder holds ≤ ${FOUNDER_MIN_PCT}% — sell history not read` : "largest holder is not the deployer" };
+    s.teamNeverSold = false;
+    const why = role ? `${role === "founder" ? "founder" : "team wallet"} holds ≤ ${FOUNDER_MIN_PCT}% — sell history not read` : null;
+    s.nullReasons = { ...s.nullReasons, founderSold: why ?? "largest holder is not the deployer", teamSold: why ?? "largest holder is not a deployer-funded wallet" };
   }
 }
 
@@ -161,6 +196,9 @@ export function applyHolderClasses(s: TokenSnapshot, rows: HolderClassRow[]) {
   };
   s.top1SharePct = top1;
   s.top10SharePct = top10;
+  const split = equalSplit(s.holders);
+  s.equalSplitPct = split.pct;
+  s.equalSplitCount = split.count;
   prov("top1SharePct", top1);
   prov("top10SharePct", top10);
   s.liquidityHeldPct = Math.round(s.liquidityHolders.reduce((a, h) => a + (h.pct ?? 0), 0) * 100) / 100;
@@ -178,29 +216,41 @@ async function classifyEvm(ctx: Ctx, chain: EvmChain, top: HolderRow[]): Promise
       if (codeKind(code) === "wallet") {
         const what = code.length > 2 ? `EIP-7702 / minimal code (${(code.length - 2) / 2} B)` : "no code (EOA)";
         if (deployers.has(a)) return classRow({ address: a, pct: h.pct, class: "founder", label: "founder wallet (deployer)", detail: null, unlocksAt: null, evidence: `${what}; equals the deployer / creator` });
-        return classRow({ address: a, pct: h.pct, class: "wallet", label: "wallet", detail: null, unlocksAt: null, evidence: `${what}; not the deployer (${[...deployers].map((d) => d.slice(0, 8) + "…").join(", ") || "deployer unknown"})` });
+        // A registered exchange wallet keeps its name (still a counted wallet; Holder Strength excludes CEX-labelled rows).
+        const cex = chain === "robinhood" ? undefined : chainCexLabel(chain, a);
+        return classRow({ address: a, pct: h.pct, class: "wallet", label: cex ?? "wallet", detail: null, unlocksAt: null, evidence: `${what}; not the deployer (${[...deployers].map((d) => d.slice(0, 8) + "…").join(", ") || "deployer unknown"})${cex ? `; ${cex} (data/${chain}-infra.json → cexWallets)` : ""}` });
       }
       const v = await classifyContract(rpc, a, ctx.token, code).catch((e: Error) => ({ class: "contract" as const, label: "unclassified contract", unlocksAt: null, detail: null, evidence: `classification failed: ${e.message.slice(0, 80)}` }));
       return classRow({ address: a, pct: h.pct, class: v.class, label: v.label, detail: v.detail ?? (v.unlocksAt ? `unlocks ${monthOf(v.unlocksAt)}` : null), unlocksAt: v.unlocksAt, evidence: v.evidence });
     }),
   );
   // A large EOA that no source names as deployer: the creation tx's sender is the deployer too (archive state).
+  // Not the deployer either: a team wallet when the deployer funded it — its first tokens by plain transfer
+  // from the deployer, or its first native coin from the deployer.
   const big = rows.find((r) => r.class === "wallet" && (r.pct ?? 0) > FOUNDER_MIN_PCT);
   const archive = chain === "robinhood" ? null : archiveRpc(chain);
+  const team = (r: HolderClassRow, from: string, how: string, tx: string | null, block: number) =>
+    Object.assign(r, classRow({ ...r, class: "team", label: TEAM_LABEL, fundingTx: tx, evidence: `${r.evidence}; funded by the deployer ${from}: ${how} in tx ${tx ?? "?"} (block ${block})` }));
   if (big && archive && Date.now() < ctx.deadline - 3_000) {
+    // The cached first receipt is fetched alongside the creation lookup (two KV round trips side by side).
+    const cachedFirst = kvGet<{ block: number; from: string | null; tx: string | null }>(firstReceiptKey(chain, ctx.token, big.address)).catch(() => null);
     const head = Number(await archive<string>("eth_blockNumber", []));
-    const created = await archiveCreation(chain, archive, ctx.token, head, ctx.s.createdAt);
+    const created = await (ctx.creation ??= archiveCreation(chain, archive, ctx.token, head, ctx.s.createdAt));
     const block = created?.block ?? null;
     const sender = created?.sender ?? null;
-    if (sender) {
-      deployers.add(sender);
-      if (sender === big.address) Object.assign(big, classRow({ ...big, class: "founder", label: "founder wallet (deployer)", evidence: `${big.evidence.split(";")[0]}; sent the creation tx (block ${block})` }));
-      else {
-        // Who funded it: the first Transfer into the wallet (archive bisection on balanceOf).
-        const fr = await firstReceipt(chain, archive, ctx.token, big.address, block!, head, ctx.deadline);
-        const from = fr?.from ?? null;
-        big.evidence = `${big.evidence.split(";")[0]}; not the deployer (creation tx sent by ${sender}${[...deployers].filter((d) => d !== sender).map((d) => `, creator ${d}`).join("")})${from ? `; first tokens received from ${from} at block ${fr!.block}` : ""}`;
-        if (from && deployers.has(from)) big.label = "wallet funded by the deployer";
+    if (sender) deployers.add(sender);
+    if (sender && sender === big.address) Object.assign(big, classRow({ ...big, class: "founder", label: "founder wallet (deployer)", evidence: `${big.evidence.split(";")[0]}; sent the creation tx (block ${block})` }));
+    else {
+      // Who funded it: the first Transfer into the wallet (archive bisection on balanceOf).
+      const fr = await firstReceipt(chain, archive, ctx.token, big.address, block ?? 0, head, ctx.deadline, cachedFirst);
+      const from = fr?.from ?? null;
+      big.evidence = `${big.evidence.split(";")[0]}; not the deployer (${sender ? `creation tx sent by ${sender}` : "creation tx not found"}${[...deployers].filter((d) => d !== sender).map((d) => `, creator ${d}`).join("")})${from ? `; first tokens received from ${from} at block ${fr!.block}` : ""}`;
+      if (from && deployers.has(from) && (await isEoa(archive, from)) && (await isPlainTransfer(archive, fr!.tx))) team(big, from, "first tokens by plain transfer (no Swap event)", fr!.tx, fr!.block);
+      else if (Date.now() < ctx.deadline - 2_000) {
+        const nf = await firstNative(chain, archive, big.address, head);
+        const coin = chain === "monad" ? "MON" : "ETH";
+        if (nf?.from && deployers.has(nf.from) && (await isEoa(archive, nf.from))) team(big, nf.from, `first ${coin} it ever received`, nf.tx, nf.block);
+        else if (nf) big.evidence = `${big.evidence}; first ${coin} ${nf.from ? `from ${nf.from}` : "through an internal call (sender not attributable)"} at block ${nf.block}`;
       }
     }
   }
@@ -211,7 +261,7 @@ async function classifyEvm(ctx: Ctx, chain: EvmChain, top: HolderRow[]): Promise
       const first = await firstInbound(rpc, ctx.token, big.address, creation.creationBlock, head).catch(() => null);
       if (first) {
         big.evidence = `${big.evidence}; first tokens received from ${first.from} at block ${first.block}`;
-        if (deployers.has(first.from)) big.label = "wallet funded by the deployer";
+        if (deployers.has(first.from) && (await isEoa(rpc, first.from)) && (await isPlainTransfer(rpc, first.tx))) team(big, first.from, "first tokens by plain transfer (no Swap event)", first.tx, first.block);
       }
     }
   }
@@ -228,7 +278,7 @@ async function classifySolana(ctx: Ctx, top: HolderRow[]): Promise<HolderClassRo
     timeoutMs: 10_000,
   }).catch(() => null);
   const accts = res?.result?.value ?? owners.map(() => undefined);
-  return top.map((h, i): HolderClassRow => {
+  const rows = top.map((h, i): HolderClassRow => {
     const a = h.address;
     const acct = accts[i];
     const program = acct?.owner ?? null;
@@ -248,56 +298,149 @@ async function classifySolana(ctx: Ctx, top: HolderRow[]): Promise<HolderClassRo
       evidence: offCurve ? `off-curve address${program ? ` (account owner ${program})` : ""}; no lock / multisig program matched` : `on-curve key${program ? ` (account owner ${program})` : ""}; not the creator`,
     });
   });
+  // A large on-curve wallet the creator funded (its first SOL, or its first tokens by plain transfer): a team wallet.
+  const big = rows.find((r) => r.class === "wallet" && r.label === "wallet" && (r.pct ?? 0) > FOUNDER_MIN_PCT);
+  if (big && deployers.size && Date.now() < ctx.deadline - 3_000) {
+    const f = await solanaFunding(big.address, deployers, ctx.s.address).catch(() => null);
+    if (f?.from) Object.assign(big, classRow({ ...big, class: "team", label: TEAM_LABEL, fundingTx: f.tx, evidence: `${big.evidence}; funded by the creator ${f.from}: ${f.how} in tx ${f.tx}` }));
+    else if (f) big.evidence = `${big.evidence}; ${f.how}`;
+  }
+  return rows;
 }
 
-/** The founder wallet's whole sell history (chain-specific), then the founder fields. */
-async function founderHistory(ctx: Ctx, f: HolderClassRow): Promise<void> {
+/** The wallet's earliest transactions (Helius, oldest first): did a creator send it its first SOL or its first tokens by plain transfer? */
+async function solanaFunding(wallet: string, creators: Set<string>, mint: string): Promise<{ from: string | null; tx: string | null; how: string } | null> {
+  const key = process.env.HELIUS_API_KEY;
+  if (!key) return null;
+  const page = await heliusClient(key)<{ data: (SolTx & { transaction: { signatures: string[] } })[] }>("getTransactionsForAddress", [wallet, { sortOrder: "asc", limit: 100, transactionDetails: "full", encoding: "jsonParsed", maxSupportedTransactionVersion: 1 }]);
+  const amt = (list: TokenBal[] | undefined, owner: string) => (list ?? []).filter((b) => b.mint === mint && b.owner === owner).reduce((a, b) => a + BigInt(b.uiTokenAmount.amount), 0n);
+  let solChecked = false;
+  for (const tx of page.data) {
+    const m = tx.meta;
+    if (!m || m.err) continue;
+    const keys = tx.transaction.message.accountKeys.map((k) => (typeof k === "string" ? k : k.pubkey));
+    const wi = keys.indexOf(wallet);
+    const sig = tx.transaction.signatures[0] ?? null;
+    if (!solChecked && wi >= 0 && m.postBalances[wi] > m.preBalances[wi]) {
+      solChecked = true;
+      const payer = [...creators].find((c) => keys.includes(c) && m.postBalances[keys.indexOf(c)] < m.preBalances[keys.indexOf(c)]);
+      if (payer) return { from: payer, tx: sig, how: "first SOL it ever received" };
+    }
+    if (amt(m.postTokenBalances, wallet) > amt(m.preTokenBalances, wallet)) {
+      // A swap moves tokens out of an off-curve pool; a plain transfer moves them out of the creator's own account.
+      const sender = [...creators].find((c) => amt(m.preTokenBalances, c) > amt(m.postTokenBalances, c));
+      return sender ? { from: sender, tx: sig, how: "first tokens by plain transfer" } : { from: null, tx: sig, how: "first tokens not from the creator" };
+    }
+  }
+  return { from: null, tx: null, how: "first token receipt not in the wallet's first 100 transactions" };
+}
+
+/** How long an unfinished outbound scan keeps reading after the response. */
+const OUTFLOW_BACKGROUND_MS = 35_000;
+
+/** Resumable outbound scan state, per token and wallet (past blocks never change). */
+const outflowKey = (chain: Chain, token: string, wallet: string) => `outflows:v1:${chain}:${token}:${wallet}`;
+
+/**
+ * The founder's / team wallet's whole sell history (chain-specific), then the role's fields. EVM: the cheap
+ * archive proofs first (never sent a tx, or none since its first receipt), else every outbound Transfer
+ * log since its first receipt, read window by window and resumed across requests until complete.
+ */
+async function keyHolderHistory(ctx: Ctx, f: HolderClassRow, role: "founder" | "team"): Promise<void> {
   const { s } = ctx;
   const age = s.ageHours;
   let sells: number | null = null;
   let complete = false;
   let reason: string | null = null;
   let method = "";
+  let sellTx: string | null = null;
   let days = age != null ? Math.floor(age / 24) : null;
+  const savedOutflow = kvGet<OutflowState>(outflowKey(ctx.chain, ctx.token, f.address)).catch(() => null);
+  const scan = async (rpc: Rpc, fromBlock: number, head: number, span: number, nonceAt?: (b: number) => Promise<number>) => {
+    const k = outflowKey(ctx.chain, ctx.token, f.address);
+    let first = true;
+    const run = async (deadline: number) => {
+      // The first read uses the state fetched when the step started (KV round trips run side by side).
+      const saved = first ? await savedOutflow : await kvGet<OutflowState>(k).catch(() => null);
+      first = false;
+      const r = await outflowScan(rpc, ctx.token, f.address, { fromBlock, head, span, deadline, isPool: (a) => isPoolish(ctx.chain, s, a), state: saved, nonceAt });
+      const state: OutflowState = { fromBlock: r.fromBlock, scannedTo: r.scannedTo, toPools: r.toPools, transfersOut: r.transfersOut, transfersOutRaw: r.transfersOutRaw, sellTxs: r.sellTxs, nonceSkipped: r.nonceSkipped };
+      await kvSet(k, state, 30 * 86_400).catch(() => undefined);
+      return r;
+    };
+    const r = await run(ctx.deadline - 2_500);
+    // Unfinished: keep reading after the response (Vercel `after`), so the next analysis starts further on.
+    if (!r.complete) {
+      try {
+        after(() => run(Date.now() + OUTFLOW_BACKGROUND_MS).then(() => undefined, () => undefined));
+      } catch {
+        // Outside a request (scripts): the next call resumes from the saved state.
+      }
+    }
+    return r;
+  };
   try {
     if (ctx.chain === "robinhood") {
-      const raw = rawOf<{ creation?: { deployer: string } | null; deployer?: { sentToContracts: string; sentToWallets: string } }>(ctx.results, "rpc");
+      const raw = rawOf<{ creation?: { deployer: string; creationBlock: number } | null; deployer?: { sentToContracts: string; sentToWallets: string } }>(ctx.results, "rpc");
       const swap = s.swapHolders.find((h) => h.address.toLowerCase() === f.address);
-      if (raw?.creation?.deployer?.toLowerCase() === f.address && raw.deployer) {
+      if (role === "founder" && raw?.creation?.deployer?.toLowerCase() === f.address && raw.deployer) {
         const sold = BigInt(raw.deployer.sentToContracts) > 0n;
         sells = (sold ? 1 : 0) + (swap?.sells ?? 0);
         complete = true;
         method = `deployer Transfer logs since creation: ${sold ? "tokens moved in swaps / into contracts" : "nothing sold or sent to a pool / router"}${swap?.sells != null ? `; HoodScan swap index: ${swap.sells} sells` : ""}`;
-      } else reason = "deployer flows not read for this wallet (Robinhood RPC)";
-    } else if (ctx.chain === "base" || ctx.chain === "monad") {
+      } else if (raw?.creation) {
+        const rpc = makeRpc();
+        const head = Number(await rpc<string>("eth_blockNumber", []));
+        const r = await scan(rpc, raw.creation.creationBlock, head, MAX_SPAN);
+        sells = r.toPools + (swap?.sells ?? 0);
+        sellTx = r.sellTxs[0] ?? null;
+        complete = r.complete;
+        if (!r.complete) reason = `outbound transfer scan read to block ${r.scannedTo} of ${head} — continues on the next analysis`;
+        method = `outbound Transfer logs since creation: ${r.toPools} into pools / routers / contracts, ${r.transfersOut} to wallets${swap?.sells != null ? `; HoodScan swap index: ${swap.sells} sells` : ""}`;
+      } else reason = "token creation block unknown (Robinhood RPC)";
+    } else if (ctx.chain === "base" || ctx.chain === "monad" || ctx.chain === "ethereum") {
       const archive = archiveRpc(ctx.chain);
       if (!archive) reason = `no archive ${ctx.chain} RPC configured`;
       else {
-        const head = Number(await archive<string>("eth_blockNumber", []));
-        const from = (await archiveCreation(ctx.chain, archive, ctx.token, head, s.createdAt))?.block ?? 0;
-        const h: WalletHistory = await archiveWalletHistory(archive, ctx.token, f.address, { fromBlock: from, head, maxCalls: 220, deadline: ctx.deadline - 1_000, isPool: (a) => isPoolish(ctx.chain, s, a) });
+        // Independent lookups side by side: head, the cached first receipt, nad.fun's swap history.
+        const nadfun = ctx.chain === "monad" ? nadfunSells(ctx.token, f.address) : null;
+        const [head, knownFirst] = await Promise.all([
+          archive<string>("eth_blockNumber", []).then(Number),
+          kvGet<{ block: number; from: string | null; tx: string | null }>(firstReceiptKey(ctx.chain, ctx.token, f.address)).catch(() => null),
+        ]);
+        const from = (await (ctx.creation ??= archiveCreation(ctx.chain, archive, ctx.token, head, s.createdAt)))?.block ?? 0;
+        const h: WalletHistory = await archiveWalletHistory(archive, ctx.token, f.address, { fromBlock: from, head, maxCalls: 160, deadline: ctx.deadline - 1_000, isPool: (a) => isPoolish(ctx.chain, s, a), proofsOnly: true, knownFirst });
         let swapSells = 0;
         let swapNote = "";
         if (ctx.chain === "monad") {
-          const nf = await nadfunSells(ctx.token, f.address);
-          if (nf.sells == null) {
-            reason = nf.note;
-          } else {
+          const nf = await nadfun!;
+          if (nf.sells == null) reason = nf.note;
+          else {
             swapSells = nf.sells;
             swapNote = `; nad.fun swap history: ${nf.note}`;
           }
         }
-        sells = h.toPools + swapSells;
-        complete = h.complete && reason == null;
-        reason = reason ?? h.reason;
-        method = `${h.method}${swapNote}; ${h.transfersOut} transfers to wallets`;
+        if (h.complete) {
+          sells = h.toPools + swapSells;
+          complete = reason == null;
+          method = `${h.method}${swapNote}`;
+        } else {
+          const start = h.firstReceipt?.block ?? from;
+          const nonceAt = (b: number) => archive<string>("eth_getTransactionCount", [f.address, hex(b)], 8_000).then(Number);
+          const r = await scan(logsRpc(ctx.chain), start, head, logSpan(ctx.chain), nonceAt);
+          sells = r.toPools + swapSells;
+          sellTx = r.sellTxs[0] ?? null;
+          complete = r.complete && reason == null;
+          if (!r.complete) reason = reason ?? `outbound transfer scan read blocks ${start}–${r.scannedTo} of ${head} (${Math.round(((r.scannedTo - start) / Math.max(1, head - start)) * 100)}%) — continues on the next analysis`;
+          method = `outbound Transfer logs since the first receipt (block ${start}): ${r.toPools} into pools / routers / contracts, ${r.transfersOut} to wallets${r.nonceSkipped ? ` (${Math.round((r.nonceSkipped / Math.max(1, r.scannedTo - start)) * 100)}% of the blocks skipped: the wallet's nonce did not change there, so it sent nothing)` : ""}${swapNote}`;
+        }
         if (h.firstReceipt) {
           const b = await archive<{ timestamp: string } | null>("eth_getBlockByNumber", [hex(h.firstReceipt.block), false]).catch(() => null);
           if (b) days = Math.floor((Date.now() / 1000 - Number(b.timestamp)) / 86_400);
         }
       }
     } else {
-      const r = await solanaFounderHistory(f.address, s);
+      const r = await solanaWalletHistory(f.address, s);
       sells = r.sells;
       complete = r.complete;
       reason = r.reason;
@@ -306,22 +449,26 @@ async function founderHistory(ctx: Ctx, f: HolderClassRow): Promise<void> {
   } catch (e) {
     reason = `sell history lookup failed: ${(e as Error).message.slice(0, 80)}`;
   }
-  s.founderHoldDays = days;
-  f.evidence = `${f.evidence}; ${method || reason}`;
+  const who = role === "founder" ? "founder" : "team wallet";
+  if (role === "founder") s.founderHoldDays = days;
+  else s.teamHoldDays = days;
+  f.evidence = `${f.evidence}; ${method || reason}${sellTx ? `; first sell / pool transfer in tx ${sellTx}` : ""}`;
   if (sells != null && sells > 0) {
-    s.founderSold = true;
-    s.founderNeverSold = false;
-    f.detail = `${sells} sell${sells === 1 ? "" : "s"} — founder started selling`;
+    if (role === "founder") Object.assign(s, { founderSold: true, founderNeverSold: false });
+    else Object.assign(s, { teamSold: true, teamNeverSold: false });
+    f.detail = `${sells} sell${sells === 1 ? "" : "s"} — ${who} started selling`;
     return;
   }
   if (!complete) {
-    s.nullReasons = { ...s.nullReasons, founderNeverSold: reason ?? "sell history incomplete", founderSold: reason ?? "sell history incomplete" };
-    f.detail = `sell history not fully read (${reason})`;
+    const why = reason ?? "sell history incomplete";
+    s.nullReasons = { ...s.nullReasons, ...(role === "founder" ? { founderNeverSold: why, founderSold: why } : { teamNeverSold: why, teamSold: why }) };
+    f.detail = `sell history not fully read (${why})`;
     return;
   }
-  s.founderSold = false;
-  s.founderNeverSold = days != null && days >= FOUNDER_MIN_DAYS;
-  if (days == null) s.nullReasons = { ...s.nullReasons, founderHoldDays: "token age unknown" };
+  const never = days != null && days >= FOUNDER_MIN_DAYS;
+  if (role === "founder") Object.assign(s, { founderSold: false, founderNeverSold: never });
+  else Object.assign(s, { teamSold: false, teamNeverSold: never });
+  if (days == null) s.nullReasons = { ...s.nullReasons, [role === "founder" ? "founderHoldDays" : "teamHoldDays"]: "token age unknown" };
   f.detail = `0 sells in ${days ?? "?"}d`;
 }
 
@@ -352,8 +499,8 @@ interface SolTx {
   transaction: { message: { accountKeys: ({ pubkey: string } | string)[] } };
 }
 
-/** The creator's whole history when it has < 100 transactions (Helius): a token outflow paid in SOL, or into an off-curve owner, is a sell. */
-async function solanaFounderHistory(creator: string, s: TokenSnapshot): Promise<{ sells: number | null; complete: boolean; reason: string | null; method: string }> {
+/** A wallet's whole history when it has < 100 transactions (Helius): a token outflow paid in SOL, or into an off-curve owner, is a sell. */
+async function solanaWalletHistory(creator: string, s: TokenSnapshot): Promise<{ sells: number | null; complete: boolean; reason: string | null; method: string }> {
   const key = process.env.HELIUS_API_KEY;
   if (!key) return { sells: null, complete: false, reason: "Helius key not set", method: "" };
   const call = heliusClient(key);
@@ -378,10 +525,10 @@ async function solanaFounderHistory(creator: string, s: TokenSnapshot): Promise<
 }
 
 // Robinhood: the earliest Transfer into a wallet (who funded it), from filtered logs.
-export async function firstInbound(rpc: Rpc, token: string, wallet: string, fromBlock: number, head: number): Promise<{ from: string; block: number } | null> {
+export async function firstInbound(rpc: Rpc, token: string, wallet: string, fromBlock: number, head: number): Promise<{ from: string; block: number; tx: string } | null> {
   for (const [f, t] of windowsBackward(fromBlock, head, MAX_SPAN).reverse()) {
     const logs = await rpc<RpcLog[]>("eth_getLogs", [{ address: token, topics: [TRANSFER_TOPIC, null, addressTopic(wallet)], fromBlock: hex(f), toBlock: hex(t) }]);
-    if (logs.length) return { from: topicAddress(logs[0].topics[1]), block: Number(logs[0].blockNumber) };
+    if (logs.length) return { from: topicAddress(logs[0].topics[1]), block: Number(logs[0].blockNumber), tx: logs[0].transactionHash };
   }
   return null;
 }

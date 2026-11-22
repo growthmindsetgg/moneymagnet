@@ -1,4 +1,4 @@
-// v3 §1d production matrix for Base and Monad. BASE=https://moneymagnet.vercel.app node scripts/v3-matrix.mjs
+// v3 §1d production matrix for Base, Monad and Ethereum. BASE=https://moneymagnet.vercel.app node scripts/v3-matrix.mjs
 // Established memes must be rated (not F / U) with ≥ 60% coverage; launches must answer with a tier and every
 // source listed; rugs must be F; blue chips must be refused (422); a token on several chains must get the picker (300).
 const BASE = process.env.BASE ?? "https://moneymagnet.vercel.app";
@@ -30,12 +30,17 @@ const M = [
   ["monad", "Vibe", "0x4c995d07af7ee32a08fc7094f532a91a44567777", "launch", anyTier],
   ["monad", "PERPL", "0xb47ffe20d02a827efcc9647d7db9e1a1ef287777", "launch", anyTier],
   ["monad", "NAD", "0x47c6ac22d1fbb5747b711b7d6602090c8dd37777", "rug", isF],
+  ["ethereum", "PEPE", "0x6982508145454ce325ddbe47a25d4ec3d2311933", "established", rated],
+  ["ethereum", "Mog", "0xaaee1a9723aadb7afa2810263653a34ba2c21c7a", "established", rated],
+  ["ethereum", "PIPI", "0x7bcefbb4ea938f71e4352057d9bf6cb2122d47b9", "launch", anyTier],
 ];
 const REFUSED = [
   ["base", "USDC", "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"],
   ["base", "WETH", "0x4200000000000000000000000000000000000006"],
   ["monad", "WMON", "0x3bd359c1119da7da1d913d1c4d2b7c461115433a"],
   ["monad", "USDC", "0x754704bc059f8c67012fed69bc8a327a5aafb603"],
+  ["ethereum", "WETH", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"],
+  ["ethereum", "USDC", "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
 ];
 let pass = 0;
 let total = 0;

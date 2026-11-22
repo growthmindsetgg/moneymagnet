@@ -19,7 +19,7 @@ import { prosCons } from "./prosCons";
 import DeepResearchButton from "./DeepResearch";
 import SocialPanel from "./SocialPanel";
 import RawData from "./RawData";
-import { largestHolderLine } from "@/lib/holderLine";
+import { largestHolderLine, txUrl } from "@/lib/holderLine";
 import { clusterSummary, deployerLine, holdersTable, poolList, poolLiquidity, short } from "./research";
 
 export { TIER_TEXT };
@@ -259,6 +259,95 @@ function VerificationCard({ v }: { v: VerificationSummary | undefined }) {
   );
 }
 
+/** Diamond / Strong read green, Mixed neutral, Weak orange, Paper red — the severity scale every other bar uses. */
+function strengthSeverity(label: string | null): Severity | null {
+  if (!label) return null;
+  return label === "Diamond" || label === "Strong" ? "good" : label === "Mixed" ? "ok" : label === "Weak" ? "warn" : "bad";
+}
+
+/** The HOLDER STRENGTH tile beside the hero stats: label, 0–100 bar, or why there is no number. */
+function StrengthTile({ report }: { report: ScoreReport }) {
+  const t = report.token;
+  const score = t.holderStrength;
+  const sev = strengthSeverity(t.holderStrengthLabel);
+  const why = t.nullReasons?.holderStrength;
+  const short = report.mode === "launch" ? "too young to measure" : t.holderStrengthPending ? "reading holder histories…" : "no data";
+  return (
+    <div className="mm-box col-span-2 min-w-0 px-3 py-2 sm:col-span-1" data-testid="holder-strength" data-label={t.holderStrengthLabel ?? "none"} title={score == null ? why : undefined}>
+      <div className="text-xs uppercase tracking-wider text-muted">Holder strength</div>
+      {score == null ? (
+        <div className="truncate text-sm font-bold" data-testid="holder-strength-value">
+          — <span className="font-normal text-muted">{short}</span>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-baseline justify-between gap-2" data-testid="holder-strength-value">
+            <span className="truncate font-mono text-base font-bold tabular-nums sm:text-lg">{Math.round(score)}</span>
+            {sev && (
+              <Chip sev={sev} testId="holder-strength-label">
+                {t.holderStrengthLabel}
+              </Chip>
+            )}
+          </div>
+          <div
+            className="relative mt-1 h-2 border border-[var(--ink)]"
+            role="meter"
+            aria-label="Holder strength"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(score)}
+            aria-valuetext={`${Math.round(score)} of 100, ${t.holderStrengthLabel}`}
+            data-testid="holder-strength-bar"
+            data-severity={sev ?? "none"}
+          >
+            {sev && <div className={`h-full ${SEV_FILL[sev]}`} style={{ width: `${Math.max(0, Math.min(100, score))}%` }} />}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Research view: the three biggest contributors as sentences, key-person holders, and every component's evidence. */
+function HolderStrengthDetail({ report }: { report: ScoreReport }) {
+  const t = report.token;
+  const d = t.holderStrengthDetail;
+  if (report.mode === "launch") return null;
+  return (
+    <section className="mm-box mm-research space-y-3 p-4" aria-labelledby="strength-heading" data-testid="holder-strength-detail">
+      <H2 id="strength-heading">
+        Holder strength{t.holderStrength != null ? ` · ${Math.round(t.holderStrength)} ${t.holderStrengthLabel}` : ""}
+      </H2>
+      {t.holderStrength == null && <p className="break-words text-xs">No score — {t.nullReasons?.holderStrength ?? d?.nullReason ?? "not measured"}.</p>}
+      {d && d.sentences.length > 0 && (
+        <ul className="list-disc space-y-1 pl-5 text-sm" data-testid="holder-strength-sentences">
+          {d.sentences.map((x) => (
+            <li key={x}>{x}</li>
+          ))}
+        </ul>
+      )}
+      {d && d.keyPerson.length > 0 && (
+        <p className="break-words text-xs" data-testid="holder-strength-key-person">
+          <span className="font-bold">Key-person risk:</span> {d.keyPerson.join(" · ")}
+        </p>
+      )}
+      {d && (
+        <ul className="space-y-1 text-xs" aria-label="Holder strength components">
+          {d.components.map((c) => (
+            <li key={c.id} className="break-words">
+              <span className="font-bold">
+                {c.label} ({c.weight})
+              </span>
+              : {c.score == null ? "—" : `${Math.round(c.score * 100)}%`} — {c.evidence}
+            </li>
+          ))}
+        </ul>
+      )}
+      {d && <p className="break-words text-xs text-muted">Method: {d.method}{d.excluded.length ? ` · excluded: ${d.excluded.map((e) => `${e.address.slice(0, 8)}… ${e.pct.toFixed(1)}% (${e.why})`).join(", ")}` : ""}</p>}
+    </section>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="mm-box min-w-0 px-3 py-2">
@@ -312,7 +401,7 @@ function Score({ score }: { score: number | null }) {
   );
 }
 
-function Hero({ report, cached, previous }: { report: ScoreReport; cached: boolean; previous?: ScoreReport }) {
+function Hero({ report, cached, cacheAgeSeconds = null, previous }: { report: ScoreReport; cached: boolean; cacheAgeSeconds?: number | null; previous?: ScoreReport }) {
   const t = report.token;
   const staleAges = Object.values(t.staleFields ?? {});
   const staleMax = staleAges.length ? Math.max(...staleAges) : null;
@@ -330,14 +419,26 @@ function Hero({ report, cached, previous }: { report: ScoreReport; cached: boole
           <div className="min-w-0 space-y-2 pb-1">
             <Score score={report.score} />
             <p className="font-mono text-xs" data-testid="raw-score">
-              raw {report.rawScore} · coverage {report.coveragePct}%
+              raw {report.rawScore ?? "—"} · coverage {report.coveragePct != null ? `${report.coveragePct}%` : "—"}
             </p>
             {report.hold && (
               <p className="font-mono text-xs" data-testid="tier-held" title={`${report.hold.factors.join(", ")} missing — this run alone reads ${report.hold.liveTier} ${report.hold.liveScore ?? "—"}`}>
                 <Chip sev="muted" testId="held-chip">
-                  unchanged (source down)
-                </Chip> · from {report.hold.minutesAgo}m ago · live {report.hold.liveTier}{" "}
+                  {report.hold.rescored ? "re-scored with last values (source down)" : "unchanged (source down)"}
+                </Chip> · {report.hold.rescored ? "previous run" : "from"} {report.hold.minutesAgo}m ago · live {report.hold.liveTier}{" "}
                 {report.hold.liveScore ?? "—"}
+              </p>
+            )}
+            {report.hysteresis && (
+              <p
+                className="font-mono text-xs"
+                data-testid="tier-hysteresis"
+                title={`This score alone maps to ${report.hysteresis.liveTier}. It sits within ±${report.hysteresis.margin} of the ${report.hysteresis.line} line, so the previous analysis's tier is kept until it moves further.`}
+              >
+                <Chip sev="muted" testId="hysteresis-chip">
+                  held near the {report.hysteresis.line} line
+                </Chip>{" "}
+                · from {report.hysteresis.minutesAgo}m ago · alone {report.hysteresis.liveTier}
               </p>
             )}
             <div className="flex flex-wrap gap-1.5">
@@ -357,11 +458,12 @@ function Hero({ report, cached, previous }: { report: ScoreReport; cached: boole
           <CopyAddress address={report.address} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <Stat label="Age" value={t.ageHours != null ? formatAge(t.ageHours) : "—"} />
         <Stat label="Price" value={formatPrice(t.priceUsd)} />
         <Stat label="FDV" value={formatCompactUsd(t.fdvUsd)} />
         <Stat label="Liquidity" value={formatCompactUsd(t.liquidityUsd)} />
+        <StrengthTile report={report} />
       </div>
       <div className="space-y-2">
         <p className="text-base font-bold" data-testid="verdict" title={report.verdict}>
@@ -391,6 +493,7 @@ function Hero({ report, cached, previous }: { report: ScoreReport; cached: boole
           </Suspense>
           <span className="text-xs text-muted" data-testid="generated-at">
             {cached ? "cached · " : ""}generated {utcTime(report.generatedAt)}
+            {cached && cacheAgeSeconds != null ? ` (${cacheAgeSeconds < 60 ? `${cacheAgeSeconds}s` : formatStaleAge(Math.floor(cacheAgeSeconds / 60))} ago)` : ""}
           </span>
         </div>
       </div>
@@ -695,6 +798,14 @@ function LargestHolder({ report }: { report: ScoreReport }) {
         <span className="mm-plus" aria-hidden="true" /> <span className="font-bold">{line}</span>
       </summary>
       <p className="mt-2 break-words text-xs text-muted">{t.largestHolder!.evidence}</p>
+      {t.largestHolder!.fundingTx && (
+        <p className="mt-1 break-all text-xs">
+          Funding tx:{" "}
+          <a className="underline" href={txUrl(report.chain, t.largestHolder!.fundingTx)} target="_blank" rel="noopener noreferrer" data-testid="funding-tx">
+            {t.largestHolder!.fundingTx}
+          </a>
+        </p>
+      )}
       {others.length > 0 && (
         <ul className="mt-2 space-y-1 font-mono text-xs" aria-label="Other top holders, classified">
           {others.map((h) => (
@@ -845,7 +956,7 @@ function safeBandMoves(report: ScoreReport): Set<string> {
   }
 }
 
-export default function Report({ report, cached = false, previous, rawInline = false }: { report: ScoreReport; cached?: boolean; previous?: ScoreReport; rawInline?: boolean }) {
+export default function Report({ report, cached = false, cacheAgeSeconds = null, previous, rawInline = false }: { report: ScoreReport; cached?: boolean; cacheAgeSeconds?: number | null; previous?: ScoreReport; rawInline?: boolean }) {
   const fired = report.rules.filter((r) => r.state === "fired");
   if (report.eligibility && !report.eligibility.meme) {
     const rejected = brand(report.eligibility.rejected ?? "Not rated — HoodTier scores memecoins only");
@@ -860,7 +971,7 @@ export default function Report({ report, cached = false, previous, rawInline = f
       <div className="flex justify-end">
         <ResearchToggle />
       </div>
-      <Hero report={report} cached={cached} previous={previous} />
+      <Hero report={report} cached={cached} cacheAgeSeconds={cacheAgeSeconds} previous={previous} />
       <WhyThisTier report={report} />
       <ProsCons report={report} />
       {report.social && <SocialPanel social={report.social} generatedAt={report.generatedAt} />}
@@ -886,6 +997,7 @@ export default function Report({ report, cached = false, previous, rawInline = f
           <VerificationCard v={report.verification} />
         </div>
         <LargestHolder report={report} />
+        <HolderStrengthDetail report={report} />
         <LiquidityHeld report={report} />
       </section>
       <ResearchExtras report={report} />
@@ -914,6 +1026,7 @@ function dedupeLinks(links: { label: string; url: string }[], report: ScoreRepor
   const out = [...links];
   if (report.chain === "solana") out.push({ label: "Solscan", url: `https://solscan.io/token/${report.address}` });
   else if (report.chain === "base") out.push({ label: "Basescan", url: `https://basescan.org/token/${report.address}` });
+  else if (report.chain === "ethereum") out.push({ label: "Etherscan", url: `https://etherscan.io/token/${report.address}` });
   else if (report.chain === "monad") {
     out.push({ label: "MonadVision", url: `https://monadvision.com/token/${report.address}` });
     out.push({ label: "Monadscan", url: `https://monadscan.com/token/${report.address}` });
