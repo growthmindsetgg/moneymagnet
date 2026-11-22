@@ -70,6 +70,53 @@ These sets stop trading after day ~90, so whale net accumulation over the last 7
 ## Env vars the owner must set
 None new.
 
+# Thin-trading cap: no top tier on holder structure alone (2026-11-22)
+
+**Status:** committed on the worktree branch `worktree-agent-a2f5ee2889a7717cb`. Not pushed, not deployed. The README LOOP was not run past lint / typecheck / test: build, verify:api, stability and Playwright still need to run before any deploy.
+
+**Bug.** This was an open item from the nad.fun sweep (`docs/nadfun-sweep-2026-11-22.md` §8, "Caps do all the work"). GOCHI (`0x527d…7777`) scored A with $14 of 24h volume. EGG scored A 79.1 with $4 and 6 makers, and MONIGGA scored A 84.9 with $25.9. No rule looked at volume, so a clean holder list was enough for a top tier.
+
+**Rule** (`lib/scoring/factors.json`, rule `thin_trading`, one self-contained entry placed before `micro_cap`):
+- **Condition:** `volume24hUsd < 100`.
+- **Effect:** caps the tier at **C**. It has no points, no gate chip and no age condition, and applies to every factor set and chain.
+- **Evidence line:** "24h trading: $14 volume, 17 buyers / 18 sellers (measured) — below the $100 24h volume a tier above C needs. Holder structure alone does not earn a top tier: capped at C."
+- **Zero activity:** $0 is a measured value. The rule fires and the token is still scored S–F with a number, never U.
+- **Unknown volume:** null volume makes the rule "not evaluable", so no cap is invented from missing data.
+- **Displayed score:** the existing generic clamp applies. A capped token shows 54.9 (top of C) with "raw N" beside it.
+
+**Decisions.**
+- **Why cap at C.** C is "mixed signals": the holder list may be sound, but no market confirms it, and $100 a day is not enough to exit a position. The other "unproven" caps (`sellable_unknown`, `top_holder_20`, `price_collapse`) also cap at C. B would still read as a tradeable market.
+- **Why $100.** The lowest-volume fixture legitimately rated above C is CHOG (`monad-chog`), recorded at $131.54 and rated A 76.3. That figure is an old-code reading about 75× too low; the sweep measured about $8k on new code. The examples sit far below the line ($4 / $14 / $25.9). A higher floor such as $1,000 would cap CHOG's recorded snapshot to C. That can be revisited once the Monad fixtures are re-recorded on the fixed volume path.
+- **Buyer/seller-count floor tried, then dropped.** A first version also capped at fewer than 5 buyers and fewer than 5 sellers. The live `api.integration` microduck run then read **0 buyers / 0 sellers beside $52k of DexScreener volume**: the swap-index counts were stale again, see the stalled-index section below. That clause capped a live, busy token at C. The counts are now only printed on the evidence line, never used as a floor.
+- **`engine.ts`:** one entry added to the generic metric-format table (`volume24hUsd: "usdAbs"`) so the evidence line reads "$14" rather than "14". There is no factor-specific logic.
+
+**Fixtures whose tier changed: none.** All 18 recorded fixtures (5 Robinhood/Solana, 13 v3) were scored before and after.
+- The rule fires on 4 fixtures that were already lower than C: `peek` ($0, F), `monad-james` ($25.32, D), `monad-perpl` ($0.62, F) and `monad-nad` ($66.33, F). Their `fired` lists in `tests/__snapshots__/fixtures.test.ts.snap` (peek) and `v3-fixtures.test.ts.snap` (3) gained `"thin_trading"`. Tier, score, raw score and factors are unchanged.
+- No other snapshot line changed.
+
+**Tests:** new file `tests/thin-trading.test.ts`, 13 tests. None deleted or weakened.
+- **GOCHI-like, EGG-like and MONIGGA-like.** A synthetic Monad token with the sweep's recorded activity figures, built from `perfectSnapshot`. Fields the sweep did not record are marked "synthetic" in the test. Each scores S/A with the rule removed from the config. With the rule each scores C, bound by the cap, displayed at 54.9 with raw beside it, and the measured volume appears on the evidence line.
+- **Not capped:** a healthy $1.2M token stays S, and a healthy Monad token stays S/A. The recorded microduck and CHOG fixtures stay A. $100 is clear and $99.99 fires. A stalled index (0/0 counts beside $52k) does not fire. Unknown volume is "unknown", not a cap.
+- **Zero activity** is rated with a number, never U, and capped.
+- **Age:** the same thin market is capped at 30h (launch set) and at 40d (established set).
+- **Monotonicity:** a sweep of 360 reports over volume, counts, top-10 share and Holder Strength. A higher displayed score never means a lower tier, and every capped report sits at or below 54.9 with raw ≥ displayed.
+
+**LOOP (partial):**
+
+| Check | Result |
+|---|---|
+| lint | ok (the same 2 old warnings) |
+| typecheck | ok |
+| Tests | 650/650, including the live `api.integration` microduck test (local B = production B) |
+
+**Sources:** no adapter was changed. Live microduck during this run: HoodScan's 24h buyer/seller counts read 0/0 while DexScreener read $52k volume. This looks like the stalled-index symptom on the count fields, which that fix did not cover. Not investigated here.
+
+**Factors still null:** none changed by this run.
+
+**Env vars:** none new. `NAD_API_KEY` in production is still recommended (sweep §Sources).
+
+**Open:** once Monad volume is trusted (fixtures re-recorded on new code), consider raising the floor or scaling it with FDV. That is an owner decision.
+
 # Ethereum + data-audit merge, stalled-index fix (2026-11-22)
 
 **Status:** deployed as `hoodtier-fu18m31dw` (`dpl_BffyCLA7u9uD1k6ZyZhdaefBgnts`), then `hoodtier-kq7jc2axn` (`dpl_E1zyaAaz8ayA8UzMQXH5b8ieRCQt`) with the stale-bound fix. `moneymagnet.vercel.app` points to the latter. The rollback target is `hoodtier-8rgtxeyx4`.

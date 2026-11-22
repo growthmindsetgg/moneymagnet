@@ -102,7 +102,7 @@ function presentOn(f: FactorDef, chain: Chain): boolean {
 type Snap = Record<string, unknown>;
 
 export function metricFormats(cfg: ScoringConfig): Record<string, Format> {
-  const map: Record<string, Format> = { volMcRatio: "ratio", volMcBar: "ratio", lpLockedPct: "pct", top1SharePct: "pct", ageHours: "age", curveCirculatingPct: "pct", sellers24h: "int", uniqueBuyers: "int", ageMinutes: "num", launchBuyers: "int", liquidityUsd: "usdAbs", fdvUsd: "usdAbs", deployerDistributedPct: "pct", lastTradeHoursAgo: "age", top10SharePct: "pct", equalSplitPct: "pct", equalSplitCount: "int", roundTripLossPct: "pct", priceChange24hPct: "signedPct" };
+  const map: Record<string, Format> = { volMcRatio: "ratio", volume24hUsd: "usdAbs", volMcBar: "ratio", lpLockedPct: "pct", top1SharePct: "pct", ageHours: "age", curveCirculatingPct: "pct", sellers24h: "int", uniqueBuyers: "int", ageMinutes: "num", launchBuyers: "int", liquidityUsd: "usdAbs", fdvUsd: "usdAbs", deployerDistributedPct: "pct", lastTradeHoursAgo: "age", top10SharePct: "pct", equalSplitPct: "pct", equalSplitCount: "int", roundTripLossPct: "pct", priceChange24hPct: "signedPct" };
   for (const set of Object.values(cfg.sets)) for (const g of set.groups) for (const f of g.factors) map[f.metric] = f.format;
   return map;
 }

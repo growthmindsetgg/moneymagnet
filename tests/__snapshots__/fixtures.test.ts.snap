@@ -1046,6 +1046,7 @@ exports[`recorded fixture snapshots > peek scores in F 1`] = `
   "fired": [
     "vol_mc_bundle",
     "dead_launch",
+    "thin_trading",
     "micro_cap",
     "dust",
   ],
