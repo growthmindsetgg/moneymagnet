@@ -1,3 +1,66 @@
+# Session summary: sync + Sparsity-inspired improvements (2026-11-22)
+
+**Status:** merged on `main` and pushed to GitHub (`growthmindsetgg/moneymagnet`). **Not deployed.** Before any deploy, run the rest of the LOOP: verify:api, stability and Playwright.
+
+## Tasks done and decisions made
+- **Sync.** Restored the source of the live deploy `dpl_4KFeqYXL` (2026-11-22) from Vercel into the repo. The other machine's commits made after that deploy (including the `pnpm sync` script) are not here yet; that machine was offline.
+- **Sparsity Data's Holder Strength** (sparsitydata.com/holderstrength) was used only for its published method ideas. Its terms forbid scraping, or building a product from its data, without written permission, so nothing is fetched from it.
+- **Merged four branches.** Each has its own dated section below.
+  - Holder Strength areas (Conviction / Demand), whale net accumulation and dip absorption.
+  - The `thin_trading` cap: tier capped at C when 24h volume is under $100.
+  - Liquidity for its size (banded `liq_fdv`) and `rel_strength_7d`.
+  - Front-end accessibility / metadata pass.
+- **Merge conflicts.** Both were resolved by keeping both sides:
+  - `REPORT.md`: kept every section.
+  - `lib/scoring/engine.ts` `metricFormats`: kept the `volume24hUsd` entry and the config-driven `metricFormats` loop.
+- **Checks after merging:**
+  - typecheck: ok.
+  - lint: 0 errors, 2 old warnings.
+  - unit tests: 709/709.
+  - build: ok.
+
+# Front end: accessibility, 360px mobile, metadata, first-time-user copy (2026-11-22)
+
+No scoring or data change, and the Holder Strength panel is untouched.
+
+## Changes
+- **Colour key at 360px:** no longer clipped.
+- **Loading status:** announced once to screen readers; the source-name cycling is visual only.
+- **Icon labels:** `role="img"` added so screen readers read them.
+- **Address input:**
+  - `aria-invalid` and `aria-describedby`;
+  - no autocapitalise or autocorrect;
+  - 16px on phones, so iOS doesn't zoom on focus.
+- **Copy controls:** the copy confirmation is announced, and the copy-address target is 32px.
+- **External links:** say they open in a new tab.
+- **New `components/TierKey.tsx`:**
+  - "What do the tiers mean?" on home, and "How to read this page" on results.
+  - Tier bands and coverage limits are read from `factors.json`, never restated in the UI.
+- **Metadata:**
+  - title template "%s · MoneyMagnet";
+  - full OG and Twitter tags on token pages, which previously lost og:title and og:description;
+  - a static share image (`app/opengraph-image.tsx`) with no tier or score;
+  - `noindex` on the not-found page.
+- **Copy:** the not-found page and the footer now name every supported chain and source.
+- **CSS:** `--bad-text` is now defined; it was undefined before.
+- **axe (WCAG 2.1 A/AA):** 0 violations on home, microduck and peek at 360px, light and dark.
+
+## Found, not fixed
+- **Gate pill evidence:** in the default view it is in a hover tooltip only. It is reachable in Research view.
+- **Cold-load result:** not announced when it replaces the loading skeleton.
+- **Chain `<select>`:** still 12px, so iOS may zoom on it.
+
+## Playwright
+- **`hero.spec.ts` screenshots fail.** The stored images show microduck at 80.4 (raw 77.4). Scoring has since moved it: 80.9 on the synced deploy, and about 81 with the banded `liq_fdv`.
+  - It failed on the base front end too.
+  - The snapshots were not updated. The owner should regenerate them once the new scoring is accepted.
+- **`clarity:24` and `severity:34/89`:** live-data or source-outage failures. They pass on rerun or fail on base too.
+
+## Sources / null factors / env vars
+- **Sources:** no change in this part.
+- **Env vars:** see the relative-strength section for optional `COHORT_BUDGET_MS` and `COHORT_REFRESH_MIN`. For production, set `HOODTIER_CANONICAL_HOST=moneymagnet.vercel.app`.
+- **Still worth setting on Vercel** (from the earlier run): `NAD_API_KEY`, a GeckoTerminal key and `ETHERSCAN_API_KEY`.
+
 # Holder Strength: Conviction / Demand areas (2026-11-22)
 
 **Status:** committed on worktree branch `worktree-agent-a6a7e4ddf69f4fd66`. Not pushed, not deployed. Only `lib/holderStrength.ts`, `lib/holderStrengthData.ts`, `tests/holder-strength.test.ts` and this report changed. `lib/scoring/factors.json`, `components/` and `app/` were not touched.
