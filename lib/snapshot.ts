@@ -444,6 +444,7 @@ export function deriveMetrics(s: TokenSnapshot): TokenSnapshot {
       d.fakeSignals.push({ kind: "wash", level: "warn", text: `24h volume is ${vl.toFixed(1)}× liquidity (elevated turnover)`, source: "HoodTier heuristic" });
     }
   }
+  applyFounderExclusion(d);
   return d;
 }
 
@@ -543,6 +544,32 @@ export function deadLaunchOf(d: TokenSnapshot): boolean | null {
  * within 10% of the group's largest. Organic holder lists fall off like a power law; near-identical balances
  * holding a real share of supply are a split. Derived from the holder list (the evidence says so).
  */
+/**
+ * Founder exclusion for the concentration factors: when the largest counted holder is the founder (the deployer or a
+ * wallet founder-link due diligence ties to it) and that wallet is proven never to have sold, the top-holder and
+ * top-10 factors score the holders other than the founder. The rules keep reading top1SharePct, so the founder cap
+ * (A) still applies while the founder holds. Derived — the factor evidence says so.
+ */
+export function applyFounderExclusion(s: TokenSnapshot): void {
+  const f = s.largestHolder;
+  const lead = s.holders[0];
+  const on = s.founderNeverSold === true && f?.class === "founder" && !!lead && lead.address.toLowerCase() === f.address.toLowerCase();
+  if (!on) {
+    s.founderExcluded = false;
+    s.top1ExFounderPct = null;
+    s.top10ExFounderPct = null;
+    return;
+  }
+  const rest = s.holders.slice(1);
+  s.founderExcluded = true;
+  s.top1ExFounderPct = Math.round((rest[0]?.pct ?? 0) * 100) / 100;
+  s.top10ExFounderPct = Math.round(rest.slice(0, 10).reduce((a, h) => a + (h.pct ?? 0), 0) * 100) / 100;
+  for (const [m, src] of [["top1ExFounderPct", "top1SharePct"], ["top10ExFounderPct", "top10SharePct"]] as const) {
+    const age = s.staleFields?.[src];
+    if (age != null) s.staleFields = { ...s.staleFields, [m]: age };
+  }
+}
+
 export function equalSplit(wallets: { pct: number | null }[]): { pct: number; count: number } {
   const p = wallets.slice(0, 20).map((h) => h.pct ?? 0).filter((x) => x > 0).sort((a, b) => b - a);
   let best = { pct: 0, count: 0 };

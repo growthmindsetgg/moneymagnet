@@ -117,6 +117,12 @@ export interface TokenSnapshot {
   /** Wallets in that group. */
   equalSplitCount: number | null;
   top1SharePct: number | null;
+  /** True when the largest holder is the founder (deployer or linked wallet) proven never to have sold: the concentration factors then score the holders other than the founder (the founder cap covers the founder). */
+  founderExcluded?: boolean | null;
+  /** Largest non-LP holder other than that founder (%). Set with founderExcluded. */
+  top1ExFounderPct?: number | null;
+  /** Top-10 non-LP holders other than that founder (%). Set with founderExcluded. */
+  top10ExFounderPct?: number | null;
   accumulatorCount: number | null;
   accumulatorSupplyPct: number | null;
   earlyCohortSize: number | null;

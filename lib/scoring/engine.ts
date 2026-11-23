@@ -146,7 +146,14 @@ function scoreFactor(f: FactorDef, s: TokenSnapshot, formats: Record<string, For
   return { ...r, max: 0, points: 0, applicable: false, missing: false, basic, evidence: `${r.evidence} Gate only — no points.` };
 }
 
-function scoreWeighted(f: FactorDef, s: TokenSnapshot, formats: Record<string, Format>, sources: SourceStatus[], zeroMetrics: Set<string> = new Set()): FactorResult {
+/** The factor as scored for this snapshot: its `override` metric and evidence when the override's flag is true. */
+function effectiveFactor(f: FactorDef, s: TokenSnapshot): FactorDef {
+  const o = f.override;
+  return o && (s as unknown as Snap)[o.when as string] === true ? { ...f, metric: o.metric, evidenceTemplate: o.evidenceTemplate } : f;
+}
+
+function scoreWeighted(f0: FactorDef, s: TokenSnapshot, formats: Record<string, Format>, sources: SourceStatus[], zeroMetrics: Set<string> = new Set()): FactorResult {
+  const f = effectiveFactor(f0, s);
   const raw = (s as unknown as Snap)[f.metric];
   const value = isMissing(raw) ? null : (raw as number | boolean);
   const display = value === null ? "no data" : (f.labels?.[String(value)] ?? formatValue(value, f.format));
@@ -378,7 +385,7 @@ export function scoreSnapshot(s: TokenSnapshot, sourceStatus: SourceStatus[] = [
   const groups: GroupResult[] = set.groups.map((g) => {
     const factors = g.factors.filter((f) => presentOn(f, s.chain)).map((f) => {
       const r = scoreFactor(f, s, formats, sourceStatus, zeroMetrics);
-      const v = byMetric.get(f.metric);
+      const v = byMetric.get(effectiveFactor(f, s).metric);
       return v ? { ...r, verification: { status: v.status, sources: v.values.length, resolution: v.resolution, values: v.values } } : r;
     });
     const scored = factors.filter((f) => f.applicable && !f.missing);

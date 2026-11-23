@@ -52,7 +52,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             },
             {
               "id": "top_holder",
@@ -88,7 +93,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%)."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "holder_strength",
@@ -1780,7 +1790,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource})."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource}).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "fresh_wallets",
@@ -2656,7 +2671,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource})."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource}).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "top10_share",
@@ -2695,7 +2715,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             },
             {
               "id": "fresh_wallets",
@@ -3363,7 +3388,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource})."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource}).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "top10_share",
@@ -3400,7 +3430,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             }
           ]
         },
@@ -3582,7 +3617,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             },
             {
               "id": "top_holder",
@@ -3616,7 +3656,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%)."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "deployer_holding",
@@ -4699,7 +4744,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource})."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource}).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "top10_share",
@@ -4736,7 +4786,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             },
             {
               "id": "holders_vs_makers",
@@ -5038,7 +5093,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             },
             {
               "id": "top_holder",
@@ -5072,7 +5132,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%)."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "deployer_holding",
@@ -6161,7 +6226,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource})."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%; source: {holderSource}).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "top10_share",
@@ -6198,7 +6268,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             }
           ]
         },
@@ -6380,7 +6455,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded)."
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
             },
             {
               "id": "top_holder",
@@ -6414,7 +6494,12 @@
                   "flag": "danger"
                 }
               ],
-              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%)."
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
             },
             {
               "id": "deployer_holding",
@@ -8619,6 +8704,9 @@
     "note": "Display formats for metrics quoted in evidence templates that no factor scores directly.",
     "priceChange7dPct": "signedPct",
     "cohortMedian7dPct": "signedPct",
-    "cohortSize": "int"
+    "cohortSize": "int",
+    "top1ExFounderPct": "pct",
+    "top10ExFounderPct": "pct",
+    "founderHoldDays": "int"
   }
 }

@@ -1,3 +1,34 @@
+# A proven never-sold founder's stake is left out of the concentration factors (2026-11-23)
+
+**Owner decision.** When the largest counted holder is the founder (the deployer, or a wallet founder-link due diligence ties to it) and that wallet is proven never to have sold, the founder cap (A) already covers the stake. It is no longer also counted in the top-holder and top-10 share factors.
+
+## How it works
+- **Engine (generic):** a factor may declare `override: { when, metric, evidenceTemplate }`.
+  - When the boolean snapshot field `when` is true, the factor reads the substitute metric with its own evidence line.
+  - The original metric's cross-source verification is not attached, because the sources' 61% reading doesn't verify the derived value.
+  - Nothing in it is founder-specific.
+- **Snapshot:** `applyFounderExclusion` (lib/snapshot.ts) sets three fields:
+  - `founderExcluded`;
+  - `top1ExFounderPct` (the largest holder other than the founder);
+  - `top10ExFounderPct` (the top 10 other than the founder).
+
+  It runs in `deriveMetrics` and again after top-holder classification (`lib/analyze.ts`), once the founder fields are known. The stale age is inherited from `top1SharePct` / `top10SharePct`.
+- **factors.json:** all 17 `top_holder` / `top10_share` factors across the sets carry the override. Their evidence says the founder's share and hold days were left out and that the value is derived.
+- **The rules keep reading `top1SharePct`**, so the founder cap A still binds while the founder holds, and the tier is never S.
+  - Burn or lock ⇒ the founder is no longer a counted holder ⇒ no cap.
+  - Any sell ⇒ `founderNeverSold` false ⇒ no exclusion, and the normal caps apply.
+- **Never excluded:** team wallets (one clue), founders that sold, and founders whose sell history is unproven.
+
+## Tests
+New in `holder-class.test.ts`:
+- the JAMES-shaped founder snapshot scores the factors on the other holders, with evidence that says so, no borrowed verification, and the founder cap still firing;
+- no exclusion for a team wallet, a founder that sold, or an unproven founder.
+
+No existing test was changed.
+
+## Sources / null factors / env vars
+No change.
+
 # Founder-link due diligence + founder cap A at any size (2026-11-23)
 
 Owner request, after $JAMES (Monad) showed C. Its 61.1% holder is the founder's second wallet, but it was classed as a "team wallet (deployer-funded)", and ≥ 35% team never-sold caps at C.

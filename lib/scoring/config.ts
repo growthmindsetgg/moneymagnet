@@ -66,6 +66,11 @@ export interface FactorDef {
    * so 1.0 means "exactly the reference". The reference never depends on other tokens.
    */
   reference?: ReferenceDef;
+  /**
+   * When the boolean snapshot field `when` is true, the factor reads `metric` instead (and fills its own evidence
+   * template). The substitute is a derived reading, so the original metric's cross-source verification is not shown.
+   */
+  override?: { when: keyof TokenSnapshot; metric: keyof TokenSnapshot; evidenceTemplate: string };
 }
 
 export interface ReferenceBand extends ValueCondition {

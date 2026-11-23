@@ -8,7 +8,7 @@ import { applyHolderClasses } from "@/lib/topHolders";
 import { largestHolderLine } from "@/lib/holderLine";
 import { classRow } from "@/lib/onchain/holderClass";
 import { scoreSnapshot } from "@/lib/scoring/engine";
-import { emptySnapshot, deriveMetrics } from "@/lib/snapshot";
+import { applyFounderExclusion, emptySnapshot, deriveMetrics } from "@/lib/snapshot";
 import { prosCons } from "@/components/prosCons";
 import type { Rpc } from "@/lib/onchain/rpc";
 import type { HolderRow, SourceStatus, TokenSnapshot } from "@/lib/types";
@@ -448,5 +448,53 @@ describe("JAMES (Monad) recorded holder fixture", () => {
     expect(r.rules.find((x) => x.id === "top_holder_35_founder")!.evidence).toBe("Founder holds 61.1%, never sold in 116d — key-person risk: capped at A.");
     for (const id of ["top_holder_35", "top_holder_20", "top_holder_35_team", "top_holder_20_team"]) expect(r.rules.find((x) => x.id === id)!.state).not.toBe("fired");
     expect(r.tier).not.toBe("S");
+  });
+
+  // Owner decision 2026-11-23: a proven never-sold founder's stake is not counted twice — the founder cap covers it,
+  // and the top-holder / top-10 factors score the holders other than the founder.
+  it("the founder's stake is left out of the top-holder and top-10 factors (derived, said so), but the founder cap still applies", () => {
+    const s: TokenSnapshot = {
+      ...fx.snapshot,
+      largestHolder: { ...fx.snapshot.largestHolder!, class: "founder", label: "founder wallet (linked to the deployer)" },
+      founderNeverSold: true,
+      founderSold: false,
+      founderHoldDays: 140,
+      teamNeverSold: false,
+    };
+    applyFounderExclusion(s);
+    expect(s.founderExcluded).toBe(true);
+    const rest = s.holders.slice(1);
+    expect(s.top1ExFounderPct).toBeCloseTo(rest[0].pct ?? 0, 2);
+    expect(s.top10ExFounderPct).toBeCloseTo(rest.slice(0, 10).reduce((a, h) => a + (h.pct ?? 0), 0), 2);
+    const r = scoreSnapshot(s, fx.sources);
+    const factors = r.groups.flatMap((g) => g.factors);
+    const top = factors.find((f) => f.id === "top_holder")!;
+    expect(top.metric).toBe("top1ExFounderPct");
+    expect(top.evidence).toMatch(/^Largest non-LP wallet other than the founder holds .*The founder's 61\.1%, never sold in 140d, is left out of this factor/);
+    expect(top.verification).toBeUndefined(); // the sources' 61% reading is not shown as verifying the derived value
+    const top10 = factors.find((f) => f.id === "top10_share")!;
+    expect(top10.metric).toBe("top10ExFounderPct");
+    expect(top10.points).toBeGreaterThan(0);
+    // The rules still read the real top-holder share: the founder cap stays.
+    expect(r.rules.find((x) => x.id === "top_holder_35_founder")!.state).toBe("fired");
+    expect(r.tier).not.toBe("S");
+    // Without the exclusion (same snapshot, founder not proven), both factors read the founder's 61% / 67% and score 0.
+    const plain = scoreSnapshot({ ...s, founderExcluded: false }, fx.sources).groups.flatMap((g) => g.factors);
+    expect(plain.find((f) => f.id === "top_holder")!.points).toBe(0);
+    expect(plain.find((f) => f.id === "top_holder")!.metric).toBe("top1SharePct");
+  });
+
+  it("no exclusion for a team wallet, a founder that sold, or a founder whose history is unproven", () => {
+    for (const over of [
+      { largestHolder: fx.snapshot.largestHolder, founderNeverSold: false, teamNeverSold: true },
+      { largestHolder: { ...fx.snapshot.largestHolder!, class: "founder" as const }, founderNeverSold: false, founderSold: true },
+      { largestHolder: { ...fx.snapshot.largestHolder!, class: "founder" as const }, founderNeverSold: null },
+    ]) {
+      const s: TokenSnapshot = { ...fx.snapshot, ...over };
+      applyFounderExclusion(s);
+      expect(s.founderExcluded).toBe(false);
+      expect(s.top1ExFounderPct).toBeNull();
+      expect(scoreSnapshot(s, fx.sources).groups.flatMap((g) => g.factors).find((f) => f.id === "top_holder")!.metric).toBe("top1SharePct");
+    }
   });
 });

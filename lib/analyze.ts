@@ -1,5 +1,5 @@
 import type { AdapterResult, Chain, ScoreReport, SourceStatus, TokenSnapshot } from "./types";
-import { applyZeroActivity, deadLaunchOf, deriveMetrics, emptySnapshot, mergeSnapshots } from "./snapshot";
+import { applyFounderExclusion, applyZeroActivity, deadLaunchOf, deriveMetrics, emptySnapshot, mergeSnapshots } from "./snapshot";
 import { scoreSnapshot, SOURCE_LABELS } from "./scoring/engine";
 import { hoodscan } from "./sources/hoodscan";
 import { scanhood } from "./sources/scanhood";
@@ -577,6 +577,8 @@ async function holderClassification(chain: Chain, address: string, snapshot: Tok
     await within(classifyTopHolders(chain, address, work, results, Date.now() + ms), ms, "top-holder classification");
     const keys = ["holders", "liquidityHolders", "holderClasses", "largestHolder", "founderNeverSold", "founderSold", "founderHoldDays", "teamNeverSold", "teamSold", "teamHoldDays", "top1SharePct", "top10SharePct", "liquidityHeldPct", "nullReasons", "provenance"] as const;
     for (const k of keys) (snapshot as unknown as Record<string, unknown>)[k] = work[k];
+    // The founder fields are known only now: re-derive the founder-excluded concentration readings.
+    applyFounderExclusion(snapshot);
   } catch (err) {
     const why = err instanceof BudgetError ? `top-holder classification timed out (${Math.round(Math.max(0, ms) / 1000)}s)` : `top-holder classification failed: ${(err as Error).message.slice(0, 80)}`;
     snapshot.nullReasons = { ...snapshot.nullReasons, largestHolder: why, founderNeverSold: why };
