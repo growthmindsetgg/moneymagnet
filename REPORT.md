@@ -1,3 +1,52 @@
+# Founder-link due diligence + founder cap A at any size (2026-11-23)
+
+Owner request, after $JAMES (Monad) showed C. Its 61.1% holder is the founder's second wallet, but it was classed as a "team wallet (deployer-funded)", and ≥ 35% team never-sold caps at C.
+
+## Decisions
+- **Founder cap** (owner decision): a founder that never sold now caps at **A at any size**. `top_holder_35_founder` moved from B to A; `top_holder_20_founder` was already A.
+  - **Never S** while the founder still holds the stake.
+  - **Burning the stake or locking it in a vesting / lock contract lifts the cap.** A burn address or lock contract is not a counted holder, so S becomes reachable.
+  - **Any sell (a swap, or a transfer into a pool / router) reverts to the normal caps (C / D)** and adds the red "founder started selling" con. A founder dumping never earns a higher tier.
+- **Founder-link due diligence:** new `lib/onchain/founderLink.ts`, used in `lib/topHolders.ts`. For a large non-deployer EOA it reads five on-chain clues; each is live, false, or null with the exact reason, never assumed:
+  - **tokens_from_deployer** (direct): its first tokens came from the deployer by plain transfer (no Swap event in that tx).
+  - **gas_from_deployer** (direct): the first native coin it ever received came from the deployer.
+  - **stake_from_deployer:** that deployer transfer is ≥ 80% of its current balance, so the stake was handed over, not bought.
+  - **deployer_emptied:** the deployer kept ≤ 1% of what it sent, so it moved its stake rather than splitting it.
+  - **shared_funder:** the wallet and the deployer got their first native coin from the same EOA. A contract funder (bridge / router) or a labelled exchange wallet doesn't count.
+- **Verdict:**
+  - no direct clue ⇒ an ordinary wallet;
+  - 1 clue ⇒ team wallet (team caps B / C as before);
+  - **≥ 2 clues with at least one direct ⇒ "founder wallet (linked to the deployer)"**, scored as the founder.
+  - The evidence line lists every clue and its reading.
+- **Coverage:**
+  - Base / Monad / Ethereum read all five clues from archive state.
+  - Robinhood reads the three token clues. Native-coin funding is null there, with the reason "no archive RPC".
+  - Solana is unchanged (team detection only); founder linking there is a follow-up.
+
+## $JAMES, read live 2026-11-23 (local, no production KV)
+- **Founder link 3/5:**
+  - tokens from deployer: yes (creation-tx sender `0x8258…`, plain transfer in tx `0x5c96c6…ebeb`);
+  - stake handed over: yes (that transfer is 109.7% of its current balance);
+  - deployer emptied: yes (the sender kept 0%);
+  - gas from deployer: no;
+  - shared funder: no (different first funders).
+- ⇒ classed **founder wallet (linked to the deployer)**. nad.fun shows it as "james.nad" with 3 buys and 0 sells.
+- **Locally the sell-history scan reached only 23% in one run** (no saved scan state), so founderNeverSold was null there. Production keeps the scan state in KV.
+- **With the history complete and 0 sells, the binding cap is A.** The tier then comes from its factor score: about 61, i.e. B. The cap no longer holds it at C, but the factors alone don't reach A.
+
+## Tests
+- **Replaced** (the spec changed; each replacement asserts the new rule):
+  - `holder-class.test.ts` "≥ 35% held by a founder … capped at B" → "… capped at A, never S".
+  - JAMES "were that wallet the deployer … B" → "classed as the founder (linked wallet) … founder cap A, team / normal caps don't fire".
+- **Added:**
+  - "burning / locking lifts the founder cap";
+  - `tests/founder-link.test.ts`: 9 tests (the pure verdict, plus JAMES-shaped fake-RPC cases: founder 3/5, gift-then-buy ⇒ team, swap ⇒ no link, shared-funder exclusions).
+- The recorded JAMES fixture (2026-10-30, class team) is kept as recorded. Its "team ⇒ C" test still holds for a team-classed snapshot.
+
+## Sources / null factors / env vars
+- No new source and no new env var.
+- Founder-link clues that can't be read are null with their reason, shown on the largest-holder evidence line.
+
 # Session summary: sync + Sparsity-inspired improvements (2026-11-22)
 
 **Status:** merged on `main`, pushed to GitHub (`growthmindsetgg/moneymagnet`) and **deployed to production** on 2026-11-22: `hoodtier-bsumxih0u`, aliased to moneymagnet.vercel.app.

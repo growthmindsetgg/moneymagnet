@@ -140,17 +140,24 @@ describe("founder softening (top-holder caps)", () => {
   const fired = (s: TokenSnapshot) => scoreSnapshot(s, []).rules.filter((r) => r.state === "fired").map((r) => r.id);
   const capOf = (s: TokenSnapshot) => scoreSnapshot(s, []).binding;
 
-  it("≥ 35% held by a founder that never sold in ≥ 30 days: capped at B (not D), with the key-person reason", () => {
+  // Replaces "≥ 35% … capped at B (not D)" — owner decision 2026-11-23: a founder who never sold caps at A at any size.
+  it("≥ 35% held by a founder that never sold in ≥ 30 days: capped at A (not D), never S, with the key-person reason", () => {
     const s = token({ top1SharePct: 61.1, founderNeverSold: true, founderSold: false, founderHoldDays: 116 });
     const r = scoreSnapshot(s, []);
     expect(fired(s)).toContain("top_holder_35_founder");
     expect(fired(s)).not.toContain("top_holder_35");
     expect(fired(s)).not.toContain("top_holder_20");
     const rule = r.rules.find((x) => x.id === "top_holder_35_founder")!;
-    expect(rule.capTier).toBe("B");
-    expect(rule.evidence).toBe("Founder holds 61.1%, never sold in 116d — key-person risk: capped at B.");
-    expect(["B", "C", "D", "F"]).toContain(r.tier);
-    expect(["S", "A"]).not.toContain(r.tier);
+    expect(rule.capTier).toBe("A");
+    expect(rule.evidence).toBe("Founder holds 61.1%, never sold in 116d — key-person risk: capped at A.");
+    expect(r.tier).not.toBe("S");
+  });
+
+  it("the founder burning / locking the stake (no longer a counted top holder) lifts the founder cap", () => {
+    const s = token({ top1SharePct: 4, founderNeverSold: false, founderSold: null });
+    expect(fired(s)).not.toContain("top_holder_35_founder");
+    expect(fired(s)).not.toContain("top_holder_20_founder");
+    expect(fired(s)).not.toContain("top_holder_35");
   });
 
   it("20–35% held by such a founder: capped at A (not C)", () => {
@@ -424,12 +431,22 @@ describe("JAMES (Monad) recorded holder fixture", () => {
     for (const h of s.holderClasses.filter((x) => x.class === "contract")) expect(s.holders.some((w) => w.address === h.address)).toBe(false);
   });
 
-  it("were that wallet the deployer with 0 sells over 116 days, the cap would be B with the key-person reason", () => {
-    const s: TokenSnapshot = { ...fx.snapshot, founderNeverSold: true, founderSold: false, founderHoldDays: 116, teamNeverSold: false };
+  // Replaces "were that wallet the deployer … the cap would be B" — founder-link due diligence (2026-11-23) reads
+  // 3/5 clues for this wallet live (tokens from the creation-tx sender by plain transfer, that transfer > its whole
+  // balance, sender kept 0%), so it is classed founder; and the founder cap is now A.
+  it("classed as the founder (linked wallet) with 0 sells over 116 days: the founder cap is A, the team / normal caps don't fire", () => {
+    const s: TokenSnapshot = {
+      ...fx.snapshot,
+      largestHolder: { ...fx.snapshot.largestHolder!, class: "founder", label: "founder wallet (linked to the deployer)" },
+      founderNeverSold: true,
+      founderSold: false,
+      founderHoldDays: 116,
+      teamNeverSold: false,
+    };
     const r = scoreSnapshot(s, fx.sources);
     expect(r.rules.find((x) => x.id === "top_holder_35_founder")!.state).toBe("fired");
-    expect(r.rules.find((x) => x.id === "top_holder_35")!.state).not.toBe("fired");
-    expect(r.rules.find((x) => x.id === "top_holder_35_founder")!.evidence).toBe("Founder holds 61.1%, never sold in 116d — key-person risk: capped at B.");
-    expect(["B", "C", "D"]).toContain(r.tier);
+    expect(r.rules.find((x) => x.id === "top_holder_35_founder")!.evidence).toBe("Founder holds 61.1%, never sold in 116d — key-person risk: capped at A.");
+    for (const id of ["top_holder_35", "top_holder_20", "top_holder_35_team", "top_holder_20_team"]) expect(r.rules.find((x) => x.id === id)!.state).not.toBe("fired");
+    expect(r.tier).not.toBe("S");
   });
 });

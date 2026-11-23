@@ -10,6 +10,7 @@ import { fetchJson } from "./sources/http";
 import { solanaRpcUrl } from "./sources/solanaCurve";
 import { isProgramAddress, heliusClient } from "./timemachine/solana";
 import { kvGet, kvSet } from "./kv";
+import { evmFounderLink, type FounderVerdict } from "./onchain/founderLink";
 
 const firstReceiptKey = (chain: Chain, token: string, wallet: string) => `first-receipt:v2:${chain}:${token}:${wallet}`;
 
@@ -47,6 +48,7 @@ async function isEoa(rpc: Rpc, address: string): Promise<boolean> {
 }
 
 const TEAM_LABEL = "team wallet (deployer-funded)";
+const FOUNDER_LINKED_LABEL = "founder wallet (linked to the deployer)";
 
 /** Widest eth_getLogs span the chain's log-capable public endpoints serve. */
 const logSpan = (chain: EvmChain) => chainLogSpan(chain);
@@ -150,7 +152,7 @@ export async function classifyTopHolders(chain: Chain, token: string, s: TokenSn
   if (largest && role && (largest.pct ?? 0) > FOUNDER_MIN_PCT) {
     if (role === "founder") s.teamNeverSold = false;
     else s.founderNeverSold = false;
-    s.nullReasons = { ...s.nullReasons, [role === "founder" ? "teamSold" : "founderSold"]: role === "founder" ? "largest holder is the deployer itself" : "largest holder is a team wallet, not the deployer" };
+    s.nullReasons = { ...s.nullReasons, [role === "founder" ? "teamSold" : "founderSold"]: role === "founder" ? (largest.label === FOUNDER_LINKED_LABEL ? `largest holder is the founder (${largest.label})` : "largest holder is the deployer itself") : "largest holder is a team wallet, not the deployer" };
     await keyHolderHistory(ctx, largest, role);
   } else if (largest) {
     // Not the deployer nor a deployer-funded wallet (or below the 20% the rules start at): the normal caps apply.
@@ -225,12 +227,16 @@ async function classifyEvm(ctx: Ctx, chain: EvmChain, top: HolderRow[]): Promise
     }),
   );
   // A large EOA that no source names as deployer: the creation tx's sender is the deployer too (archive state).
-  // Not the deployer either: a team wallet when the deployer funded it — its first tokens by plain transfer
-  // from the deployer, or its first native coin from the deployer.
+  // Not the deployer either: founder-link due diligence (lib/onchain/founderLink.ts) — one direct clue (its first
+  // tokens by plain transfer from the deployer, or its first native coin from the deployer) makes a team wallet;
+  // two or more clues make a founder wallet linked to the deployer.
   const big = rows.find((r) => r.class === "wallet" && (r.pct ?? 0) > FOUNDER_MIN_PCT);
   const archive = chain === "robinhood" ? null : archiveRpc(chain);
-  const team = (r: HolderClassRow, from: string, how: string, tx: string | null, block: number) =>
-    Object.assign(r, classRow({ ...r, class: "team", label: TEAM_LABEL, fundingTx: tx, evidence: `${r.evidence}; funded by the deployer ${from}: ${how} in tx ${tx ?? "?"} (block ${block})` }));
+  const link = (r: HolderClassRow, v: FounderVerdict, from: string, tx: string | null) => {
+    if (v.role === "founder") Object.assign(r, classRow({ ...r, class: "founder", label: FOUNDER_LINKED_LABEL, fundingTx: tx, evidence: `${r.evidence}; linked to the deployer ${from} — ${v.summary}` }));
+    else if (v.role === "team") Object.assign(r, classRow({ ...r, class: "team", label: TEAM_LABEL, fundingTx: tx, evidence: `${r.evidence}; funded by the deployer ${from} — ${v.summary}` }));
+    else r.evidence = `${r.evidence}; ${v.summary}`;
+  };
   if (big && archive && Date.now() < ctx.deadline - 3_000) {
     // The cached first receipt is fetched alongside the creation lookup (two KV round trips side by side).
     const cachedFirst = kvGet<{ block: number; from: string | null; tx: string | null }>(firstReceiptKey(chain, ctx.token, big.address)).catch(() => null);
@@ -245,13 +251,19 @@ async function classifyEvm(ctx: Ctx, chain: EvmChain, top: HolderRow[]): Promise
       const fr = await firstReceipt(chain, archive, ctx.token, big.address, block ?? 0, head, ctx.deadline, cachedFirst);
       const from = fr?.from ?? null;
       big.evidence = `${big.evidence.split(";")[0]}; not the deployer (${sender ? `creation tx sent by ${sender}` : "creation tx not found"}${[...deployers].filter((d) => d !== sender).map((d) => `, creator ${d}`).join("")})${from ? `; first tokens received from ${from} at block ${fr!.block}` : ""}`;
-      if (from && deployers.has(from) && (await isEoa(archive, from)) && (await isPlainTransfer(archive, fr!.tx))) team(big, from, "first tokens by plain transfer (no Swap event)", fr!.tx, fr!.block);
-      else if (Date.now() < ctx.deadline - 2_000) {
-        const nf = await firstNative(chain, archive, big.address, head);
-        const coin = chain === "monad" ? "MON" : "ETH";
-        if (nf?.from && deployers.has(nf.from) && (await isEoa(archive, nf.from))) team(big, nf.from, `first ${coin} it ever received`, nf.tx, nf.block);
-        else if (nf) big.evidence = `${big.evidence}; first ${coin} ${nf.from ? `from ${nf.from}` : "through an internal call (sender not attributable)"} at block ${nf.block}`;
-      }
+      const tokensFrom = from && deployers.has(from) && (await isEoa(archive, from)) ? from : null;
+      const plain = tokensFrom ? await isPlainTransfer(archive, fr!.tx) : false;
+      const coin = chain === "monad" ? "MON" : "ETH";
+      const gasTime = Date.now() < ctx.deadline - 2_000;
+      const nf = gasTime ? await firstNative(chain, archive, big.address, head) : null;
+      const gasFrom = nf?.from && deployers.has(nf.from) && (await isEoa(archive, nf.from)) ? nf.from : null;
+      const d = (plain ? tokensFrom : null) ?? gasFrom ?? tokensFrom;
+      if (d) {
+        const dGas = Date.now() < ctx.deadline - 2_000 ? await firstNative(chain, archive, d, head) : null;
+        const gasReason = !gasTime ? "time budget spent before the native-coin lookup" : !nf ? `first ${coin} receipt not found` : !dGas ? `deployer's first ${coin} receipt not read (time budget or not found)` : undefined;
+        const v = await evmFounderLink(archive, { token: ctx.token, wallet: big.address, deployer: d, first: fr, firstPlain: plain && tokensFrom === d, walletGas: nf, deployerGas: dGas, gasReason, isExchange: (a) => !!chainCexLabel(chain, a) });
+        link(big, v, d, plain && tokensFrom === d ? fr!.tx : nf?.tx ?? null);
+      } else if (nf) big.evidence = `${big.evidence}; first ${coin} ${nf.from ? `from ${nf.from}` : "through an internal call (sender not attributable)"} at block ${nf.block}`;
     }
   }
   if (big && chain === "robinhood" && Date.now() < ctx.deadline - 3_000) {
@@ -261,7 +273,11 @@ async function classifyEvm(ctx: Ctx, chain: EvmChain, top: HolderRow[]): Promise
       const first = await firstInbound(rpc, ctx.token, big.address, creation.creationBlock, head).catch(() => null);
       if (first) {
         big.evidence = `${big.evidence}; first tokens received from ${first.from} at block ${first.block}`;
-        if (deployers.has(first.from) && (await isEoa(rpc, first.from)) && (await isPlainTransfer(rpc, first.tx))) team(big, first.from, "first tokens by plain transfer (no Swap event)", first.tx, first.block);
+        if (deployers.has(first.from) && (await isEoa(rpc, first.from))) {
+          const plain = await isPlainTransfer(rpc, first.tx);
+          const v = await evmFounderLink(rpc, { token: ctx.token, wallet: big.address, deployer: first.from, first, firstPlain: plain, walletGas: null, deployerGas: null, gasReason: "native-coin funding not read on Robinhood Chain (no archive RPC)" });
+          link(big, v, first.from, first.tx);
+        }
       }
     }
   }

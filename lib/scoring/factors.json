@@ -7430,7 +7430,7 @@
       "id": "top_holder_35",
       "label": "Top holder ≥ 35%",
       "source": "guide",
-      "note": "p.22 — softened to B for a founder wallet that never sold (top_holder_35_founder); to C for a deployer-funded team wallet that never sold (top_holder_35_team); one tier softer when the largest classified holder is a vesting contract and Holder Strength ≥ 80 (top_holder_35_vesting)",
+      "note": "p.22 — softened to A for a founder wallet that never sold (top_holder_35_founder); to C for a deployer-funded team wallet that never sold (top_holder_35_team); one tier softer when the largest classified holder is a vesting contract and Holder Strength ≥ 80 (top_holder_35_vesting)",
       "when": {
         "top1SharePct": {
           "gte": 35
@@ -7455,7 +7455,7 @@
       "id": "top_holder_20_founder",
       "label": "Founder holds > 20%, never sold",
       "source": "hoodtier",
-      "note": "Largest holder is the deployer's own wallet (EOA), token ≥ 30 days old, 0 swap-sells and no transfer to a pool / router over its whole history: key-person risk, not a dump in waiting — cap A instead of C.",
+      "note": "Largest holder is the deployer's own wallet (EOA) — or a wallet founder-link due diligence ties to it (≥ 2 on-chain clues, lib/onchain/founderLink.ts) — token ≥ 30 days old, 0 swap-sells and no transfer to a pool / router over its whole history: key-person risk, not a dump in waiting — cap A instead of C.",
       "when": {
         "top1SharePct": {
           "gt": 20
@@ -7471,7 +7471,7 @@
       "id": "top_holder_35_founder",
       "label": "Founder holds ≥ 35%, never sold",
       "source": "hoodtier",
-      "note": "As top_holder_20_founder: cap B instead of D.",
+      "note": "As top_holder_20_founder: cap A instead of D (owner decision 2026-11-23: a founder who never sold is key-person risk at any size, not a dump in waiting; burning or locking the stake removes the cap, any sell reverts to the normal caps).",
       "when": {
         "top1SharePct": {
           "gte": 35
@@ -7480,8 +7480,8 @@
           "eq": true
         }
       },
-      "capTier": "B",
-      "evidenceTemplate": "Founder holds {top1SharePct}, never sold in {founderHoldDays}d — key-person risk: capped at B."
+      "capTier": "A",
+      "evidenceTemplate": "Founder holds {top1SharePct}, never sold in {founderHoldDays}d — key-person risk: capped at A."
     },
     {
       "id": "founder_selling",
@@ -7494,7 +7494,7 @@
         }
       },
       "flag": "danger",
-      "evidenceTemplate": "The deployer's wallet — the largest holder at {top1SharePct} — has started selling: RED FLAG, normal top-holder caps apply."
+      "evidenceTemplate": "The founder's wallet — the largest holder at {top1SharePct} — has started selling: RED FLAG, normal top-holder caps apply."
     },
     {
       "id": "top_holder_20_team",
