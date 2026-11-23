@@ -475,8 +475,19 @@ async function keyHolderHistory(ctx: Ctx, f: HolderClassRow, role: "founder" | "
     f.detail = `${sells} sell${sells === 1 ? "" : "s"} — ${who} started selling`;
     return;
   }
+  const proofKey = `key-holder-proof:v1:${ctx.chain}:${ctx.token}:${f.address}`;
   if (!complete) {
     const why = reason ?? "sell history incomplete";
+    // No sell seen in what was read: the last complete 0-sell proof stands in, labelled stale, for at most 6h.
+    const last = await kvGet<{ role: string; days: number | null; at: number }>(proofKey).catch(() => null);
+    if (last && last.role === role && Date.now() - last.at <= PROOF_STALE_MS) {
+      const mins = Math.max(1, Math.round((Date.now() - last.at) / 60_000));
+      const never = last.days != null && last.days >= FOUNDER_MIN_DAYS;
+      if (role === "founder") Object.assign(s, { founderSold: false, founderNeverSold: never, founderHoldDays: last.days });
+      else Object.assign(s, { teamSold: false, teamNeverSold: never, teamHoldDays: last.days });
+      f.detail = `0 sells in ${last.days ?? "?"}d (stale ${mins}m — live read: ${why.slice(0, 70)})`;
+      return;
+    }
     s.nullReasons = { ...s.nullReasons, ...(role === "founder" ? { founderNeverSold: why, founderSold: why } : { teamNeverSold: why, teamSold: why }) };
     f.detail = `sell history not fully read (${why})`;
     return;
@@ -486,7 +497,11 @@ async function keyHolderHistory(ctx: Ctx, f: HolderClassRow, role: "founder" | "
   else Object.assign(s, { teamSold: false, teamNeverSold: never });
   if (days == null) s.nullReasons = { ...s.nullReasons, [role === "founder" ? "founderHoldDays" : "teamHoldDays"]: "token age unknown" };
   f.detail = `0 sells in ${days ?? "?"}d`;
+  await kvSet(proofKey, { role, days, at: Date.now() }, 6 * 3_600).catch(() => undefined);
 }
+
+/** A complete 0-sell proof can stand in for a failed / unfinished read for this long (CLAUDE.md: stale ≤ 6h). */
+const PROOF_STALE_MS = 6 * 3_600_000;
 
 /** Last good nad.fun reading per account, used (labelled stale) when a live read fails; expires after 6h. */
 const NADFUN_STALE_MS = 6 * 3_600_000;

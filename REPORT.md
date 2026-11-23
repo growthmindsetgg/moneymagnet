@@ -43,6 +43,13 @@ Owner request, after $JAMES (Monad) showed C. Its 61.1% holder is the founder's 
   - `tests/founder-link.test.ts`: 9 tests (the pure verdict, plus JAMES-shaped fake-RPC cases: founder 3/5, gift-then-buy ⇒ team, swap ⇒ no link, shared-funder exclusions).
 - The recorded JAMES fixture (2026-10-30, class team) is kept as recorded. Its "team ⇒ C" test still holds for a team-classed snapshot.
 
+## Stability fixes found on the live $JAMES checks
+The tier flipped B ↔ D whenever one read of the founder sell history failed.
+- **nad.fun swap-history read fails:** the last good reading (≤ 6h, labelled "stale Xm") stands in.
+- **Sell-history read fails or doesn't finish:** e.g. the Monad archive RPC returning "Block requested not found". If no sell was seen in what was read, the last complete 0-sell proof (≤ 6h, labelled stale) stands in.
+- A sell found in the live read always wins.
+- **Live result:** $JAMES reads **B ~61**, founder cap A (not binding), "0 sells in 140d". The tier is B because its factor score is ~58 raw + 3 track-record bonus; the founder cap no longer holds it down.
+
 ## Sources / null factors / env vars
 - No new source and no new env var.
 - Founder-link clues that can't be read are null with their reason, shown on the largest-holder evidence line.
