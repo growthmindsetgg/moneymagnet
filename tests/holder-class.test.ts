@@ -484,6 +484,17 @@ describe("JAMES (Monad) recorded holder fixture", () => {
     expect(plain.find((f) => f.id === "top_holder")!.metric).toBe("top1SharePct");
   });
 
+  it("the A/S 'top-10 < 60%' requirement reads the top 10 other than a proven never-sold founder; unchanged otherwise", () => {
+    const req = (o: Partial<TokenSnapshot>) => scoreSnapshot({ ...fx.snapshot, ...o }, fx.sources).requirements.find((q) => q.id === "basic_top10:A")!;
+    expect(req({ top10SharePct: 71.2, founderExcluded: true, top10ExFounderPct: 10.1 }).state).toBe("pass");
+    expect(req({ top10SharePct: 71.2, founderExcluded: true, top10ExFounderPct: 10.1 }).evidence).toMatch(/top10ExFounderPct = 10\.1%/);
+    expect(req({ top10SharePct: 71.2, founderExcluded: true, top10ExFounderPct: 65 }).state).toBe("fail");
+    expect(req({ top10SharePct: 71.2, founderExcluded: false, top10ExFounderPct: null }).state).toBe("fail");
+    expect(req({ top10SharePct: 40, founderExcluded: false, top10ExFounderPct: null }).state).toBe("pass");
+    // Missing data is still not held against the token (allowMissing), as before.
+    expect(req({ top10SharePct: null, founderExcluded: false, top10ExFounderPct: null }).state).toBe("pass");
+  });
+
   it("no exclusion for a team wallet, a founder that sold, or a founder whose history is unproven", () => {
     for (const over of [
       { largestHolder: fx.snapshot.largestHolder, founderNeverSold: false, teamNeverSold: true },

@@ -18,6 +18,10 @@
   - Burn or lock ⇒ the founder is no longer a counted holder ⇒ no cap.
   - Any sell ⇒ `founderNeverSold` false ⇒ no exclusion, and the normal caps apply.
 - **Never excluded:** team wallets (one clue), founders that sold, and founders whose sell history is unproven.
+- **The S/A requirement `basic_top10` ("Top-10 holders < 60%")** also passes when `founderExcluded` and `top10ExFounderPct` < 60.
+  - Its founder branch uses `missing: false`, so it can only add a pass.
+  - It never turns a measured fail into "not held against the token". The existing test "top-10 ≥ 60% fails the requirement" still passes unchanged.
+- **Live, before the requirement change:** $JAMES top-holder factor 9/9 (2.0% other than the founder), top-10 factor 10/10 (10.1%), but B 69.9: "A requirement not met: Top-10 holders < 60%".
 
 ## Tests
 New in `holder-class.test.ts`:

@@ -8298,16 +8298,29 @@
     },
     {
       "id": "basic_top10",
-      "label": "Top-10 holders < 60%",
+      "label": "Top-10 holders < 60% (a proven never-sold founder left out)",
+      "note": "Owner decision 2026-11-23: a founder that never sold is covered by the founder cap, so the requirement reads the top 10 other than the founder (top10ExFounderPct) when founderExcluded is true. The founder branch never reads as unknown (missing: false), so it can only add a pass, never turn a measured fail into \"not held against the token\".",
       "tiers": [
         "S",
         "A"
       ],
-      "when": {
-        "top10SharePct": {
-          "lt": 60
+      "anyOf": [
+        {
+          "top10SharePct": {
+            "lt": 60
+          }
+        },
+        {
+          "founderExcluded": {
+            "missing": false,
+            "eq": true
+          },
+          "top10ExFounderPct": {
+            "missing": false,
+            "lt": 60
+          }
         }
-      },
+      ],
       "allowMissing": true
     },
     {
