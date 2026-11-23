@@ -488,8 +488,24 @@ async function keyHolderHistory(ctx: Ctx, f: HolderClassRow, role: "founder" | "
   f.detail = `0 sells in ${days ?? "?"}d`;
 }
 
-/** nad.fun's swap index for one account on one token (curve and DEX), every page. */
+/** Last good nad.fun reading per account, used (labelled stale) when a live read fails; expires after 6h. */
+const NADFUN_STALE_MS = 6 * 3_600_000;
+const nadfunKey = (token: string, account: string) => `nadfun-sells:v1:${token}:${account}`;
+
+/** nad.fun's swap index for one account on one token (curve and DEX), every page. A failed read falls back to the last good one (≤ 6h, "stale Xm"). */
 async function nadfunSells(token: string, account: string): Promise<{ sells: number | null; note: string }> {
+  const live = await nadfunSellsLive(token, account);
+  const k = nadfunKey(token, account);
+  if (live.sells != null) {
+    await kvSet(k, { sells: live.sells, note: live.note, at: Date.now() }, 6 * 3_600).catch(() => undefined);
+    return live;
+  }
+  const last = await kvGet<{ sells: number; note: string; at: number }>(k).catch(() => null);
+  if (last && Date.now() - last.at <= NADFUN_STALE_MS) return { sells: last.sells, note: `${last.note} (stale ${Math.max(1, Math.round((Date.now() - last.at) / 60_000))}m — live read failed: ${live.note.replace(/^nad\.fun swap history failed: /, "").slice(0, 60)})` };
+  return live;
+}
+
+async function nadfunSellsLive(token: string, account: string): Promise<{ sells: number | null; note: string }> {
   const headers = process.env.NAD_API_KEY ? { "X-API-Key": process.env.NAD_API_KEY } : undefined;
   let sells = 0;
   let buys = 0;
