@@ -58,6 +58,8 @@ describe("GeckoTerminal OHLCV 429 on microduck ⇒ last good candles, stale, sam
 
   beforeEach(() => {
     setKV(new MemoryKV());
+    // The adapter reads the clock (GeckoTerminal response cache): runs "10 minutes later" really are later.
+    vi.useFakeTimers({ toFake: ["Date"] });
     ohlcvDown = false;
     vi.stubGlobal("fetch", async (url: string) => {
       const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { "content-type": "application/json" } });
@@ -91,10 +93,14 @@ describe("GeckoTerminal OHLCV 429 on microduck ⇒ last good candles, stale, sam
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
     setKV(null);
   });
 
-  const run = async (now: number): Promise<AdapterResult> => withLastGood("geckoterminal", "robinhood", A, await geckoterminal("robinhood", A), now);
+  const run = async (now: number): Promise<AdapterResult> => {
+    vi.setSystemTime(now);
+    return withLastGood("geckoterminal", "robinhood", A, await geckoterminal("robinhood", A), now);
+  };
   const scored = (r: AdapterResult) => {
     const snap = deriveMetrics(mergeSnapshots(withoutOhlcv(flapping), [r.data]));
     return scoreSnapshot(snap, [...sources.filter((s) => s.id !== "geckoterminal"), r.status]);

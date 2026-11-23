@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryKV, setKV } from "@/lib/kv";
 import { poolMetrics, pumpMarket } from "@/lib/sources/pools";
 import { historyMetrics, liquidityChangeWhy, type LiqPoint } from "@/lib/history";
@@ -27,10 +27,13 @@ async function withFetch<T>(mod: string, respond: (url: string) => unknown): Pro
     ...(await orig<typeof import("@/lib/sources/http")>()),
     fetchJson: async (url: string) => respond(url),
   }));
+  // GeckoTerminal goes through lib/sources/gtClient, which calls fetch directly (it reads Retry-After): same responder.
+  vi.stubGlobal("fetch", async (url: string) => new Response(JSON.stringify(respond(url)), { status: 200, headers: { "content-type": "application/json" } }));
   return (await import(mod)) as T;
 }
 afterEach(() => {
   vi.doUnmock("@/lib/sources/http");
+  vi.unstubAllGlobals();
   setKV(null);
 });
 
@@ -117,6 +120,10 @@ describe("C1: a pool listed without liquidity / volume / txns is unknown, never 
 
 // ---------------------------------------------------------------------------------------------
 describe("M5: GeckoTerminal main-pool trade counts stand for the token only when it carries ≥ 90% of volume", () => {
+  // Independent scenarios on one token: a fresh store per test, so the shared GeckoTerminal response cache of one
+  // scenario never answers the next.
+  beforeEach(() => setKV(new MemoryKV()));
+  afterEach(() => setKV(null));
   const pool = (addr: string, reserve: string | null, vol: string | null, tx: { buys: number; sells: number; buyers: number; sellers: number }) => ({
     id: `base_${addr}`,
     attributes: { name: "T / WETH", address: addr, reserve_in_usd: reserve, pool_created_at: null, fdv_usd: "100000", base_token_price_usd: "0.0001", volume_usd: { h24: vol }, transactions: { h24: tx } },

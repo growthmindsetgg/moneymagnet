@@ -66,6 +66,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="mm-rule-t">
           <p className="mx-auto max-w-[1440px] px-4 py-4 text-xs text-muted sm:px-8">
             data: HoodScan · ScanHood · Helius · RugCheck · GoPlus · DexScreener · GeckoTerminal · pump.fun feed · nad.fun · Basescan · Etherscan · chain RPCs
+            {/* CoinGecko's keyed API plans require visible attribution with a link. */}
+            {process.env.GECKO_API_KEY ? (
+              <span className="block sm:inline">
+                {" "}· Data provided by{" "}
+                <a className="underline" href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer">
+                  CoinGecko<span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </span>
+            ) : null}
             <span className="block sm:inline"> — not investment advice</span>
           </p>
         </footer>

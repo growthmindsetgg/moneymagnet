@@ -1,4 +1,5 @@
-import { fetchJson, num } from "../sources/http";
+import { num } from "../sources/http";
+import { gtGet } from "../sources/gtClient";
 import { findCreation } from "../onchain/creation";
 import { codeKind, hex, makeRpc, TRANSFER_TOPIC, topicAddress, type Rpc, type RpcLog } from "../onchain/rpc";
 import { bucketFields } from "./core";
@@ -6,7 +7,6 @@ import { emptyFields } from "./solana";
 import { BUCKETS, type BalanceDelta, type BucketSnapshot, type FieldName, type PricePoint, type Reconstruction, type Trade } from "./types";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
-const GT = "https://api.geckoterminal.com/api/v2";
 /** Max Transfer logs read per token. Buckets beyond it are null, never sampled. */
 export const DEFAULT_MAX_LOGS = Number(process.env.TM_MAX_LOGS || 400_000);
 
@@ -74,14 +74,14 @@ interface GtPool {
 
 /** Hourly (and 5-minute for the first hours) candles of the token's main pool on GeckoTerminal. */
 async function geckoPrices(token: string, t0: number, until: number): Promise<{ prices: PricePoint[]; pool: string | null; note?: string }> {
-  const pools = await fetchJson<{ data: GtPool[] }>(`${GT}/networks/robinhood/tokens/${token}/pools?page=1`, { timeoutMs: 15_000 });
+  const pools = (await gtGet<{ data: GtPool[] }>(`/networks/robinhood/tokens/${token}/pools?page=1`, { priority: "background", timeoutMs: 15_000 })).body;
   const main = [...(pools.data ?? [])].sort((a, b) => (num(b.attributes.reserve_in_usd) ?? 0) - (num(a.attributes.reserve_in_usd) ?? 0))[0];
   if (!main) return { prices: [], pool: null, note: "GeckoTerminal lists no pool" };
   const q = (tf: string, agg: number, limit: number, before: number) =>
-    fetchJson<{ data?: { attributes?: { ohlcv_list?: number[][] } } }>(
-      `${GT}/networks/robinhood/pools/${main.attributes.address}/ohlcv/${tf}?aggregate=${agg}&limit=${limit}&before_timestamp=${before}&currency=usd&token=base`,
-      { timeoutMs: 15_000 },
-    ).then((r) => r.data?.attributes?.ohlcv_list ?? []);
+    gtGet<{ data?: { attributes?: { ohlcv_list?: number[][] } } }>(
+      `/networks/robinhood/pools/${main.attributes.address}/ohlcv/${tf}?aggregate=${agg}&limit=${limit}&before_timestamp=${before}&currency=usd&token=base`,
+      { priority: "background", timeoutMs: 15_000 },
+    ).then((r) => r.body.data?.attributes?.ohlcv_list ?? []);
   const fine = await q("minute", 5, 1000, Math.min(until, t0 + 24 * 3600) + 300);
   const coarse = until > t0 + 24 * 3600 ? await q("hour", 1, 1000, until + 3600) : [];
   const fineEnd = fine.length ? Math.max(...fine.map((c) => c[0])) : 0;

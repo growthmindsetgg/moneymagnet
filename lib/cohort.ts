@@ -1,6 +1,7 @@
 import type { Chain, SourceStatus } from "./types";
 import { sortCandles, type Candle } from "./patterns";
-import { fetchJson, num } from "./sources/http";
+import { num } from "./sources/http";
+import { gtGet } from "./sources/gtClient";
 import { kvGet, kvIncr, kvSet } from "./kv";
 import { STALE_MAX_MS, formatStaleAge } from "./stale";
 import { CHAIN_LABEL } from "./chain";
@@ -136,7 +137,8 @@ export class CohortError extends Error {
 }
 
 type Get = <T>(url: string) => Promise<T>;
-const defaultGet: Get = (url) => fetchJson(url, { timeoutMs: 6_000 });
+/** Through the shared GeckoTerminal client at background priority: the cohort never takes calls the scored token needs. */
+const defaultGet: Get = (url) => gtGet(url.startsWith(API) ? url.slice(API.length) : url, { priority: "background", timeoutMs: 6_000 }).then((r) => r.body as never);
 
 const why = (e: unknown) => {
   const m = e instanceof Error ? (e.name === "TimeoutError" ? "timed out" : e.message) : String(e);

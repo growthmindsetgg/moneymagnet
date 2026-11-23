@@ -1,3 +1,49 @@
+# GeckoTerminal rate limits: one shared client, budget, cool-down, candle reuse (2026-11-23)
+
+**Problem.** Production GeckoTerminal calls were often rate-limited (HTTP 429).
+- **Baseline before this change, measured on production:** 12 fresh analyses in two parallel bursts. **4 of 12 were rate-limited, all in the second burst**; they fell back to stale data on 8–26 fields.
+- **Causes:**
+  - one analysis fires the pool list plus up to 5 candle series in parallel;
+  - each 429 was retried twice inside the request, which multiplied the burst;
+  - the peer cohort, social links and time machine drew on the same per-minute quota with no coordination.
+
+## Decisions
+- **New `lib/sources/gtClient.ts`** is the only GeckoTerminal caller. The adapter, cohort, social links and Robinhood time machine all go through it.
+  - **A 429 is never retried in-request.** It sets a shared cool-down (Retry-After, else 60s, max 5 min) in KV. Every caller then skips the call at once.
+  - **Skips surface as HTTP 429 errors**, so the existing outage path (last good ≤ 6h, labelled "stale Xm") applies unchanged and nothing is invented.
+  - **A shared per-minute call budget** (KV counter): defaults are no key 20, Demo 80, Pro 250 per minute, or `GECKO_RPM`.
+    - "Core" calls for the token being scored may use the whole budget. "Background" calls (cohort, social links, time machine) get at most half, so they never starve scoring.
+    - If the KV is down the client fails open, and the provider's own 429 still triggers the cool-down.
+  - **Timeouts and 5xx get one retry**, counted against the budget. Nothing else is retried.
+  - **A keyed plan that runs out of monthly credits** (CoinGecko 402/403 with a credits message) counts as a rate limit, with a 1h pause.
+- **Candle reuse** (`CANDLE_CACHE_S` in `lib/sources/geckoterminal.ts`): the 5m series 120s, the hourly 600s, the daily 1800s.
+  - The 1m launch candles and launch-mode 5m series (sized by age) are never reused.
+  - The pool list is reused only within 45s.
+  - **Labelling:** reuse under a minute counts as this run's reading (GeckoTerminal's own refresh step). Older reuse is labelled "stale Xm" **on exactly the fields that series fed**:
+    - 5m → staircase / up-only, plus trend in launch mode;
+    - 1h → trend;
+    - 1d → 7d change / launch price.
+  - Only fields that hold a value are labelled; a null keeps its reason.
+  - Known gap: the daily candles passed to Holder Strength (`raw.dayCandles`) can be up to 30 min old. Holder Strength reads drawdowns and dips over days, so this is not labelled separately.
+- **Optional CoinGecko key:**
+  - `GECKO_API_KEY` + `GECKO_API_PLAN` (demo | pro) switch to `api.coingecko.com/api/v3/onchain` (header `x-cg-demo-api-key`) or `pro-api.coingecko.com/api/v3/onchain` (`x-cg-pro-api-key`). The paths are the same.
+  - With a key the footer shows "Data provided by CoinGecko" with a link, as CoinGecko's terms require.
+  - Demo is 100 calls/min but only 10k calls/month, so it is a stopgap, not a fix for heavy traffic.
+- **DexPaprika not integrated.** Its API terms (§3.6) allow commercial use only on paid plans (Dev $30/mo and up) and require "Powered by DexPaprika" (§3.10). That is an owner decision, so it was left out.
+
+## Tests
+- **New:**
+  - `tests/gt-client.test.ts` (10): plan roots and headers; cache with age; no retry on 429 plus a shared cool-down; Retry-After parsing; budget priorities; the single 5xx retry; credits exhaustion.
+  - `tests/gt-candle-reuse.test.ts` (2): reused series are labelled stale on exactly their fields, and refetched past their window.
+- **Test harness fixes. No assertion was changed or removed:**
+  - `stability.test.ts`: the "10 minutes later" run now sets the clock to that time, because the adapter reads the clock for the cache.
+  - `audit-indexers.test.ts`: `withFetch` also stubs `fetch`, because GeckoTerminal now goes through the client rather than `fetchJson`; without this the test reached the real network. M5 also gets a fresh store per test.
+  - `v21.test.ts`: a fresh store per test.
+
+## Sources / null factors / env vars
+- **Env vars (optional):** `GECKO_API_KEY` (secret), `GECKO_API_PLAN`, `GECKO_RPM`, documented in `.env.example`.
+- When GeckoTerminal is skipped (budget or cool-down), the source line says why. For example: "rate limited — GeckoTerminal answered 429 recently; cooling down 30s before calling again".
+
 # A proven never-sold founder's stake is left out of the concentration factors (2026-11-23)
 
 **Owner decision.** When the largest counted holder is the founder (the deployer, or a wallet founder-link due diligence ties to it) and that wallet is proven never to have sold, the founder cap (A) already covers the stake. It is no longer also counted in the top-holder and top-10 share factors.

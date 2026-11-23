@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryKV, setKV } from "@/lib/kv";
 import { defaultConfig } from "@/lib/scoring/config";
 import { scoreSnapshot } from "@/lib/scoring/engine";
 import { geckoterminal } from "@/lib/sources/geckoterminal";
@@ -57,7 +58,12 @@ describe("launch-only guide rules are absent from Established mode", () => {
 
 // ---------------------------------------------------------------------------------------------
 describe("trend timeframe by mode", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  // Each mode is its own scenario on the same address: a fresh store per test (the GeckoTerminal response cache).
+  beforeEach(() => setKV(new MemoryKV()));
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    setKV(null);
+  });
 
   function mockGecko(createdHoursAgo: number, seen: string[]) {
     const created = new Date(Date.now() - createdHoursAgo * 3_600_000).toISOString();

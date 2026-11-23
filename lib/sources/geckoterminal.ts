@@ -1,6 +1,7 @@
 import type { AdapterResult, Chain, PatternDetection, TokenSnapshot } from "../types";
-import { fetchJson, num } from "./http";
-import { isOutage, withRetry } from "./retry";
+import { num } from "./http";
+import { isOutage } from "./retry";
+import { gtGet, staleMinutes } from "./gtClient";
 import { poolMetrics, pumpMarket, type PoolRow } from "./pools";
 import { identicalCandles, launchRetrace, sortCandles, staircase, trend, upOnly } from "../patterns";
 import { priceChange7d } from "../cohort";
@@ -26,20 +27,25 @@ interface GtOhlcv {
 }
 
 const NETWORK: Record<Chain, string> = { robinhood: "robinhood", solana: "solana", base: "base", monad: "monad", ethereum: "eth" };
-const API = "https://api.geckoterminal.com/api/v2";
+
+/**
+ * Candle reuse per series (seconds). Under a minute counts as this run's reading (GeckoTerminal's own refresh step);
+ * older reuse is labelled "stale Xm" on exactly the fields that series fed. 1m candles (launch checks) are never reused.
+ */
+export const CANDLE_CACHE_S = { m5: 120, h1: 600, d1: 1800 } as const;
+/** The token's pool list: reused only within GeckoTerminal's ~1 min refresh step, so it is always this run's reading. */
+const POOLS_CACHE_S = 45;
 
 export async function geckoterminal(chain: Chain, address: string): Promise<AdapterResult> {
   const t0 = Date.now();
   const net = NETWORK[chain];
-  const url = `${API}/networks/${net}/tokens/${address}/pools?page=1`;
-  const res = await withRetry(() => fetchJson<{ data: GtPool[] }>(url), {
-    delays: [1500, 3000],
-    isRetryable: (e) => e instanceof Error && /\b429\b|timed? ?out|TimeoutError/i.test(`${e.name} ${e.message}`),
-  }).catch((e: Error) => {
-    // Base / Monad: 404 = GeckoTerminal does not index the token (e.g. a nad.fun curve token) — an answer, not an outage.
-    if ((chain === "base" || chain === "monad" || chain === "ethereum") && /HTTP 404/.test(e.message)) return { data: [] as GtPool[] };
-    throw e;
-  });
+  const res = await gtGet<{ data: GtPool[] }>(`/networks/${net}/tokens/${address}/pools?page=1`, { priority: "core", cacheTtlS: POOLS_CACHE_S })
+    .then((r) => r.body)
+    .catch((e: Error) => {
+      // Base / Monad: 404 = GeckoTerminal does not index the token (e.g. a nad.fun curve token) — an answer, not an outage.
+      if ((chain === "base" || chain === "monad" || chain === "ethereum") && /HTTP 404/.test(e.message)) return { data: [] as GtPool[] };
+      throw e;
+    });
   const pools = res.data ?? [];
   const page = `https://www.geckoterminal.com/${net}/tokens/${address}`;
   if (!pools.length) {
@@ -145,27 +151,47 @@ export const OHLCV_FIELDS = [
   "patterns",
 ] as const;
 
-async function ohlcv(net: string, pool: string, tf: "minute" | "hour" | "day", aggregate: number, limit: number, before?: number) {
+interface Series {
+  candles: ReturnType<typeof sortCandles>;
+  /** Whole minutes old when reused from the cache (≥ 1), else null (this run's reading). */
+  staleMin: number | null;
+}
+const NONE: Series = { candles: [], staleMin: null };
+
+async function ohlcv(net: string, pool: string, tf: "minute" | "hour" | "day", aggregate: number, limit: number, opts: { before?: number; cacheTtlS?: number } = {}): Promise<Series> {
   const q = new URLSearchParams({ aggregate: String(aggregate), limit: String(limit), currency: "usd" });
-  if (before) q.set("before_timestamp", String(before));
-  const r = await withRetry(() => fetchJson<GtOhlcv>(`${API}/networks/${net}/pools/${pool}/ohlcv/${tf}?${q}`, { timeoutMs: 10_000 }), {
-    delays: [1500, 3000],
-    isRetryable: (e) => e instanceof Error && /\b429\b|timed? ?out|TimeoutError/i.test(`${e.name} ${e.message}`),
-  });
-  return sortCandles(r.data?.attributes?.ohlcv_list ?? []);
+  if (opts.before) q.set("before_timestamp", String(opts.before));
+  const r = await gtGet<GtOhlcv>(`/networks/${net}/pools/${pool}/ohlcv/${tf}?${q}`, { priority: "core", cacheTtlS: opts.cacheTtlS, timeoutMs: 10_000 });
+  return { candles: sortCandles(r.body.data?.attributes?.ohlcv_list ?? []), staleMin: staleMinutes(r.cachedAgeS) };
 }
 
 /** Fills pattern metrics on `data` and returns null, or a failure note. Never invents a value. */
 async function chartPatterns(net: string, pool: string, createdAt: string | null, data: Partial<TokenSnapshot>, raw: Record<string, unknown> = {}): Promise<string | null> {
   const launchTs = createdAt ? Math.floor(Date.parse(createdAt) / 1000) : null;
   const ageH = launchTs ? (Date.now() / 1000 - launchTs) / 3600 : null;
-  const [m1, m5, d1, h1, launch1m] = await Promise.all([
-    ageH != null && ageH < 72 ? ohlcv(net, pool, "minute", 1, 60) : Promise.resolve([]),
-    ohlcv(net, pool, "minute", 5, ageH != null && ageH < 72 ? Math.min(1000, Math.ceil(ageH * 12) + 2) : 300),
-    ohlcv(net, pool, "day", 1, 1000),
-    ageH == null || ageH >= 72 ? ohlcv(net, pool, "hour", 1, 168) : Promise.resolve([]),
-    launchTs && ageH != null && ageH < 72 ? ohlcv(net, pool, "minute", 1, 300, launchTs + 300 * 60) : Promise.resolve([]),
+  const young = ageH != null && ageH < 72;
+  const [s1, s5, sd, sh, sl] = await Promise.all([
+    young ? ohlcv(net, pool, "minute", 1, 60) : Promise.resolve(NONE),
+    // A launch-mode series is sized by the token's age, so it is not reused (its window moves every minute).
+    ohlcv(net, pool, "minute", 5, young ? Math.min(1000, Math.ceil(ageH! * 12) + 2) : 300, { cacheTtlS: young ? undefined : CANDLE_CACHE_S.m5 }),
+    ohlcv(net, pool, "day", 1, 1000, { cacheTtlS: CANDLE_CACHE_S.d1 }),
+    ageH == null || ageH >= 72 ? ohlcv(net, pool, "hour", 1, 168, { cacheTtlS: CANDLE_CACHE_S.h1 }) : Promise.resolve(NONE),
+    launchTs && young ? ohlcv(net, pool, "minute", 1, 300, { before: launchTs + 300 * 60 }) : Promise.resolve(NONE),
   ]);
+  const [m1, m5, d1, h1, launch1m] = [s1.candles, s5.candles, sd.candles, sh.candles, sl.candles];
+  // A field read from a reused series is as stale as that series (CLAUDE.md: labelled "stale Xm").
+  const staleFields: Record<string, number> = {};
+  const markStale = (s: Series, fields: string[]) => {
+    if (s.staleMin != null) for (const f of fields) staleFields[f] = Math.max(staleFields[f] ?? 0, s.staleMin);
+  };
+  markStale(s5, ["staircase", "staircaseWindow", "upOnlyChart", ...(young ? ["trendScore", "trendWindow", "brokeHigherLow"] : [])]);
+  markStale(sh, ["trendScore", "trendWindow", "brokeHigherLow"]);
+  markStale(sd, ["priceChange7dPct", "priceChange7dWindow", "launchPriceUsd"]);
+  const oldest = Math.max(0, ...Object.values(staleFields));
+  if (oldest) {
+    staleFields.patterns = oldest;
+    raw.candleReuse = { m5: s5.staleMin, h1: sh.staleMin, d1: sd.staleMin };
+  }
   const patterns: PatternDetection[] = [];
   const nullReasons: Record<string, string> = {};
 
@@ -224,5 +250,8 @@ async function chartPatterns(net: string, pool: string, createdAt: string | null
 
   data.patterns = patterns;
   data.nullReasons = nullReasons;
+  // Only fields that hold a value can be stale (a null keeps its reason).
+  const held = Object.fromEntries(Object.entries(staleFields).filter(([k]) => (data as Record<string, unknown>)[k] != null));
+  if (Object.keys(held).length) data.staleFields = { ...data.staleFields, ...held };
   return null;
 }
