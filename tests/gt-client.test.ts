@@ -29,11 +29,11 @@ beforeEach(() => {
 
 describe("gtConfig", () => {
   it("no key ⇒ public GeckoTerminal; demo / pro keys ⇒ CoinGecko onchain roots with the right header", () => {
-    expect(gtConfig({})).toMatchObject({ plan: "public", base: "https://api.geckoterminal.com/api/v2", headers: {}, rpm: 20 });
-    expect(gtConfig({ GECKO_API_KEY: "k" })).toMatchObject({ plan: "demo", base: "https://api.coingecko.com/api/v3/onchain", headers: { "x-cg-demo-api-key": "k" }, rpm: 80 });
-    expect(gtConfig({ GECKO_API_KEY: "k", GECKO_API_PLAN: "PRO" })).toMatchObject({ plan: "pro", base: "https://pro-api.coingecko.com/api/v3/onchain", headers: { "x-cg-pro-api-key": "k" }, rpm: 250 });
+    expect(gtConfig({})).toMatchObject({ plan: "public", base: "https://api.geckoterminal.com/api/v2", headers: {}, rpm: 30 });
+    expect(gtConfig({ GECKO_API_KEY: "k" })).toMatchObject({ plan: "demo", base: "https://api.coingecko.com/api/v3/onchain", headers: { "x-cg-demo-api-key": "k" }, rpm: 90 });
+    expect(gtConfig({ GECKO_API_KEY: "k", GECKO_API_PLAN: "PRO" })).toMatchObject({ plan: "pro", base: "https://pro-api.coingecko.com/api/v3/onchain", headers: { "x-cg-pro-api-key": "k" }, rpm: 280 });
     expect(gtConfig({ GECKO_RPM: "7" }).rpm).toBe(7);
-    expect(gtConfig({ GECKO_RPM: "nope" }).rpm).toBe(20);
+    expect(gtConfig({ GECKO_RPM: "nope" }).rpm).toBe(30);
   });
 });
 
@@ -73,10 +73,39 @@ describe("gtGet", () => {
     await expect(gtGet("/c", { fetchImpl: f.impl, env: ENV, now })).resolves.toMatchObject({ cachedAgeS: null });
   });
 
-  it("a 429 without Retry-After pauses 60s", async () => {
+  it("a 429 without Retry-After pauses until the next minute window opens (the quota is per minute), at least 5s", async () => {
     const f = stubFetch([status(429)]);
+    clock = Date.parse("2026-11-23T10:00:40Z");
     const e = await gtGet("/a", { fetchImpl: f.impl, env: ENV, now }).catch((x: Error) => x);
-    expect((e as Error).message).toMatch(/pause 60s/);
+    expect((e as Error).message).toMatch(/pause 21s/);
+    clock = Date.parse("2026-11-23T10:01:58Z");
+    const g = stubFetch([status(429)]);
+    const e2 = await gtGet("/b", { fetchImpl: g.impl, env: ENV, now }).catch((x: Error) => x);
+    expect((e2 as Error).message).toMatch(/pause 5s/);
+  });
+
+  it("a core call waits out a cool-down that ends within 8s; a background call skips at once", async () => {
+    const f = stubFetch([status(429, { "retry-after": "6" }), ok({ v: 1 })]);
+    const sleep = async (ms: number) => { clock += ms; };
+    await gtGet("/a", { fetchImpl: f.impl, env: ENV, now, sleep }).catch(() => undefined);
+    await expect(gtGet("/bg", { priority: "background", fetchImpl: f.impl, env: ENV, now, sleep })).rejects.toThrow(/cooling down 6s/);
+    await expect(gtGet("/core", { fetchImpl: f.impl, env: ENV, now, sleep })).resolves.toEqual({ body: { v: 1 }, cachedAgeS: null });
+    expect(f.calls).toHaveLength(2);
+  });
+
+  it("budget used: a core call waits for the next minute when it opens within 8s; otherwise, and for background, it skips", async () => {
+    const env = { GECKO_RPM: "2" };
+    const f = stubFetch([ok({})]);
+    const sleep = async (ms: number) => { clock += ms; };
+    clock = Date.parse("2026-11-23T10:00:55Z");
+    await gtGet("/1", { fetchImpl: f.impl, env, now, sleep });
+    await gtGet("/2", { fetchImpl: f.impl, env, now, sleep });
+    await expect(gtGet("/bg", { priority: "background", fetchImpl: f.impl, env, now, sleep })).rejects.toThrow(/budget is used/);
+    await expect(gtGet("/3", { fetchImpl: f.impl, env, now, sleep })).resolves.toBeTruthy(); // waited ~5s into 10:01
+    expect(clock).toBeGreaterThanOrEqual(Date.parse("2026-11-23T10:01:00Z"));
+    clock = Date.parse("2026-11-23T10:01:10Z");
+    await gtGet("/4", { fetchImpl: f.impl, env, now, sleep });
+    await expect(gtGet("/5", { fetchImpl: f.impl, env, now, sleep })).rejects.toThrow(/budget is used/); // next window 50s away: no wait
   });
 
   it("per-minute budget: core calls may use all of it, background calls half; a new minute resets it", async () => {

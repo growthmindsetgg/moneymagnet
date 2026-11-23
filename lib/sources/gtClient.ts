@@ -34,10 +34,16 @@ export interface GtConfig {
   rpm: number;
 }
 
-/** Budgets kept under each plan's published limit (public: ~10–30/min, undocumented; Demo 100/min; Pro ≥ 300/min). */
-const DEFAULT_RPM: Record<GtPlan, number> = { public: 20, demo: 80, pro: 250 };
+/**
+ * Budgets per plan. Public: GeckoTerminal has documented 30 calls/min; production served a ~24-call burst without a
+ * 429 (2026-11-23), and a budget below the real limit only fails calls the provider would have answered. Demo 100/min,
+ * Pro ≥ 300/min: kept under. A real 429 still triggers the cool-down whatever the budget says.
+ */
+const DEFAULT_RPM: Record<GtPlan, number> = { public: 30, demo: 90, pro: 280 };
 const BACKGROUND_SHARE = 0.5;
-const COOLDOWN_DEFAULT_S = 60;
+/** A core call that finds the budget used or a cool-down running waits for it to clear when that is this close. */
+export const CORE_WAIT_MS = 8_000;
+const COOLDOWN_MIN_S = 5;
 const COOLDOWN_MAX_S = 300;
 const CREDITS_COOLDOWN_S = 3_600;
 
@@ -59,6 +65,7 @@ export interface GtGetOptions {
   /** Test hooks. */
   fetchImpl?: typeof fetch;
   now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
   env?: Record<string, string | undefined>;
 }
 
@@ -92,11 +99,25 @@ export async function gtGet<T>(path: string, opts: GtGetOptions = {}): Promise<G
     kvGet<{ until: number }>(cooldownKey(cfg.plan)),
   ]);
   if (cached && opts.cacheTtlS && now() - cached.at <= opts.cacheTtlS * 1000) return { body: cached.body, cachedAgeS: Math.max(0, Math.floor((now() - cached.at) / 1000)) };
-  if (cooldown && cooldown.until > now()) throw rateLimited(`GeckoTerminal answered 429 recently; cooling down ${Math.ceil((cooldown.until - now()) / 1000)}s before calling again`);
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  // A core call waits out a cool-down that ends within CORE_WAIT_MS; anything else skips at once.
+  if (cooldown && cooldown.until > now()) {
+    const left = cooldown.until - now();
+    if (priority !== "core" || left > CORE_WAIT_MS) throw rateLimited(`GeckoTerminal answered 429 recently; cooling down ${Math.ceil(left / 1000)}s before calling again`);
+    await sleep(left + 100);
+  }
 
-  const minute = Math.floor(now() / 60_000);
-  const used = await kvIncr(budgetKey(cfg.plan, minute), 120);
   const cap = priority === "core" ? cfg.rpm : Math.max(1, Math.floor(cfg.rpm * BACKGROUND_SHARE));
+  let used = await kvIncr(budgetKey(cfg.plan, Math.floor(now() / 60_000)), 120);
+  // Budget used: a core call waits for the next minute's window when it opens within CORE_WAIT_MS (a burst is smoothed,
+  // not failed); a background call never waits.
+  if (used != null && used > cap && priority === "core") {
+    const toNext = (Math.floor(now() / 60_000) + 1) * 60_000 - now();
+    if (toNext <= CORE_WAIT_MS) {
+      await sleep(toNext + 100);
+      used = await kvIncr(budgetKey(cfg.plan, Math.floor(now() / 60_000)), 120);
+    }
+  }
   // KV unavailable (null): fail open — the provider's own 429 still triggers the cool-down.
   if (used != null && used > cap) throw rateLimited(`this minute's GeckoTerminal call budget is used (${cap} ${priority} calls/min, ${cfg.plan} plan) — skipped to stay under the provider limit`);
 
@@ -108,7 +129,8 @@ export async function gtGet<T>(path: string, opts: GtGetOptions = {}): Promise<G
       cache: "no-store",
     });
     if (res.status === 429) {
-      const s = retryAfterSeconds(res.headers.get("retry-after"), now()) ?? COOLDOWN_DEFAULT_S;
+      // Without Retry-After: the quota is per minute, so pause until the next minute's window opens (≥ 5s).
+      const s = retryAfterSeconds(res.headers.get("retry-after"), now()) ?? Math.max(COOLDOWN_MIN_S, Math.ceil(((Math.floor(now() / 60_000) + 1) * 60_000 - now()) / 1000) + 1);
       await kvSet(cooldownKey(cfg.plan), { until: now() + s * 1000 }, s + 5);
       throw rateLimited(`GeckoTerminal answered 429; all callers pause ${s}s`);
     }

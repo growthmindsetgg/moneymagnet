@@ -9,9 +9,10 @@
 
 ## Decisions
 - **New `lib/sources/gtClient.ts`** is the only GeckoTerminal caller. The adapter, cohort, social links and Robinhood time machine all go through it.
-  - **A 429 is never retried in-request.** It sets a shared cool-down (Retry-After, else 60s, max 5 min) in KV. Every caller then skips the call at once.
+  - **A 429 is never retried in-request.** It sets a shared cool-down in KV: Retry-After, else until the next minute window opens (the quota is per minute; min 5s, max 5 min). Background callers then skip at once. A scoring (core) call waits out a cool-down that ends within 8s.
   - **Skips surface as HTTP 429 errors**, so the existing outage path (last good ≤ 6h, labelled "stale Xm") applies unchanged and nothing is invented.
-  - **A shared per-minute call budget** (KV counter): defaults are no key 20, Demo 80, Pro 250 per minute, or `GECKO_RPM`.
+  - **A shared per-minute call budget** (KV counter): defaults are no key 30, Demo 90, Pro 280 per minute, or `GECKO_RPM`. When the budget is used and the next minute window opens within 8s, a core call waits for it (a burst is smoothed, not failed); otherwise it skips.
+    - **First deploy used 20/min with a flat 60s cool-down. That was too strict.** Production had served a ~24-call burst without a 429, and the stress test got worse: 10 of 12 analyses rate-limited, 5 of them by our own budget. Hence 30/min, a cool-down only to the next minute, and core waits.
     - "Core" calls for the token being scored may use the whole budget. "Background" calls (cohort, social links, time machine) get at most half, so they never starve scoring.
     - If the KV is down the client fails open, and the provider's own 429 still triggers the cool-down.
   - **Timeouts and 5xx get one retry**, counted against the budget. Nothing else is retried.
