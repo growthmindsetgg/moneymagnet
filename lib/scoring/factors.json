@@ -10534,7 +10534,7 @@
     "clusterSampleWallets": "int"
   },
   "walletClusters": {
-    "note": "Wallet-cluster meter (lib/cluster; plan docs/research/2026-11-23-team-review-plan.md §3). sameTimeSec: owner decision 2026-11-24 (30s). Strong edges merge wallets; weak ones only as two different kinds on one pair. coverage.minSampleAll (8): holder sources that list only ~10 wallets (GoPlus top-10 on Base / Monad / Ethereum) pass the bar only when all of them are resolved.",
+    "note": "Wallet-cluster meter (lib/cluster; plan docs/research/2026-11-23-team-review-plan.md §3). sameTimeSec: owner decision 2026-11-24 (30s). Strong edges merge wallets; weak ones only as two different kinds on one pair. coverage.minSampleAll (8): holder sources that list only ~10 wallets (GoPlus top-10 on Base / Monad / Ethereum) pass the bar only when all of them are resolved. passiveMaxPct (2): a proven EVM token-only wallet (nonce 0, never held native coin) holding ≤ 2% counts as read but can never link; a larger one keeps blocking the number.",
     "sameTimeSec": 30,
     "strongWindowSec": 1800,
     "weakWindowSec": 7200,
@@ -10580,6 +10580,7 @@
       39,
       59,
       79
-    ]
+    ],
+    "passiveMaxPct": 2
   }
 }

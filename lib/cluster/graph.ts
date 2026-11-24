@@ -30,6 +30,8 @@ export interface WalletClustersCfg {
   sample: { holders: number; buyers: number };
   bands: number[];
   dustPct: number;
+  /** A proven token-only wallet holding at most this % of supply counts as read (see buildGraph). */
+  passiveMaxPct: number;
   hubNonce: number;
   hubSigs: number;
 }
@@ -107,6 +109,9 @@ const short = (a: string) => (a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}
 const pctText = (n: number) => `${(Math.round(n * 10) / 10).toFixed(1)}%`;
 const FOUNDERISH = new Set(["founder", "team"]);
 
+/** EVM proof from lib/onchain/origin.ts: nonce 0 and zero native balance at the head block. */
+export const isProvenTokenOnly = (o: Origin) => o.method === "archive-2stage" && !o.funder && /^never held native coin/.test(o.reason ?? "");
+
 /** A node is resolved when its funder is known with proof, or proven to be excluded infrastructure. */
 export function nodeStatus(o: Origin | null, fact: FunderFact | undefined): ClusterNode["status"] {
   if (!o) return "unresolved";
@@ -149,8 +154,15 @@ export function buildGraph(input: {
   const nodes: ClusterNode[] = wallets.map((w) => {
     const origin = origins.get(w.address) ?? null;
     const fact = origin?.funder ? funders.get(norm(origin.funder)) : undefined;
-    const status = nodeStatus(origin, fact);
-    const excludedReason = status === "excluded" ? (origin?.funder ? `funded by ${fact?.label ?? fact?.kind ?? "infrastructure"} ${short(origin.funder)} — not a link` : (origin?.reason ?? "funded from a program account")) : undefined;
+    let status = nodeStatus(origin, fact);
+    let excludedReason = status === "excluded" ? (origin?.funder ? `funded by ${fact?.label ?? fact?.kind ?? "infrastructure"} ${short(origin.funder)} — not a link` : (origin?.reason ?? "funded from a program account")) : undefined;
+    // A PROVEN token-only wallet (EVM: nonce 0 and no native coin, ever) can never be funding-linked; a small one counts
+    // as read so it cannot hold the small-sample bar hostage. A large one keeps blocking (tokens parked in a big gasless
+    // wallet are worth a human look). Solana "token-first" is not proof (only the first 25 txs were read): not this.
+    if (status === "unresolved" && origin && isProvenTokenOnly(origin) && (w.pct ?? 0) <= cfg.passiveMaxPct) {
+      status = "excluded";
+      excludedReason = `token-only wallet (never held native coin, holds ${pctText(w.pct ?? 0)}) — cannot be funding-linked`;
+    }
     return { ...w, origin, status, clusterId: null, ...(excludedReason ? { excludedReason } : {}) };
   });
   const byAddr = new Map(nodes.map((n) => [norm(n.address), n]));

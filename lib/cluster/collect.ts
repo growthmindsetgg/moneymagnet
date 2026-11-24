@@ -235,8 +235,8 @@ export function startWalletClusters(chain: Chain, token: string, snapshot: Token
 
       // Background reads for what is still unresolved, within the end-state limits.
       const unresolved = sample.filter((w) => nodeStatus(origins.get(w.address) ?? null, origins.get(w.address)?.funder ? funders.get(norm(chain, origins.get(w.address)!.funder!)) : undefined) === "unresolved");
-      // Versioned with the origin cache key (origin:v3): a cache bump starts with a clean episode.
-      const progressKey = `clusters:v3:${chain}:${norm(chain, token)}`;
+      // Versioned with the origin cache key (origin:v4): a cache bump starts with a clean episode.
+      const progressKey = `clusters:v4:${chain}:${norm(chain, token)}`;
       const stored = await kvGet<Progress>(progressKey);
       // Retryable: wallets with no origin yet, or a non-final one whose reason is a budget / outage (not a proven gap).
       const retryable = unresolved.filter((w) => {

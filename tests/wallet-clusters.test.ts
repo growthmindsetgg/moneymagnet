@@ -339,3 +339,27 @@ describe("background episodes (B2)", () => {
     expect(r).toEqual({ progress: { attempts: 0, startedAt: NOW }, schedule: false, endState: false });
   });
 });
+
+describe("proven token-only wallets (EVM) and the small-sample bar", () => {
+  const evmOrigin = (wallet: string, extra: Partial<Origin>): Origin => ({ wallet, fundT: null, fundRef: null, funder: null, funderKind: "unknown", via: null, fundTx: null, method: "archive-2stage", final: false, ...extra });
+  const evmGraph = (wallets: SampleWallet[], origins: Origin[]) => buildGraph({ chain: "ethereum", token: "0xtoken", wallets, origins: new Map(origins.map((o) => [o.wallet, o])), funders: new Map(), deployers: new Set(), cfg, computedAt: 0 });
+  const nine = (lastPct: number) => Array.from({ length: 9 }, (_, i) => holder(i, i === 8 ? lastPct : 5));
+  const resolved8 = (ws: SampleWallet[]) => ws.slice(0, 8).map((w) => evmOrigin(w.address, { funder: `0xf${w.address}`, funderKind: "eoa", fundT: T, fundRef: 1 }));
+
+  it("a small proven token-only wallet no longer holds the bar hostage (the PEPE case: 8 of 9 + one token-only)", () => {
+    const ws = nine(0.5);
+    const g = evmGraph(ws, [...resolved8(ws), evmOrigin(ws[8].address, { reason: "never held native coin (token-only wallet)" })]);
+    expect(g.nodes[8].status).toBe("excluded");
+    expect(g.nodes[8].excludedReason).toMatch(/^token-only wallet \(never held native coin, holds 0\.5%\)/);
+    expect(meterFields({ graph: g, cfg, mode: "established", pending: false, attempts: 1 }).walletClusterState).toBe("live");
+  });
+  it("a large token-only wallet (> 2%) still blocks; an unproven or Solana token-first one is never treated as read", () => {
+    const ws = nine(6);
+    const big = evmGraph(ws, [...resolved8(ws), evmOrigin(ws[8].address, { reason: "never held native coin (token-only wallet)" })]);
+    expect(big.nodes[8].status).toBe("unresolved");
+    const sponsored = evmGraph(nine(0.5), [...resolved8(nine(0.5)), evmOrigin(nine(0.5)[8].address, { reason: "no native coin before its first transaction (block 9): gas was sponsored or paid in the same block" })]);
+    expect(sponsored.nodes[8].status).toBe("unresolved");
+    const sol = graphOf([holder(1, 0.5)], [origin("w01", null as unknown as string, null, { funder: null, reason: "first 25 transactions carry no SOL receipt (token-first wallet: tokens arrived before any SOL)" })]);
+    expect(sol.nodes[0].status).toBe("unresolved");
+  });
+});

@@ -3,6 +3,7 @@ import { isEvmChain, type EvmChain } from "../chain";
 import { kvMget, kvSet } from "../kv";
 import { archiveRpc, codeKind, hex, type Rpc } from "./rpc";
 import { kSearch } from "./holderClass";
+import { isOutage } from "../sources/retry";
 import { isProgramAddress, type FullTx, type Helius } from "../timemachine/solana";
 import disperse from "../../data/disperse-contracts.json";
 
@@ -38,7 +39,7 @@ export interface Origin {
 }
 
 /** The one cache / memo key for a wallet's origin (also used by lib/cluster/collect.ts for the in-request memo). */
-export const originKey = (chain: Chain, wallet: string) => `origin:v3:${chain}:${chain === "solana" ? wallet : wallet.toLowerCase()}`;
+export const originKey = (chain: Chain, wallet: string) => `origin:v4:${chain}:${chain === "solana" ? wallet : wallet.toLowerCase()}`;
 const KEY = originKey;
 /** Non-final results are re-read after at most an hour (a read error is never cached as a fact). */
 const NON_FINAL_TTL_S = 3_600;
@@ -114,6 +115,7 @@ export function originOf(chain: Chain, wallet: string, ctx: OriginCtx): Promise<
 
 const keyOf = (k: { pubkey: string } | string) => (typeof k === "string" ? k : k.pubkey);
 let gtfaUnavailable = false;
+let gtfaWarned = false;
 
 /**
  * From one transaction: is it the wallet's first SOL receipt, and who paid it? The funder is the non-program account
@@ -150,12 +152,19 @@ async function solanaOrigin(helius: Helius, wallet: string, ctx: OriginCtx): Pro
   let method: Origin["method"] = "helius-gtfa";
   if (!gtfaUnavailable) {
     try {
-      const r = await helius<{ data: FullTx[] }>("getTransactionsForAddress", [wallet, { sortOrder: "asc", limit: SOLANA_FIRST_TXS, transactionDetails: "full", encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+      // Same params as the app's working calls (helius.ts, holderStrengthData.ts): maxSupportedTransactionVersion 1.
+      const r = await helius<{ data: FullTx[] }>("getTransactionsForAddress", [wallet, { sortOrder: "asc", limit: SOLANA_FIRST_TXS, transactionDetails: "full", encoding: "jsonParsed", maxSupportedTransactionVersion: 1 }]);
       txs = r.data ?? [];
     } catch (e) {
-      // The plan may not offer the method: remember it for this instance and use the signatures path.
-      if (/method not found|not supported|-32601|unsupported/i.test((e as Error).message)) gtfaUnavailable = true;
-      else throw e;
+      const m = (e as Error).message;
+      // Only "Method not found" (the plan lacks it) switches the instance to the signatures path. An outage makes this
+      // wallet retryable (the background re-reads it); any other error falls back for this wallet only, logged once.
+      if (/method not found/i.test(m)) gtfaUnavailable = true;
+      else if (isOutage(e)) throw e;
+      else if (!gtfaWarned) {
+        gtfaWarned = true;
+        console.warn(`[origin] getTransactionsForAddress failed (falling back to signatures for this wallet): ${m.slice(0, 160)}`);
+      }
     }
   }
   if (txs == null) {
@@ -163,7 +172,7 @@ async function solanaOrigin(helius: Helius, wallet: string, ctx: OriginCtx): Pro
     const sigs = await helius<{ signature: string }[]>("getSignaturesForAddress", [wallet, { limit: 1000 }]);
     if (!sigs.length) return unreadable(wallet, "no transactions found for this wallet", method);
     if (sigs.length >= 1000) return unreadable(wallet, "active wallet: first funding not reachable inline (≥ 1000 transactions); read in background", method);
-    const oldest = await helius<FullTx>("getTransaction", [sigs[sigs.length - 1].signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+    const oldest = await helius<FullTx>("getTransaction", [sigs[sigs.length - 1].signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 1 }]);
     txs = oldest ? [oldest] : [];
   }
   for (const tx of txs) {

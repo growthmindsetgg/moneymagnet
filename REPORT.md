@@ -1,3 +1,57 @@
+# Wallet-cluster meter: status, live validation, fixes awaiting deploy (2026-11-24)
+
+## Live validation (production, 7ba9a02)
+- **Caught a coordinated group:** Monad nad.fun token `0x3500…7777`: **meter 80**, 3 wallets holding 20.7% of supply, all first funded by one wallet within 33s (2 of them within 30s). `cluster_20` caps it at C (C 54.9).
+- **No false positives on established tokens:**
+  - WIF meter 0, after its exchange custody wallets were left out (it read 32 before that fix);
+  - brett meter 0;
+  - fartcoin meter 11 (a 4-wallet, 4.9% group);
+  - PEPE (see the fix below).
+- **Not yet seen firing on a pump.fun curve launch:** the four fresh launches tried were pending or small-sample, so this is not yet validated there. See the Solana fix below; it limited coverage on new tokens.
+
+## Fixes committed but NOT deployed
+The machine was saturated (100% CPU, < 1 GB RAM free from another project's dev servers), so Playwright could not run. CLAUDE.md requires the LOOP before any deploy.
+- **The Solana origin lookup had been falling back to the signatures path.**
+  - **Cause:** my call passed `maxSupportedTransactionVersion: 0`, where the app's working `getTransactionsForAddress` calls pass `1`. The "method unavailable" check matched loose words ("not supported"), so a non-method error switched the whole instance to the fallback.
+  - **Why it went unnoticed:** the fallback still resolves wallets with fewer than 1000 transactions, so established tokens looked fine. Busy wallets on new launches read "active wallet ≥ 1000 transactions".
+  - **Fix:**
+    - params now match the proven calls;
+    - only "Method not found" disables the method;
+    - an outage leaves the wallet retryable;
+    - any other error falls back for that wallet only and is logged once.
+  - **Cache:** origin and progress keys bumped to `v4`, so such wallets are re-read at once.
+  - **Tests:** `tests/origin-solana.test.ts` (4).
+- **A proven token-only wallet blocked small samples indefinitely.**
+  - **The case:** PEPE was null with 8 of 9 resolved; the ninth was a proven token-only wallet (nonce 0, never held ETH), so the factor counted as missing (about −5 coverage).
+  - **Fix:** a proven EVM token-only wallet holding ≤ 2% (`walletClusters.passiveMaxPct`) now counts as read but can never link.
+  - **Still blocking:** a larger token-only wallet; Solana "token-first in 25 transactions", which is not proof; sponsored-gas wallets.
+  - **Tests:** 2.
+- **Wallet-map legend** (`0f10c62`): HTML legend and larger phone labels.
+
+**To deploy:** run the full LOOP (`pnpm test:e2e` included) on an idle machine, then `vercel deploy --prod` and `vercel alias set <deployment> moneymagnet.vercel.app`.
+
+## Where the meter scores, by chain
+
+| Chain | Status | What it reads |
+|---|---|---|
+| Solana | live, scored | top holders + first curve buyers (pump.fun) |
+| Base, Ethereum | scored when every sampled wallet resolves (source lists ~9–10 holders) | holders only (EVM first buyers not built) |
+| Monad | rarely measured | public archive too shallow ("Block requested not found"); holder source often lists < 8 wallets ⇒ n/a. Needs a deeper `MONAD_RPC_URL`. |
+| Robinhood | **not scored** (partial, reason shown) | public RPC keeps no history; partial-mode edges (hand-off, paid buy, common sink, deployed-by) not built |
+
+**S is reachable only on Solana now:**
+- `s_clusters` needs a live, clean check;
+- Base, Monad and Ethereum already could not reach S (no swap-index accumulators);
+- **no Robinhood token can be S** until its funding is readable (an archive RPC) or the partial edges are built. That was the owner default "Robinhood S blocked".
+
+## Known risks / follow-ups
+- **Costs are not capped.** There is no `/api/work` route and no credit caps (plan R2). A cold token costs about 20 Helius `getTransactionsForAddress` calls plus hub checks, bounded only by the 12-per-minute-per-visitor limit.
+- **Not built yet:**
+  - EVM first-buyer reconstruction;
+  - the token hand-off, paid-buy, common-sink, peel and deployed-by edges;
+  - cluster 24h selling (`cluster_dumping`);
+  - the bot / 4337 registries.
+
 # Fixes after the cluster deploys: background episodes, WIF dead launch, group wording, source line (2026-11-24)
 
 - **Background reads stopped for good after 30 minutes (a regression in stage B).**
