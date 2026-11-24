@@ -42,6 +42,7 @@ import { baseAdapters, baseLaunchExtras } from "./sources/base";
 import { ethereumAdapters } from "./sources/ethereum";
 import { chainRpc } from "./onchain/rpc";
 import { classifyTopHolders } from "./topHolders";
+import { startWalletClusters } from "./cluster/collect";
 import { holderStrength } from "./holderStrengthData";
 import { defaultConfig, modeFor } from "./scoring/config";
 import { COHORT_BUDGET_MS, readCohort } from "./cohort";
@@ -451,8 +452,15 @@ export async function collect(
   // §7b zero is data: genuinely no activity ⇒ activity metrics are 0 (then the dead-launch gate re-reads them).
   const zeroed = applyZeroActivity(deriveMetrics(merged), sources);
   const snapshot = zeroed.zeroActivity.length ? { ...zeroed, launchBuyers: zeroed.uniqueBuyers ?? zeroed.buyers24h, deadLaunch: deadLaunchOf(zeroed) } : zeroed;
+  // Wallet clusters start now (cached origins + priority funding reads overlap the holder steps) and finish after them.
+  const clusters = startWalletClusters(chain, address, snapshot, results, deadline.at + requestRoomMs());
   await holderClassification(chain, address, snapshot, results, deadline);
   await holderStrengthStep(chain, address, snapshot, results, deadline);
+  await clusters.finish(snapshot).catch((err: Error) => {
+    snapshot.walletClusterState = "null";
+    snapshot.walletClusterMeter = null;
+    snapshot.nullReasons = { ...snapshot.nullReasons, walletClusterMeter: `wallet-cluster step failed: ${err.message.slice(0, 80)}` };
+  });
   return { snapshot, sources, raw };
 }
 

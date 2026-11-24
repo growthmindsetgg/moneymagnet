@@ -75,9 +75,15 @@ describe("memecoin-guide hard rules — one synthetic fixture each", () => {
     expect(rule(r, "fees_low").state).toBe("unknown");
   });
 
-  it("7. > 3 same-source funded wallets ⇒ RED FLAG −15 and cap C (p.25)", () => {
-    const r = launch({ fundingClusterMax: 5 });
-    expect(rule(r, "funding_cluster")).toMatchObject({ state: "fired", points: 15, capTier: "C", flag: "RED FLAG" });
+  // Replaced (2026-11-24): the top-20 "funding_cluster" rule (> 3 wallets from one source within 2h ⇒ −15, cap C) is now
+  // the wallet-cluster meter (factor wallet_clusters, guide p.25) and its caps, which read the proven linked share of supply.
+  it("7. same-source funded wallets (p.25): a proven linked group > 20% of supply ⇒ treated as one holder, cap C", () => {
+    const r = launch({ walletClusterMeter: 70, clusterSupplyMinPct: 24, clusterSupplyText: "24.0%", fundingClusterMax: 5, clusterLargestText: "largest linked group: 5 wallets holding 24.0% of supply (funded by one wallet within 12s)" });
+    expect(rule(r, "cluster_20")).toMatchObject({ state: "fired", capTier: "C" });
+    expect(rule(r, "cluster_20").evidence).toMatch(/linked group holds 24\.0% of supply/);
+    const f = r.groups.flatMap((g) => g.factors).find((x) => x.id === "wallet_clusters")!;
+    expect(f.points).toBe(0);
+    expect(f.flag).toBe("danger");
     atMost(r, "C");
   });
 
@@ -121,10 +127,11 @@ describe("memecoin-guide hard rules — one synthetic fixture each", () => {
     atMost(r, "C");
   });
 
+  // Replaced (2026-11-24): full_bundle now reads the proven lower bound clusterSupplyMinPct (wallet-cluster meter).
   it("12. one linked cluster holding 50-80% ⇒ full bundle, cap D (p.21-22, 28-29)", () => {
-    const r = launch({ clusterSupplyPct: 62 });
+    const r = launch({ walletClusterMeter: 90, clusterSupplyMinPct: 62, clusterSupplyText: "62.0%" });
     expect(rule(r, "full_bundle")).toMatchObject({ state: "fired", capTier: "D", flag: "full bundle" });
-    expect(rule(r, "full_bundle").evidence).toMatch(/HoodTier cluster \(funding-graph\)/);
+    expect(rule(r, "full_bundle").evidence).toBe("A linked group (on-chain ties) holds 62.0% of supply — full bundle, capped at D.");
     atMost(r, "D");
   });
 

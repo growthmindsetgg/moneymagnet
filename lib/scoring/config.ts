@@ -152,6 +152,8 @@ export interface ScoringConfig {
   /** Chain → mode → set name, e.g. Robinhood launch tokens use `launch_robinhood`. */
   chainSets?: { note?: string } & Partial<Record<Chain, Partial<Record<Mode, string>>>>;
   rules: RuleDef[];
+  /** Wallet-cluster meter constants (lib/cluster reads them; the engine only scores the resulting metrics). */
+  walletClusters?: import("../cluster/graph").WalletClustersCfg;
   tiers: { tier: RatedTier; min: number }[];
   coverage: { unratedBelowPct: number; capBBelowPct: number; topTierMinPct: number };
   /**

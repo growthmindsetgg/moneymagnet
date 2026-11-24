@@ -169,6 +169,38 @@ export interface TokenSnapshot {
   vestingDiamond: boolean | null;
   /** Holder histories are still being read (resumed on the next analysis / in the background): the factor is not counted yet. */
   holderStrengthPending: boolean | null;
+
+  // Wallet-cluster meter (lib/cluster; plan docs/research/2026-11-23-team-review-plan.md §3.2). Null ⇒ nullReasons says why.
+  /** 0–100: 0 independent wallets, 100 one linked group dominates buying and holding. Only past the coverage bar. */
+  walletClusterMeter?: number | null;
+  walletClusterState?: "live" | "partial" | "pending" | "null" | "n/a" | null;
+  /** Funding reads still in flight in the background (within 3 attempts / 30 min): the factor is n/a until then. */
+  walletClusterPending?: boolean | null;
+  walletClusterAttempts?: number | null;
+  /** Proven lower bound the caps read: largest strong cluster's share of TOTAL supply; null below 10% until coverage is complete. */
+  clusterSupplyMinPct?: number | null;
+  /** "22.4%" or "at least 22.4%" for evidence templates. */
+  clusterSupplyText?: string | null;
+  clusterSupplyIsLowerBound?: boolean | null;
+  clusterHoldShare?: number | null;
+  clusterBuyShare?: number | null;
+  /** Largest group funded by one non-excluded source within walletClusters.sameTimeSec (or the same block / slot). */
+  sameTimeFundedMax?: number | null;
+  /** Largest group sharing a funder whose first buys fall within sameTimeSec. */
+  sameTimeBuyMax?: number | null;
+  clusterCount?: number | null;
+  clusterResolvedWallets?: number | null;
+  clusterSampleWallets?: number | null;
+  clusterHolderSupplyResolvedPct?: number | null;
+  clusterIncludesFounder?: boolean | null;
+  /** The largest cluster is only the founder / team wallets. */
+  founderClusterOnly?: boolean | null;
+  clusterEdgeSummary?: string | null;
+  /** Pre-rendered evidence sentences: the largest group, and same-time funding. */
+  clusterLargestText?: string | null;
+  clusterSameTimeText?: string | null;
+  /** The graph behind the meter (nodes, edges, clusters) for the page. */
+  walletClusterGraph?: import("./cluster/graph").ClusterGraph | null;
   /** Metric name → age in minutes, for values served from the last good snapshot. */
   staleFields: Record<string, number>;
 

@@ -58,6 +58,8 @@ export interface CurveTradeStats {
   /** owner → last observed balance (raw units). */
   lastBalance: Map<string, bigint>;
   firstBuyTime: Map<string, number>;
+  /** owner → slot of its first curve buy (wallet-cluster meter: same-slot buys). */
+  firstBuySlot: Map<string, number>;
   buyers: Set<string>;
 }
 
@@ -82,6 +84,7 @@ export function parseCurveTrades(txs: ParsedTx[], mint: string, curve: string, c
     snipedInFirstSlots: 0n,
     lastBalance: new Map(),
     firstBuyTime: new Map(),
+    firstBuySlot: new Map(),
     buyers: new Set(),
   };
   const sellers = new Set<string>();
@@ -104,6 +107,7 @@ export function parseCurveTrades(txs: ParsedTx[], mint: string, curve: string, c
         stats.buyers.add(o);
         stats.totalBought += delta;
         if (!stats.firstBuyTime.has(o) && tx.blockTime) stats.firstBuyTime.set(o, tx.blockTime);
+        if (!stats.firstBuySlot.has(o)) stats.firstBuySlot.set(o, tx.slot);
         if (tx.slot - firstSlot < snipeSlots) stats.snipedInFirstSlots += delta;
         if (o === creator) {
           stats.creatorBought += delta;
@@ -157,6 +161,8 @@ export async function helius(mint: string): Promise<AdapterResult> {
   const call = <T,>(method: string, params: unknown) => queuedCall<T>(method, params, 15_000);
 
   const notes: string[] = [];
+  /** First curve buyers in buy order (the wallet-cluster meter samples them). */
+  let firstBuyers: { wallet: string; t: number | null; slot: number | null }[] | null = null;
   const data: Partial<TokenSnapshot> = {};
   const nullReasons: Record<string, string> = {};
   // Every field whose producing call failed, with the real error text: those fields are null, never a value.
@@ -255,6 +261,10 @@ export async function helius(mint: string): Promise<AdapterResult> {
 
   function replayCurve(txs: ParsedTx[]) {
     const t = parseCurveTrades(txs, mint, curve, creator);
+    firstBuyers = [...t.firstBuySlot.entries()]
+      .sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1))
+      .slice(0, 40)
+      .map(([wallet, slot]) => ({ wallet, slot, t: t.firstBuyTime.get(wallet) ?? null }));
     if (graduated) nullReasons.uniqueBuyers = "graduated — curve buyers are only the pre-graduation subset (AMM buyers not counted)";
     else data.uniqueBuyers = t.uniqueBuyers;
     data.makersCount = t.makers;
@@ -313,8 +323,6 @@ export async function helius(mint: string): Promise<AdapterResult> {
   if (failed.has("freshWalletsTop20")) for (const m of FUNDING_FIELDS) nullReasons[m] = failed.get(m)!;
   else {
     data.freshWalletsTop20 = funding.filter((f) => f.firstTx != null && now - f.firstTx < 24 * 3600).length;
-    data.fundingClusterMax = clusters.size;
-    data.clusterSupplyPct = clusters.size >= 2 ? clusters.supplyPct : 0;
   }
 
   // Creator's current balance: holding share, and — when the curve replay could not say — the share
@@ -418,10 +426,11 @@ export async function helius(mint: string): Promise<AdapterResult> {
       ms: Date.now() - t0,
     },
     data,
-    raw: { creator, curve, funding, clusters },
+    raw: { creator, curve, funding, clusters, firstBuyers },
     ...(failedFields.length ? { failedFields } : {}),
   };
 }
 
 const CURVE_FIELDS = ["allBuyersExited", "uniqueBuyers", "makersCount", "devBuySharePct", "devBuySol", "snipeRatioPct", "deployerSoldPct"] as const;
-const FUNDING_FIELDS = ["freshWalletsTop20", "fundingClusterMax", "clusterSupplyPct"] as const;
+/** fundingClusterMax / clusterSupplyPct now come from the wallet-cluster step (lib/cluster). */
+const FUNDING_FIELDS = ["freshWalletsTop20"] as const;

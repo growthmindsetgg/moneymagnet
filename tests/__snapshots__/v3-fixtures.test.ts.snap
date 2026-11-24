@@ -2,7 +2,7 @@
 
 exports[`v3 Base / Monad recorded fixtures > base-99 (launch) scores in A/B/C/D/F/U 1`] = `
 {
-  "coveragePct": 91,
+  "coveragePct": 85,
   "factors": [
     [
       "vol_mc",
@@ -56,13 +56,18 @@ exports[`v3 Base / Monad recorded fixtures > base-99 (launch) scores in A/B/C/D/
     ],
     [
       "top_holder",
-      16,
+      13,
       "live",
     ],
     [
       "top10_share",
-      14,
+      11,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -98,7 +103,7 @@ exports[`v3 Base / Monad recorded fixtures > base-99 (launch) scores in A/B/C/D/
 
 exports[`v3 Base / Monad recorded fixtures > base-adfo (launch) scores in A/B/C/D/F/U 1`] = `
 {
-  "coveragePct": 73,
+  "coveragePct": 67,
   "factors": [
     [
       "vol_mc",
@@ -152,13 +157,18 @@ exports[`v3 Base / Monad recorded fixtures > base-adfo (launch) scores in A/B/C/
     ],
     [
       "top_holder",
-      16,
+      13,
       "live",
     ],
     [
       "top10_share",
-      14,
+      11,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -194,11 +204,11 @@ exports[`v3 Base / Monad recorded fixtures > base-adfo (launch) scores in A/B/C/
 
 exports[`v3 Base / Monad recorded fixtures > base-brett (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 98,
+  "coveragePct": 93,
   "factors": [
     [
       "top10_share",
-      6.05,
+      3.3,
       "live",
     ],
     [
@@ -210,6 +220,11 @@ exports[`v3 Base / Monad recorded fixtures > base-brett (established) scores in 
       "deployer_holding",
       9,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -301,15 +316,15 @@ exports[`v3 Base / Monad recorded fixtures > base-brett (established) scores in 
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 68.8,
-  "score": 71.8,
+  "rawScore": 68.9,
+  "score": 71.9,
   "tier": "A",
 }
 `;
 
 exports[`v3 Base / Monad recorded fixtures > base-rug (rug) scores in F 1`] = `
 {
-  "coveragePct": 53,
+  "coveragePct": 47,
   "factors": [
     [
       "vol_mc",
@@ -372,6 +387,11 @@ exports[`v3 Base / Monad recorded fixtures > base-rug (rug) scores in F 1`] = `
       "live",
     ],
     [
+      "wallet_clusters",
+      0,
+      "null",
+    ],
+    [
       "buyer_seller_ratio",
       5.6,
       "live",
@@ -408,11 +428,11 @@ exports[`v3 Base / Monad recorded fixtures > base-rug (rug) scores in F 1`] = `
 
 exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 98,
+  "coveragePct": 93,
   "factors": [
     [
       "top10_share",
-      6.05,
+      3.3,
       "live",
     ],
     [
@@ -424,6 +444,11 @@ exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in 
       "deployer_holding",
       9,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -515,19 +540,19 @@ exports[`v3 Base / Monad recorded fixtures > base-toshi (established) scores in 
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 69.6,
-  "score": 72.6,
+  "rawScore": 69.7,
+  "score": 72.7,
   "tier": "A",
 }
 `;
 
 exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores in B/C/D 1`] = `
 {
-  "coveragePct": 85,
+  "coveragePct": 80,
   "factors": [
     [
       "top10_share",
-      3.3,
+      1.8,
       "live",
     ],
     [
@@ -539,6 +564,11 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores i
       "deployer_holding",
       9,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -626,7 +656,7 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores i
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 65.1,
+  "rawScore": 65.8,
   "score": 54.9,
   "tier": "C",
 }
@@ -634,11 +664,11 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-mog (established) scores i
 
 exports[`v3 Base / Monad recorded fixtures > ethereum-pepe (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 85,
+  "coveragePct": 80,
   "factors": [
     [
       "top10_share",
-      6.05,
+      3.3,
       "live",
     ],
     [
@@ -650,6 +680,11 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-pepe (established) scores 
       "deployer_holding",
       9,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -736,8 +771,8 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-pepe (established) scores 
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 66.7,
-  "score": 69.7,
+  "rawScore": 66.9,
+  "score": 69.9,
   "tier": "B",
 }
 `;
@@ -802,6 +837,11 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-pipi (launch) scores in A/
       "null",
     ],
     [
+      "wallet_clusters",
+      0,
+      "null",
+    ],
+    [
       "buyer_seller_ratio",
       7,
       "live",
@@ -835,11 +875,11 @@ exports[`v3 Base / Monad recorded fixtures > ethereum-pipi (launch) scores in A/
 
 exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in A/B/C 1`] = `
 {
-  "coveragePct": 98,
+  "coveragePct": 93,
   "factors": [
     [
       "top10_share",
-      5.5,
+      2.75,
       "live",
     ],
     [
@@ -856,6 +896,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in 
       "deployer_sold",
       10,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "net_flow_24h",
@@ -947,15 +992,15 @@ exports[`v3 Base / Monad recorded fixtures > monad-chog (established) scores in 
     "track_record_30d",
   ],
   "mode": "established",
-  "rawScore": 73.3,
-  "score": 76.3,
+  "rawScore": 74.4,
+  "score": 77.4,
   "tier": "A",
 }
 `;
 
 exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in B/C/D 1`] = `
 {
-  "coveragePct": 98,
+  "coveragePct": 93,
   "factors": [
     [
       "top10_share",
@@ -976,6 +1021,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
       "deployer_sold",
       10,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "net_flow_24h",
@@ -1071,7 +1121,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
     "thin_trading",
   ],
   "mode": "established",
-  "rawScore": 66,
+  "rawScore": 68.6,
   "score": 39.9,
   "tier": "D",
 }
@@ -1079,11 +1129,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-james (established) scores in
 
 exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
 {
-  "coveragePct": 89,
+  "coveragePct": 88,
   "factors": [
     [
       "top10_share",
-      8,
+      4,
       "live",
     ],
     [
@@ -1100,6 +1150,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
       "deployer_sold",
       0,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "n/a",
     ],
     [
       "net_flow_24h",
@@ -1198,7 +1253,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
     "micro_cap",
   ],
   "mode": "established",
-  "rawScore": 52.6,
+  "rawScore": 50.9,
   "score": 0,
   "tier": "F",
 }
@@ -1206,7 +1261,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-nad (rug) scores in F 1`] = `
 
 exports[`v3 Base / Monad recorded fixtures > monad-perpl (launch) scores in A/B/C/D/F/U 1`] = `
 {
-  "coveragePct": 55,
+  "coveragePct": 49,
   "factors": [
     [
       "vol_mc",
@@ -1260,12 +1315,12 @@ exports[`v3 Base / Monad recorded fixtures > monad-perpl (launch) scores in A/B/
     ],
     [
       "top_holder",
-      10,
+      7,
       "live",
     ],
     [
       "top10_share",
-      8,
+      5,
       "live",
     ],
     [
@@ -1277,6 +1332,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-perpl (launch) scores in A/B/
       "deployer_sold",
       8,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -1324,7 +1384,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-perpl (launch) scores in A/B/
 
 exports[`v3 Base / Monad recorded fixtures > monad-vibe (launch) scores in A/B/C/D/F/U 1`] = `
 {
-  "coveragePct": 95,
+  "coveragePct": 89,
   "factors": [
     [
       "vol_mc",
@@ -1378,12 +1438,12 @@ exports[`v3 Base / Monad recorded fixtures > monad-vibe (launch) scores in A/B/C
     ],
     [
       "top_holder",
-      10,
+      7,
       "live",
     ],
     [
       "top10_share",
-      8,
+      5,
       "live",
     ],
     [
@@ -1395,6 +1455,11 @@ exports[`v3 Base / Monad recorded fixtures > monad-vibe (launch) scores in A/B/C
       "deployer_sold",
       0,
       "live",
+    ],
+    [
+      "wallet_clusters",
+      0,
+      "null",
     ],
     [
       "buyer_seller_ratio",
@@ -1434,7 +1499,7 @@ exports[`v3 Base / Monad recorded fixtures > monad-vibe (launch) scores in A/B/C
     "dust",
   ],
   "mode": "launch",
-  "rawScore": 74.6,
+  "rawScore": 72,
   "score": 24.9,
   "tier": "F",
 }

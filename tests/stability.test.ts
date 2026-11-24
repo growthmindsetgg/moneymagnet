@@ -23,7 +23,9 @@ const sources = fx.sources as unknown as SourceStatus[];
 /** microduck as production saw it on the flapping runs (buyers = sellers): A 83.9 clean, S 87.2 with OHLCV down
  * (84.3 / 87.7 since Holder Strength replaced the two accumulator factors, 2026-10-30; 84.5 / 88 since liq_fdv became
  * "liquidity for its size" and gave 2 points to relative strength 7d, 2026-11-22 — the flap is the same). */
-const flapping: TokenSnapshot = { ...base, buyers24h: base.sellers24h, buyerSellerRatio: 1, smartMoneyNetUsd: 0 };
+// A clean cluster check is stubbed in: Robinhood S is blocked in production until funding is readable (2026-11-24), and
+// these tests are about the hold reproducing the A/S flap, not the bundle check.
+const flapping: TokenSnapshot = { ...base, buyers24h: base.sellers24h, buyerSellerRatio: 1, smartMoneyNetUsd: 0, walletClusterState: "live", walletClusterPending: false, walletClusterMeter: 5, clusterSupplyMinPct: 0, clusterSupplyText: "0.0%", founderClusterOnly: null, clusterResolvedWallets: 30, clusterSampleWallets: 30, clusterLargestText: "no linked group among 30 resolved wallets", clusterSameTimeText: "no two wallets funded by one source within 30s" };
 
 const factor = (r: ScoreReport, metric: string) => r.groups.flatMap((g) => g.factors).find((f) => f.metric === metric)!;
 

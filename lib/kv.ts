@@ -9,6 +9,8 @@ export interface KV {
   set(key: string, value: unknown, ttlSeconds?: number): Promise<void>;
   /** Atomically adds 1 to a numeric key (created at 1 with the TTL) and returns the new value. */
   incr(key: string, ttlSeconds: number, by?: number): Promise<number>;
+  /** Several keys in one round trip; a missing / expired key is null, in input order. */
+  mget<T>(keys: string[]): Promise<(T | null)[]>;
 }
 
 export class MemoryKV implements KV {
@@ -33,6 +35,9 @@ export class MemoryKV implements KV {
     const n = (live ? (JSON.parse(e.v) as number) : 0) + by;
     this.map.set(key, { v: JSON.stringify(n), exp: live ? e.exp : Date.now() + ttlSeconds * 1000 });
     return n;
+  }
+  async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    return Promise.all(keys.map((k) => this.get<T>(k)));
   }
 }
 
@@ -69,6 +74,9 @@ export class FileKV implements KV {
     this.lock = run.catch(() => undefined);
     return run;
   }
+  async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    return Promise.all(keys.map((k) => this.get<T>(k)));
+  }
 }
 
 /** Upstash Redis over its REST API. Works with both Vercel KV and Upstash env var names. */
@@ -103,6 +111,11 @@ export class UpstashKV implements KV {
     const n = await this.cmd<number>(["INCRBY", key, by]);
     if (n === by) await this.cmd(["EXPIRE", key, ttlSeconds]);
     return n;
+  }
+  async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    if (!keys.length) return [];
+    const raw = await this.cmd<(string | null)[]>(["MGET", ...keys]);
+    return raw.map((r) => (r == null ? null : (JSON.parse(r) as T)));
   }
 }
 
@@ -141,6 +154,13 @@ export class PostgresKV implements KV {
         expires_at = CASE WHEN kv.expires_at IS NOT NULL AND kv.expires_at <= now() THEN EXCLUDED.expires_at ELSE kv.expires_at END
       RETURNING value`) as { value: number }[];
     return Number(rows[0].value);
+  }
+  async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    if (!keys.length) return [];
+    await this.init();
+    const rows = (await this.sql`SELECT key, value FROM kv WHERE key = ANY(${keys}) AND (expires_at IS NULL OR expires_at > now())`) as { key: string; value: T }[];
+    const by = new Map(rows.map((r) => [r.key, r.value]));
+    return keys.map((k) => by.get(k) ?? null);
   }
 }
 
@@ -187,6 +207,16 @@ export async function kvIncr(key: string, ttlSeconds: number, by = 1): Promise<n
   } catch (err) {
     console.warn(`[kv] incr ${key} failed: ${(err as Error).message}`);
     return null;
+  }
+}
+
+/** Several keys at once; on a KV error every key reads as a miss (callers fall back to fetching). */
+export async function kvMget<T>(keys: string[]): Promise<(T | null)[]> {
+  try {
+    return await getKV().mget<T>(keys);
+  } catch (err) {
+    console.warn(`[kv] mget (${keys.length} keys) failed: ${(err as Error).message}`);
+    return keys.map(() => null);
   }
 }
 

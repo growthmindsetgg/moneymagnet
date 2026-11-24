@@ -45,6 +45,9 @@ const basicsOnly = (s: TokenSnapshot): TokenSnapshot => ({
   first5mSharePct: 60,
   freshWalletsTop20: 15,
   fundingClusterMax: 10,
+  // The wallet-cluster meter replaced fundingClusterMax (2026-11-24): the same weak signal on the new metric.
+  walletClusterMeter: 90,
+  clusterSupplyMinPct: 40,
   insiderSupplyPct: 40,
   creatorRugRatePct: 80,
   creatorHasSocials: false,

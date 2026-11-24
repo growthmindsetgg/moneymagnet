@@ -210,7 +210,8 @@ describe("stock token: refused, never scored", () => {
 describe("C6 + M1: the tier hold never re-uses a value older than 6h, and holds only the same tier", () => {
   const base = fx.snapshot as unknown as TokenSnapshot;
   const sources = fx.sources as unknown as SourceStatus[];
-  const flapping: TokenSnapshot = { ...base, buyers24h: base.sellers24h, buyerSellerRatio: 1, smartMoneyNetUsd: 0 };
+  // Clean cluster check stubbed (Robinhood S blocked until funding is readable, 2026-11-24): the hold is under test.
+  const flapping: TokenSnapshot = { ...base, buyers24h: base.sellers24h, buyerSellerRatio: 1, smartMoneyNetUsd: 0, walletClusterState: "live", walletClusterPending: false, walletClusterMeter: 5, clusterSupplyMinPct: 0, clusterSupplyText: "0.0%", founderClusterOnly: null, clusterResolvedWallets: 30, clusterSampleWallets: 30, clusterLargestText: "no linked group among 30 resolved wallets", clusterSameTimeText: "no two wallets funded by one source within 30s" };
   const R429 = "GeckoTerminal OHLCV failed: rate limited (HTTP 429)";
   const downSnap = (s: TokenSnapshot = flapping) => {
     const out = { ...s, bundlersFlushed: null, patterns: [], nullReasons: { ...s.nullReasons } } as unknown as Record<string, unknown>;

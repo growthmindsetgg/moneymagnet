@@ -1,0 +1,10 @@
+{
+  "note": "Registered multi-send / disperse contracts and programs. A wallet funded through one of these is credited to the tx sender (multisend); any other contract that carries the coin is itself the funder and is excluded. Add an entry only after checking it on chain (source + date). EVM contracts are also recognised by the Disperse selectors in lib/onchain/origin.ts (disperseEther / disperseToken / disperseTokenSimple), so this list may stay short.",
+  "chains": {
+    "ethereum": [],
+    "base": [],
+    "monad": [],
+    "robinhood": [],
+    "solana": []
+  }
+}

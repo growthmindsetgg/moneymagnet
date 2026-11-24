@@ -8,7 +8,8 @@ import { geckoterminal } from "@/lib/sources/geckoterminal";
 import type { SourceStatus, TokenSnapshot } from "@/lib/types";
 import { perfectLaunch, perfectSnapshot } from "./helpers";
 
-const LAUNCH_ONLY_RULES = ["vol_mc_bundle", "insider_18", "insider_40", "fees_low", "funding_cluster", "fresh_wallets", "bot_inflated", "supply_controlled"];
+// funding_cluster removed 2026-11-24 (replaced by the wallet-cluster meter and its caps, which apply in every mode).
+const LAUNCH_ONLY_RULES = ["vol_mc_bundle", "insider_18", "insider_40", "fees_low", "fresh_wallets", "bot_inflated", "supply_controlled"];
 const LAUNCH_ONLY_METRICS = ["volMcVsBar", "insiderSupplyPct", "feesPerMcap15k", "fundingClusterMax", "freshWalletsTop20", "makersHoldersRatio", "launchRetraced30"];
 
 const load = (name: string): { snapshot: TokenSnapshot; sources: SourceStatus[] } =>

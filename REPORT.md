@@ -1,3 +1,84 @@
+# Wallet-cluster meter, stages A + B: origins, graph, meter, scoring (2026-11-24)
+
+Owner request: rate how much of a meme's buying and holding is one person, using unique vs same-time-funded wallets, as a 0–100 meter used in scoring (bubble-map style).
+- **Spec:** docs/research/2026-11-23-team-review-plan.md §3, from the 8-agent team review.
+- **Owner defaults (2026-11-24):**
+  - same-time window 30s;
+  - Robinhood partial with S blocked;
+  - the founder-rule change through funded wallets (R3) deferred.
+
+## Built
+- **`lib/onchain/origin.ts`.** A wallet's first native-coin funding.
+  - **Solana:** `getTransactionsForAddress` (asc, 5). The plan already uses it in production, at helius.ts:217 and :332. The funder is the non-program account with the largest lamport drop. There is no fee-payer fallback, and it falls back to the signatures path if the method is ever unavailable.
+  - **Base / Monad / Ethereum:** archive two-stage search with proof (balance 0 and nonce 0 just before the funding block).
+    - When the wallet has sent transactions, the balance is searched only below its first outgoing tx, where an EOA's balance can only rise.
+    - A multi-send counts only when the contract is registered or matches the verified Disperse selectors (keccak checked); any other carrier contract (bridge, relayer, 4337) is itself the funder and is excluded.
+  - **Robinhood:** unreadable, with the reason.
+  - **Caching:** final results are kept forever; anything not final keeps its reason for at most 1h.
+- **`lib/kv.ts` `mget`.** Upstash MGET, Postgres `key = ANY(...)`, and loops for File and Memory. A warm run reads every origin in one round trip.
+- **`lib/cluster/graph.ts`.** Pure.
+  - **Strong edges merge** (union-find): same funder ≤ 30s or same block/slot, shared funder ≤ 30 min, direct funding, and a high-volume sender spraying back to back.
+  - **Weak edges never merge alone:** funder 30 min–2h, high-volume sender not consecutive, batch payout (> 20 recipients, sample < 25%), same-block buys.
+  - **Two weak clues of different kinds merge** as a composite.
+  - **Excluded funders** (exchange, bridge, router, launchpad, program, contract, relayer, 4337, bot infra) create no edge.
+  - **Founder group:** a cluster made only of founder or team wallets.
+- **`lib/cluster/meter.ts`.**
+  - **Formula:** launch 0.6·buyShare + 0.4·holdShare; established 0.2/0.8; with a floor of 80 when one group holds ≥ 50% of the resolved holder supply.
+  - **Supply:** always measured against TOTAL supply.
+  - **Coverage bar:** ≥ 12 resolved and ≥ 70% of the sampled holder supply, plus ≥ 10 first buyers when buyers are sampled.
+  - **States:** live / pending (background, ≤ 3 attempts in 30 min) / null with named reasons / n/a / partial.
+  - **Caps read `clusterSupplyMinPct`,** which stays null below 10% until coverage is complete, so no unread gate ever shows as passed.
+- **`lib/cluster/collect.ts`.**
+  - **Timing:** starts as soon as the holder list is merged, in parallel with classification and Holder Strength; the priority wallets (top-10 holders and first-10 buyers) are resolved within `CLUSTER_BUDGET_MS` (8s); the rest is read in the background via `after()`.
+  - **Sample:** the top-20 counted holders, minus dust, programs, infrastructure, exchanges and non-counted classes.
+  - **First buyers:** Solana's first curve buyers, from the existing replay with slot and time.
+- **factors.json:**
+  - the `walletClusters` constants;
+  - the `wallet_clusters` factor (a guide factor, p.25 / p.21-22) in launch, established_solana, launch/established for base, monad and ethereum;
+  - group totals unchanged: launch funding_cluster 5 → removed, fresh_wallets 7 → 6, meter 6; base/eth launch top_holder 16 → 13, top10_share 14 → 11, meter 6; monad launch 10 → 7, 8 → 5, meter 6; established top10_share → −5, meter 5;
+  - caps `cluster_10` → A, `cluster_20` → C, `cluster_35` → D, `cluster_20/35_founder` → A, `cluster_overhang` → B;
+  - `full_bundle` now reads the proven bound;
+  - the S requirement `s_clusters`: a complete, clean check.
+- **Robinhood stays on the shared `established` set, unchanged.** Solana established tokens get `established_solana`, the same set plus the meter.
+
+## Deviations from the spec, and why
+- **Small samples.** Base / Monad / Ethereum holder sources list only about 10 wallets and EVM first buyers are not built, so the 12-wallet bar was unreachable.
+  - Added `coverage.minSampleAll` (8): a smaller sample passes only when every wallet is resolved.
+  - Below 8 wallets the factor is **n/a**, "only N holder wallets to sample", not missing, so a source limit cannot cut coverage.
+- **Robinhood partial is shown but not scored.** The partial-mode edges (hand-off, paid buy, common sink, deployed-by) are not built yet, so a partial number would be guesswork. S is blocked by `s_clusters`.
+- **A dead launch ⇒ n/a** ("no wallets to sample").
+- **Not built yet** (later stages; the factor reads holders only where buyers are missing, and says so):
+  - EVM first-buyer reconstruction, so the buyer share is n/a on EVM;
+  - token hand-off, paid-buy, common-sink, peel and deployed-by edges;
+  - cluster 24h selling (`cluster_dumping`) and the `bundler_majority` feed;
+  - the `/api/work` route (R2);
+  - registries beyond the existing infrastructure and exchange files (bot-infra, 4337 EntryPoints).
+
+## Live probes (local, public archive RPC)
+- **Base brett:**
+  - first run: 13s for the whole analysis, pending, 3 of 9 resolved inline;
+  - the cache filled over three runs; in production the background run does this in one;
+  - then **live, meter 0, 9 of 9 resolved, no linked group**.
+- **Monad $JAMES:** the source lists 4 holder wallets ⇒ n/a with that reason.
+- **Solana:** needs `HELIUS_API_KEY`, which is not available locally; checked on production after deploy.
+
+## Tests
+- **New:** `tests/wallet-clusters.test.ts` (33): the graph (windows, exclusions, hub spray vs hub funder, batch payout, composite, direct funding, founder group, determinism), the meter (blend per mode, floor, coverage bar, small sample, lower bound, total-supply denominator, n/a, partial, bands), the Solana parser (fee excluded, no fee-payer fallback, failed tx), scoring (caps, founder cap, missing founder flag, pending n/a, null missing, monotone, sets, dead launch, small source).
+- **Replaced** (the spec changed):
+  - guide-rules #7: `funding_cluster` → `cluster_20` and the meter factor;
+  - guide-rules #12: `full_bundle` now on `clusterSupplyMinPct`;
+  - v21 drops `funding_cluster` from its launch-only rule list.
+- **Harness updates (no assertion removed):**
+  - the "perfect" and "clean" test tokens carry a clean, complete cluster check;
+  - the weak v24 token carries the bad cluster signal it used to carry as `fundingClusterMax`;
+  - the Robinhood A/S flap fixtures in stability and audit-scoring get a clean cluster check stubbed in, because Robinhood S is now blocked and those tests are about the hold;
+  - the config pick-up test adds its factor to the set the token resolves to.
+- **Fixture snapshots regenerated: no tier changed.** Scores moved ≤ 1.1 within their band. Coverage fell 5–6 points on chains with the meter, because the recordings predate it (missing until re-recorded). Robinhood fixtures are unchanged.
+
+## Env vars
+- `CLUSTER_BUDGET_MS`: optional, default 8000.
+- No new keys. Solana uses the existing `HELIUS_API_KEY`.
+
 # GeckoTerminal rate limits: one shared client, budget, cool-down, candle reuse (2026-11-23)
 
 **Problem.** Production GeckoTerminal calls were often rate-limited (HTTP 429).

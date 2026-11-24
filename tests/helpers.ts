@@ -65,6 +65,17 @@ export function perfectSnapshot(chain: Chain = "robinhood", overrides: Partial<T
     cohortSize: 8,
     cohortLabel: "test-dex peers on Robinhood Chain",
     relStrength7dPp: 20,
+    // Wallet-cluster meter (2026-11-24): a complete, clean bundle check — S requires one (s_clusters).
+    walletClusterState: "live",
+    walletClusterPending: false,
+    walletClusterMeter: 5,
+    clusterSupplyMinPct: 0,
+    clusterSupplyText: "0.0%",
+    founderClusterOnly: null,
+    clusterResolvedWallets: 30,
+    clusterSampleWallets: 30,
+    clusterLargestText: "no linked group among 30 resolved wallets",
+    clusterSameTimeText: "no two wallets funded by one source within 30s",
     ...overrides,
   };
 }

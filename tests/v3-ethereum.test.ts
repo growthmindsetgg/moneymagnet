@@ -41,6 +41,8 @@ function clean(ageHours: number, over: Partial<TokenSnapshot> = {}): TokenSnapsh
   return deriveMetrics({
     ...emptySnapshot("ethereum", "0x" + "e".repeat(40)),
     name: "Clean",
+    // A clean bundle check (wallet-cluster meter, 2026-11-24).
+    walletClusterState: "live", walletClusterPending: false, walletClusterMeter: 5, clusterSupplyMinPct: 0, clusterSupplyText: "0.0%", founderClusterOnly: null, clusterResolvedWallets: 30, clusterSampleWallets: 30, clusterLargestText: "no linked group among 30 resolved wallets", clusterSameTimeText: "no two wallets funded by one source within 30s",
     symbol: "CLN",
     tokenExists: true,
     ageHours,

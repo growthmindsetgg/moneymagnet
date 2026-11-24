@@ -1800,7 +1800,7 @@
             {
               "id": "fresh_wallets",
               "label": "Fresh wallets in top 20",
-              "weight": 7,
+              "weight": 6,
               "metric": "freshWalletsTop20",
               "direction": "lower_better",
               "format": "int",
@@ -1825,35 +1825,6 @@
                 }
               ],
               "evidenceTemplate": "{value} of the top-20 holders made their first transaction < 24h before buying."
-            },
-            {
-              "id": "funding_cluster",
-              "label": "Same-source funding",
-              "weight": 5,
-              "metric": "fundingClusterMax",
-              "direction": "lower_better",
-              "format": "int",
-              "source": "guide",
-              "note": "p.25: > 3-5 top wallets funded from the same source at the same time = bundle",
-              "data": [
-                "helius"
-              ],
-              "thresholds": [
-                {
-                  "lte": 1,
-                  "points": 1
-                },
-                {
-                  "lte": 3,
-                  "points": 0.5,
-                  "flag": "warn"
-                },
-                {
-                  "points": 0,
-                  "flag": "danger"
-                }
-              ],
-              "evidenceTemplate": "Largest group of top-20 wallets funded by one source within 2h: {value}."
             },
             {
               "id": "insider_supply",
@@ -1967,6 +1938,78 @@
                 }
               ],
               "evidenceTemplate": "Deployer sold {value} via swaps; {deployerDistributedPct} distributed by transfer (not penalised)."
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 6,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "helius"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
             }
           ]
         },
@@ -3359,7 +3402,7 @@
             {
               "id": "top_holder",
               "label": "Top holder (non-LP)",
-              "weight": 16,
+              "weight": 13,
               "metric": "top1SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -3398,7 +3441,7 @@
             {
               "id": "top10_share",
               "label": "Top-10 holder share",
-              "weight": 14,
+              "weight": 11,
               "metric": "top10SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -3436,6 +3479,78 @@
                 "metric": "top10ExFounderPct",
                 "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
               }
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 6,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "base-rpc"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
             }
           ]
         },
@@ -3585,7 +3700,7 @@
             {
               "id": "top10_share",
               "label": "Top-10 holder share",
-              "weight": 11,
+              "weight": 6,
               "metric": "top10SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -3695,6 +3810,78 @@
                 }
               ],
               "evidenceTemplate": "Deployer wallet holds {value} of supply."
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 5,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "base-rpc"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
             }
           ]
         },
@@ -4715,7 +4902,7 @@
             {
               "id": "top_holder",
               "label": "Top holder (non-LP)",
-              "weight": 10,
+              "weight": 7,
               "metric": "top1SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -4754,7 +4941,7 @@
             {
               "id": "top10_share",
               "label": "Top-10 holder share",
-              "weight": 8,
+              "weight": 5,
               "metric": "top10SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -4850,6 +5037,78 @@
                 }
               ],
               "evidenceTemplate": "Deployer sold {value} via swaps; {deployerDistributedPct} distributed by transfer (not penalised)."
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 6,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "monad-rpc"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
             }
           ]
         },
@@ -5061,7 +5320,7 @@
             {
               "id": "top10_share",
               "label": "Top-10 holder share",
-              "weight": 10,
+              "weight": 5,
               "metric": "top10SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -5205,6 +5464,78 @@
                 }
               ],
               "evidenceTemplate": "Deployer sold {value} via swaps; {deployerDistributedPct} distributed by transfer (not penalised)."
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 5,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "monad-rpc"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
             }
           ]
         },
@@ -6197,7 +6528,7 @@
             {
               "id": "top_holder",
               "label": "Top holder (non-LP)",
-              "weight": 16,
+              "weight": 13,
               "metric": "top1SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -6236,7 +6567,7 @@
             {
               "id": "top10_share",
               "label": "Top-10 holder share",
-              "weight": 14,
+              "weight": 11,
               "metric": "top10SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -6274,6 +6605,78 @@
                 "metric": "top10ExFounderPct",
                 "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
               }
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 6,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "ethereum-rpc"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
             }
           ]
         },
@@ -6423,7 +6826,7 @@
             {
               "id": "top10_share",
               "label": "Top-10 holder share",
-              "weight": 11,
+              "weight": 6,
               "metric": "top10SharePct",
               "direction": "lower_better",
               "format": "pct",
@@ -6533,6 +6936,78 @@
                 }
               ],
               "evidenceTemplate": "Deployer wallet holds {value} of supply."
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 5,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "ethereum-rpc"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
             }
           ]
         },
@@ -7095,6 +7570,1238 @@
               "id": "trend",
               "label": "Trend structure",
               "weight": 7,
+              "metric": "trendScore",
+              "direction": "higher_better",
+              "format": "num",
+              "source": "guide",
+              "note": "p.61-71: higher highs + higher lows = uptrend; lower lows + lower highs = downtrend",
+              "data": [
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1,
+                  "points": 1,
+                  "note": "higher highs and higher lows"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.5,
+                  "note": "mixed / ranging structure"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "lower lows and lower highs"
+                }
+              ],
+              "evidenceTemplate": "1h swing structure over 7d: {note} ({trendWindow})."
+            },
+            {
+              "id": "rel_strength_7d",
+              "label": "Relative strength 7d",
+              "weight": 2,
+              "metric": "relStrength7dPp",
+              "direction": "higher_better",
+              "format": "signedPp",
+              "source": "hoodtier",
+              "note": "Method idea (relative strength vs peers): strong only if the coin ROSE over 7d AND beat the median 7d move of its peer cohort (same DEX / launchpad on the same chain, read from GeckoTerminal). Derived: relStrength7dPp = min(7d change, 7d change − cohort median), which is > 0 only when both hold. The cohort median is cached in KV (refreshed hourly, never used past 6h, labelled stale with its age); an unreadable cohort leaves the factor null with the reason.",
+              "data": [
+                "geckoterminal",
+                "cohort"
+              ],
+              "thresholds": [
+                {
+                  "gte": 10,
+                  "points": 1,
+                  "note": "rose and beat the peer median by ≥ 10 pp"
+                },
+                {
+                  "gt": 0,
+                  "points": 0.75,
+                  "note": "rose and beat the peer median"
+                },
+                {
+                  "gte": -15,
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "did not both rise and beat the peer median"
+                },
+                {
+                  "points": 0,
+                  "flag": "info",
+                  "note": "fell, or lagged the peer median, by more than 15 pp"
+                }
+              ],
+              "evidenceTemplate": "7d price change {priceChange7dPct} ({priceChange7dWindow}) against a median of {cohortMedian7dPct} across {cohortSize} {cohortLabel}; strength = the lesser of the change and its excess over the median = {value} (derived) — {note}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "ageHours": {
+                      "lt": 168
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Token is {ageHours} old — a 7d price change needs 7 days of trading, so relative strength does not apply yet (age never penalises)."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "established_solana": {
+      "label": "Established mode",
+      "groups": [
+        {
+          "id": "holders",
+          "label": "Holder conviction",
+          "weight": 38,
+          "factors": [
+            {
+              "id": "top10_share",
+              "label": "Top-10 holder share",
+              "weight": 3,
+              "metric": "top10SharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "rpc",
+                "hoodscan",
+                "rugcheck",
+                "helius"
+              ],
+              "thresholds": [
+                {
+                  "lte": 15,
+                  "points": 1
+                },
+                {
+                  "lte": 25,
+                  "points": 0.8
+                },
+                {
+                  "lte": 40,
+                  "points": 0.55,
+                  "flag": "info"
+                },
+                {
+                  "lte": 60,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Top-10 wallets hold {value} of supply (source: {holderSource}; pools, curves, routers and lockers excluded).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top10ExFounderPct",
+                "evidenceTemplate": "Top-10 wallets other than the founder hold {value} of supply (the founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it; pools, curves, routers and lockers excluded; derived from the holder list)."
+              }
+            },
+            {
+              "id": "top_holder",
+              "label": "Top holder (non-LP)",
+              "weight": 7,
+              "metric": "top1SharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.22: top holder should be ≤ 3.5% excluding LP/curve/lockers",
+              "data": [
+                "rpc",
+                "hoodscan",
+                "rugcheck"
+              ],
+              "thresholds": [
+                {
+                  "lte": 3.5,
+                  "points": 1
+                },
+                {
+                  "lte": 10,
+                  "points": 0.5,
+                  "flag": "warn"
+                },
+                {
+                  "lte": 20,
+                  "points": 0.2,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Largest non-LP wallet holds {value} of supply (guide bar: ≤ 3.5%).",
+              "override": {
+                "when": "founderExcluded",
+                "metric": "top1ExFounderPct",
+                "evidenceTemplate": "Largest non-LP wallet other than the founder holds {value} of supply (guide bar: ≤ 3.5%). The founder's {top1SharePct}, never sold in {founderHoldDays}d, is left out of this factor — the founder cap covers it (derived from the holder list)."
+              }
+            },
+            {
+              "id": "holder_strength",
+              "label": "Holder Strength",
+              "weight": 10,
+              "metric": "holderStrength",
+              "direction": "higher_better",
+              "format": "int",
+              "source": "hoodtier",
+              "note": "Top-20 non-LP, non-infra holders weighted by share: hold duration, drawdown survival, sell discipline, wallet maturity, dip accumulation and the 0-sell accumulators (which used to be two separate factors). Diamond ≥ 80 · Strong 60–79 · Mixed 40–59 · Weak 20–39 · Paper < 20. Established mode only, Robinhood Chain and Solana (the sets with a holder-conviction group); on Base / Monad it is shown as information.",
+              "data": [
+                "hoodscan",
+                "helius",
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 80,
+                  "points": 1
+                },
+                {
+                  "gte": 60,
+                  "points": 0.75
+                },
+                {
+                  "gte": 40,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "gte": 20,
+                  "points": 0.25,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Holder Strength {value}/100 — {holderStrengthLabel} (top-20 non-LP holders).",
+              "whenMissing": [
+                {
+                  "if": {
+                    "holderStrengthPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Holder histories are still being read (they continue in the background) — not counted yet."
+                }
+              ]
+            },
+            {
+              "id": "early_retention",
+              "label": "Early-cohort retention",
+              "weight": 2,
+              "metric": "earlyRetentionPct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan"
+              ],
+              "thresholds": [
+                {
+                  "gte": 70,
+                  "points": 1
+                },
+                {
+                  "gte": 50,
+                  "points": 0.75
+                },
+                {
+                  "gte": 30,
+                  "points": 0.4,
+                  "flag": "info"
+                },
+                {
+                  "points": 0.1,
+                  "flag": "info"
+                }
+              ],
+              "evidenceTemplate": "{value} of the first-20 buyers (HoodScan 24h lens) still hold."
+            },
+            {
+              "id": "bundlers_flushed",
+              "label": "Bundlers flushed out",
+              "weight": 4,
+              "metric": "bundlersFlushed",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.37: early buyers exiting while price holds above launch is healthy for a 3d+ token",
+              "data": [
+                "hoodscan",
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "≥ 70% of the first-20 buyers exited while price held above launch — bundlers flushed out."
+                },
+                {
+                  "points": 0.4,
+                  "note": "Early buyers have not been flushed out (exit < 70% or price below launch)."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "chains": [
+                "robinhood"
+              ]
+            },
+            {
+              "id": "deployer_holding",
+              "label": "Deployer holding",
+              "weight": 2,
+              "metric": "deployerHoldingPct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "rpc",
+                "rugcheck",
+                "helius"
+              ],
+              "thresholds": [
+                {
+                  "lte": 5,
+                  "points": 1
+                },
+                {
+                  "lte": 10,
+                  "points": 0.7
+                },
+                {
+                  "lte": 20,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Deployer wallet holds {value} of supply."
+            },
+            {
+              "id": "deployer_sold",
+              "label": "Dev sold",
+              "weight": 5,
+              "metric": "deployerSoldPct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.24: dev selling is a red flag",
+              "data": [
+                "rpc",
+                "helius"
+              ],
+              "thresholds": [
+                {
+                  "lte": 0,
+                  "points": 1
+                },
+                {
+                  "lt": 25,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lt": 50,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Deployer sold {value} via swaps; {deployerDistributedPct} distributed by transfer (not penalised)."
+            },
+            {
+              "id": "wallet_clusters",
+              "label": "Linked wallets (on-chain ties)",
+              "weight": 5,
+              "metric": "walletClusterMeter",
+              "direction": "lower_better",
+              "format": "int",
+              "source": "guide",
+              "note": "p.25 (same-source funded wallets), p.21-22 (bundles): funding origins of the top holders and first buyers; wallets merged only on proven links (lib/cluster).",
+              "data": [
+                "helius"
+              ],
+              "whenMissing": [
+                {
+                  "if": {
+                    "walletClusterPending": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Bundle check reading: funding origin read for {clusterResolvedWallets} of {clusterSampleWallets} wallets; the rest load in the background."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "eq": 0
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (no trading activity)."
+                },
+                {
+                  "if": {
+                    "deadLaunch": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "No wallets to sample (dead launch: no trading activity)."
+                },
+                {
+                  "if": {
+                    "clusterSampleWallets": {
+                      "lt": 8
+                    }
+                  },
+                  "mode": "na",
+                  "evidence": "Only {clusterSampleWallets} holder wallets to sample (the holder source lists few wallets) — linked wallets not measured; below the 8 the check needs (walletClusters.coverage.minSampleAll)."
+                }
+              ],
+              "thresholds": [
+                {
+                  "lte": 19,
+                  "points": 1
+                },
+                {
+                  "lte": 39,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "lte": 59,
+                  "points": 0.35,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Meter {value}/100 — {clusterLargestText}; {clusterSameTimeText}; {clusterResolvedWallets} of {clusterSampleWallets} wallets resolved."
+            }
+          ]
+        },
+        {
+          "id": "flow",
+          "label": "Flow & volume quality",
+          "weight": 36,
+          "factors": [
+            {
+              "id": "net_flow_24h",
+              "label": "24h net flow ratio",
+              "weight": 9,
+              "metric": "netFlowRatio24h",
+              "direction": "higher_better",
+              "format": "signedRatioPct",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan"
+              ],
+              "thresholds": [
+                {
+                  "gte": 0.15,
+                  "points": 1
+                },
+                {
+                  "gte": 0.05,
+                  "points": 0.8
+                },
+                {
+                  "gte": -0.05,
+                  "points": 0.55
+                },
+                {
+                  "gte": -0.2,
+                  "points": 0.25,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Net 24h flow is {value} of gross volume."
+            },
+            {
+              "id": "buyer_seller_ratio",
+              "label": "Buyer / seller wallets",
+              "weight": 7,
+              "metric": "buyerSellerRatio",
+              "direction": "higher_better",
+              "format": "ratio",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan",
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1.2,
+                  "points": 1
+                },
+                {
+                  "gte": 1,
+                  "points": 0.8
+                },
+                {
+                  "gte": 0.75,
+                  "points": 0.55,
+                  "flag": "info"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0.1,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} buyers per seller (24h) — {buyersBasis}."
+            },
+            {
+              "id": "single_trade_share",
+              "label": "Single-trade wallets",
+              "weight": 5,
+              "metric": "singleTradeWalletSharePct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan"
+              ],
+              "thresholds": [
+                {
+                  "lte": 40,
+                  "points": 1
+                },
+                {
+                  "lte": 60,
+                  "points": 0.7
+                },
+                {
+                  "lte": 75,
+                  "points": 0.4,
+                  "flag": "info"
+                },
+                {
+                  "points": 0.15,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "{value} of 24h wallets traded exactly once."
+            },
+            {
+              "id": "trades_per_wallet",
+              "label": "Trades per wallet",
+              "weight": 3,
+              "metric": "tradesPerWallet",
+              "direction": "band",
+              "format": "num",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan",
+                "geckoterminal"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1.5,
+                  "lte": 6,
+                  "points": 1
+                },
+                {
+                  "lt": 1.5,
+                  "points": 0.6,
+                  "flag": "info"
+                },
+                {
+                  "lte": 12,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "points": 0.2,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "{value} trades per active wallet (healthy band 1.5–6)."
+            },
+            {
+              "id": "smart_money_net",
+              "label": "Smart-money net",
+              "weight": 6,
+              "metric": "smartMoneyNetUsd",
+              "direction": "higher_better",
+              "format": "usd",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan"
+              ],
+              "thresholds": [
+                {
+                  "gt": 5000,
+                  "points": 1
+                },
+                {
+                  "gt": 0,
+                  "points": 0.75
+                },
+                {
+                  "eq": 0,
+                  "points": 0.5
+                },
+                {
+                  "gt": -5000,
+                  "points": 0.3,
+                  "flag": "info"
+                },
+                {
+                  "points": 0,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "Quality wallets net {value} over 24h."
+            },
+            {
+              "id": "flow_consistency",
+              "label": "7d vs 24h flow",
+              "weight": 2,
+              "metric": "flowConsistent",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan"
+              ],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "24h and 7d flow both non-negative."
+                },
+                {
+                  "points": 0.3,
+                  "flag": "info",
+                  "note": "7d flow contradicts or confirms net selling."
+                }
+              ],
+              "evidenceTemplate": "{note}"
+            },
+            {
+              "id": "wash_trade",
+              "label": "Wash-trade heuristic",
+              "weight": 0,
+              "metric": "washFlag",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "hoodtier",
+              "data": [
+                "hoodscan",
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "labels": {
+                "true": "wash: yes",
+                "false": "wash: no"
+              },
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "No wash pattern: volume/liquidity, repeated sizes and same-block bundles within normal range."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Wash pattern detected — see manipulation signals."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "round_trip_loss",
+              "label": "Round-trip loss",
+              "weight": 4,
+              "metric": "roundTripLossPct",
+              "direction": "lower_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "rh-sim",
+                "scanhood",
+                "jupiter"
+              ],
+              "thresholds": [
+                {
+                  "lte": 10,
+                  "points": 1
+                },
+                {
+                  "lte": 20,
+                  "points": 0.75,
+                  "flag": "info"
+                },
+                {
+                  "lte": 35,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Simulated buy→sell loses {value} (fees + tax + slippage)."
+            }
+          ]
+        },
+        {
+          "id": "safety",
+          "label": "Basics (gates only — no points)",
+          "weight": 0,
+          "factors": [
+            {
+              "id": "sellable",
+              "label": "Sellable (honeypot sim)",
+              "weight": 0,
+              "metric": "sellable",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.19: honeypot check",
+              "data": [
+                "rh-sim",
+                "scanhood",
+                "rugcheck",
+                "jupiter"
+              ],
+              "gate": true,
+              "gatePass": {
+                "eq": true
+              },
+              "labels": {
+                "true": "sellable: yes",
+                "false": "sellable: no"
+              },
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "Token can be sold (buy+sell simulation / no freeze, hook or prohibitive fee)."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Honeypot: selling is blocked or taxed away."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "mint_authority",
+              "label": "Mint authority",
+              "weight": 0,
+              "metric": "mintAuthority",
+              "direction": "boolean",
+              "format": "bool",
+              "chains": [
+                "solana"
+              ],
+              "source": "guide",
+              "note": "p.17-19: mint authority must be disabled",
+              "data": [
+                "rugcheck",
+                "helius"
+              ],
+              "gate": true,
+              "gatePass": {
+                "eq": false
+              },
+              "labels": {
+                "true": "enabled",
+                "false": "disabled"
+              },
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "Mint authority disabled — supply is fixed."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Mint authority enabled — supply can be inflated."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "freeze_authority",
+              "label": "Freeze authority",
+              "weight": 0,
+              "metric": "freezeAuthority",
+              "direction": "boolean",
+              "format": "bool",
+              "chains": [
+                "solana"
+              ],
+              "source": "guide",
+              "note": "p.19, 99: freeze authority must be disabled",
+              "data": [
+                "rugcheck",
+                "helius"
+              ],
+              "gate": true,
+              "gatePass": {
+                "eq": false
+              },
+              "labels": {
+                "true": "enabled",
+                "false": "disabled"
+              },
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "Freeze authority disabled."
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "Freeze authority enabled — wallets can be frozen."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "verified",
+              "label": "Contract verified",
+              "weight": 0,
+              "metric": "verified",
+              "direction": "boolean",
+              "format": "bool",
+              "chains": [
+                "robinhood"
+              ],
+              "source": "hoodtier",
+              "data": [],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1
+                },
+                {
+                  "points": 0
+                }
+              ],
+              "evidenceTemplate": "{value}",
+              "gateOnly": true
+            },
+            {
+              "id": "owner_renounced",
+              "label": "Owner renounced",
+              "weight": 0,
+              "metric": "ownerRenounced",
+              "direction": "boolean",
+              "format": "bool",
+              "chains": [
+                "robinhood"
+              ],
+              "source": "hoodtier",
+              "data": [
+                "rpc"
+              ],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "No active owner (renounced or no owner() function)."
+                },
+                {
+                  "points": 0.4,
+                  "flag": "info",
+                  "note": "An owner address still controls the contract."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "upgradeable",
+              "label": "Upgradeable proxy",
+              "weight": 0,
+              "metric": "upgradeable",
+              "direction": "boolean",
+              "format": "bool",
+              "chains": [
+                "robinhood"
+              ],
+              "source": "hoodtier",
+              "data": [
+                "rpc"
+              ],
+              "thresholds": [
+                {
+                  "eq": false,
+                  "points": 1,
+                  "note": "Not an EIP-1967 proxy — code cannot be swapped."
+                },
+                {
+                  "points": 0.2,
+                  "flag": "warn",
+                  "note": "EIP-1967 proxy — logic can be upgraded."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            },
+            {
+              "id": "lp_lock",
+              "label": "LP locked / burned (main pool)",
+              "weight": 0,
+              "metric": "lpLockedPct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "guide",
+              "note": "p.16-18: LP must be locked or burned on the main pool",
+              "data": [
+                "rugcheck",
+                "rpc",
+                "scanhood"
+              ],
+              "thresholds": [
+                {
+                  "gte": 95,
+                  "points": 1
+                },
+                {
+                  "gte": 80,
+                  "points": 0.75
+                },
+                {
+                  "gte": 50,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} of main-pool LP is locked or burned.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "isLaunchpad": {
+                      "eq": true
+                    }
+                  },
+                  "mode": "score",
+                  "points": 1,
+                  "flag": "none",
+                  "evidence": "Launchpad-created ({launchpad}) — LP is locked/burned by construction (guide p.16-18)."
+                },
+                {
+                  "mode": "na",
+                  "evidence": "LP lock not verifiable here (v3/v4 positions, or the lookup only runs on young tokens). On an established token liquidity is judged by its 24h/7d history instead — not held against the token."
+                }
+              ],
+              "gateOnly": true
+            },
+            {
+              "id": "launchpad",
+              "label": "Known launchpad",
+              "weight": 0,
+              "metric": "isLaunchpad",
+              "direction": "boolean",
+              "format": "bool",
+              "source": "guide",
+              "note": "p.16, 19: launchpad tokens have locked LP and standard contracts",
+              "data": [
+                "hoodscan",
+                "rugcheck"
+              ],
+              "thresholds": [
+                {
+                  "eq": true,
+                  "points": 1,
+                  "note": "Launched on {launchpad}."
+                },
+                {
+                  "points": 0.3,
+                  "flag": "info",
+                  "note": "Not created by a known launchpad — contract and LP need manual review."
+                }
+              ],
+              "evidenceTemplate": "{note}",
+              "gateOnly": true
+            }
+          ]
+        },
+        {
+          "id": "liquidity",
+          "label": "Liquidity & market",
+          "weight": 26,
+          "factors": [
+            {
+              "id": "liq_fdv",
+              "label": "Liquidity for its size",
+              "weight": 7,
+              "metric": "liqFdvPct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1,
+                  "points": 1,
+                  "note": "at or above the band reference"
+                },
+                {
+                  "gte": 0.5,
+                  "points": 0.75,
+                  "note": "at least half the band reference"
+                },
+                {
+                  "gte": 0.2,
+                  "points": 0.45,
+                  "flag": "info",
+                  "note": "a fifth to half of the band reference"
+                },
+                {
+                  "gte": 0.1,
+                  "points": 0.2,
+                  "flag": "warn",
+                  "note": "a tenth to a fifth of the band reference"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger",
+                  "note": "under a tenth of the band reference"
+                }
+              ],
+              "evidenceTemplate": "Active-pool liquidity is {value} of FDV ({fdvUsd}); the fixed reference for the {band} band is {reference}, so it holds {ratio} of the reference — {note}.",
+              "reference": {
+                "metric": "fdvUsd",
+                "label": "market cap (FDV)",
+                "note": "Liquidity for its size: a FIXED reference liquidity / market-cap ratio per market-cap band, so a coin's score never depends on other coins. Larger caps carry deeper books and need a smaller share of their value in pool liquidity; small caps need more. FDV stands in for market cap (DexScreener reports fdv, else marketCap; GeckoTerminal fdv_usd). The $1M–10M band keeps the pre-2026-11-22 flat bars (10% / 5% / 2% / 1%).",
+                "bands": [
+                  {
+                    "lt": 100000,
+                    "value": 20,
+                    "label": "< $100k"
+                  },
+                  {
+                    "gte": 100000,
+                    "lt": 1000000,
+                    "value": 15,
+                    "label": "$100k–1M"
+                  },
+                  {
+                    "gte": 1000000,
+                    "lt": 10000000,
+                    "value": 10,
+                    "label": "$1M–10M"
+                  },
+                  {
+                    "gte": 10000000,
+                    "value": 5,
+                    "label": "> $10M"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "main_pool_share",
+              "label": "Main-pool share",
+              "weight": 4,
+              "metric": "mainPoolSharePct",
+              "direction": "higher_better",
+              "format": "pct",
+              "source": "hoodtier",
+              "data": [
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "thresholds": [
+                {
+                  "gte": 70,
+                  "points": 1
+                },
+                {
+                  "gte": 50,
+                  "points": 0.75
+                },
+                {
+                  "gte": 30,
+                  "points": 0.5,
+                  "flag": "info"
+                },
+                {
+                  "points": 0.25,
+                  "flag": "warn"
+                }
+              ],
+              "evidenceTemplate": "The deepest pool holds {value} of active liquidity."
+            },
+            {
+              "id": "liq_change_24h",
+              "label": "Liquidity change 24h",
+              "weight": 3,
+              "metric": "liqChange24hPct",
+              "direction": "higher_better",
+              "format": "signedPct",
+              "source": "hoodtier",
+              "data": [
+                "history"
+              ],
+              "thresholds": [
+                {
+                  "gte": -5,
+                  "points": 1
+                },
+                {
+                  "gte": -15,
+                  "points": 0.6,
+                  "flag": "info"
+                },
+                {
+                  "gte": -30,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Total pool liquidity moved {value} over {liqChange24hWindow}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "liqHistoryPoints": {
+                      "lt": 2
+                    }
+                  },
+                  "mode": "exclude",
+                  "flag": "info",
+                  "evidence": "Collecting liquidity history ({liqHistoryPoints} observation so far) — scored from the next analysis on."
+                }
+              ]
+            },
+            {
+              "id": "liq_change_7d",
+              "label": "Liquidity change 7d",
+              "weight": 5,
+              "metric": "liqChange7dPct",
+              "direction": "higher_better",
+              "format": "signedPct",
+              "source": "hoodtier",
+              "data": [
+                "history"
+              ],
+              "thresholds": [
+                {
+                  "gte": -10,
+                  "points": 1
+                },
+                {
+                  "gte": -25,
+                  "points": 0.6,
+                  "flag": "info"
+                },
+                {
+                  "gte": -40,
+                  "points": 0.3,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "Total pool liquidity moved {value} over {liqChange7dWindow}.",
+              "whenMissing": [
+                {
+                  "if": {
+                    "liqHistoryPoints": {
+                      "lt": 2
+                    }
+                  },
+                  "mode": "exclude",
+                  "flag": "info",
+                  "evidence": "Collecting liquidity history ({liqHistoryPoints} observation so far) — scored from the next analysis on."
+                }
+              ]
+            },
+            {
+              "id": "pool_count",
+              "label": "Active pool count",
+              "weight": 1,
+              "metric": "poolCount",
+              "direction": "band",
+              "format": "int",
+              "source": "hoodtier",
+              "data": [
+                "geckoterminal",
+                "dexscreener"
+              ],
+              "thresholds": [
+                {
+                  "gte": 1,
+                  "lte": 8,
+                  "points": 1
+                },
+                {
+                  "gte": 9,
+                  "lte": 20,
+                  "points": 0.7,
+                  "flag": "info"
+                },
+                {
+                  "gt": 20,
+                  "points": 0.4,
+                  "flag": "warn"
+                },
+                {
+                  "points": 0,
+                  "flag": "danger"
+                }
+              ],
+              "evidenceTemplate": "{value} pools with ≥$1k liquidity and recent volume."
+            },
+            {
+              "id": "trend",
+              "label": "Trend structure",
+              "weight": 4,
               "metric": "trendScore",
               "direction": "higher_better",
               "format": "num",
@@ -7757,26 +9464,6 @@
       ]
     },
     {
-      "id": "funding_cluster",
-      "label": "Same-source funded wallets",
-      "source": "guide",
-      "note": "p.25",
-      "gate": true,
-      "when": {
-        "fundingClusterMax": {
-          "gt": 3
-        }
-      },
-      "points": 15,
-      "capTier": "C",
-      "flag": "RED FLAG",
-      "evidenceTemplate": "{fundingClusterMax} top wallets funded from one source within 2h — RED FLAG: −15, capped at C.",
-      "passLabel": "No same-source cluster",
-      "sets": [
-        "launch"
-      ]
-    },
-    {
       "id": "fresh_wallets",
       "label": "Multiple fresh wallets",
       "source": "guide",
@@ -7866,18 +9553,117 @@
       ]
     },
     {
+      "id": "cluster_10",
+      "label": "Linked group > 10%",
+      "source": "hoodtier",
+      "note": "Proven lower bound (strong links only); a lone founder wallet is never a cluster.",
+      "when": {
+        "clusterSupplyMinPct": {
+          "gt": 10
+        },
+        "founderClusterOnly": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "capTier": "A",
+      "evidenceTemplate": "A linked group holds {clusterSupplyText} of supply — {clusterLargestText}: capped at A."
+    },
+    {
+      "id": "cluster_20",
+      "label": "Linked group > 20%",
+      "source": "hoodtier",
+      "note": "Mirrors top_holder_20: a linked group is one holder.",
+      "when": {
+        "clusterSupplyMinPct": {
+          "gt": 20
+        },
+        "founderClusterOnly": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "capTier": "C",
+      "evidenceTemplate": "A linked group holds {clusterSupplyText} of supply, treated as one holder > 20% — capped at C."
+    },
+    {
+      "id": "cluster_35",
+      "label": "Linked group ≥ 35%",
+      "source": "hoodtier",
+      "note": "Mirrors top_holder_35.",
+      "when": {
+        "clusterSupplyMinPct": {
+          "gte": 35
+        },
+        "founderClusterOnly": {
+          "ne": true,
+          "orMissing": true
+        }
+      },
+      "capTier": "D",
+      "evidenceTemplate": "A linked group holds {clusterSupplyText} of supply, treated as one holder ≥ 35% — capped at D."
+    },
+    {
+      "id": "cluster_20_founder",
+      "label": "Founder group > 20%, never sold",
+      "source": "hoodtier",
+      "note": "Mirrors top_holder_20_founder: the largest group is only founder / team wallets.",
+      "when": {
+        "founderClusterOnly": {
+          "eq": true
+        },
+        "clusterSupplyMinPct": {
+          "gt": 20
+        }
+      },
+      "capTier": "A",
+      "evidenceTemplate": "The founder and the wallets it funded hold {clusterSupplyText} — key-person risk: capped at A."
+    },
+    {
+      "id": "cluster_35_founder",
+      "label": "Founder group ≥ 35%, never sold",
+      "source": "hoodtier",
+      "note": "Mirrors top_holder_35_founder (owner decision 2026-11-23: founder caps at A).",
+      "when": {
+        "founderClusterOnly": {
+          "eq": true
+        },
+        "clusterSupplyMinPct": {
+          "gte": 35
+        }
+      },
+      "capTier": "A",
+      "evidenceTemplate": "The founder and the wallets it funded hold {clusterSupplyText} — key-person risk: capped at A."
+    },
+    {
+      "id": "cluster_overhang",
+      "label": "Coordinated buying, group still holds",
+      "source": "hoodtier",
+      "note": "Only with a proven link of at least 10%.",
+      "when": {
+        "walletClusterMeter": {
+          "gte": 60
+        },
+        "clusterSupplyMinPct": {
+          "gte": 10
+        }
+      },
+      "capTier": "B",
+      "evidenceTemplate": "Buying was coordinated (meter {walletClusterMeter}) and the group still holds {clusterSupplyText} — capped at B."
+    },
+    {
       "id": "full_bundle",
       "label": "Cluster holds ≥ 50%",
       "source": "guide",
       "note": "p.21-22, 28-29",
       "when": {
-        "clusterSupplyPct": {
+        "clusterSupplyMinPct": {
           "gte": 50
         }
       },
       "capTier": "D",
       "flag": "full bundle",
-      "evidenceTemplate": "One linked HoodTier cluster (funding-graph) holds {clusterSupplyPct} — full bundle, capped at D."
+      "evidenceTemplate": "A linked group (on-chain ties) holds {clusterSupplyText} of supply — full bundle, capped at D."
     },
     {
       "id": "bot_inflated",
@@ -8428,6 +10214,21 @@
           }
         }
       ]
+    },
+    {
+      "id": "s_clusters",
+      "label": "Bundle check complete and clean",
+      "tiers": [
+        "S"
+      ],
+      "when": {
+        "walletClusterState": {
+          "eq": "live"
+        },
+        "walletClusterMeter": {
+          "lt": 20
+        }
+      }
     }
   ],
   "manualChecks": [
@@ -8652,7 +10453,7 @@
     ]
   },
   "chainSets": {
-    "note": "Chain-specific factor sets: Robinhood launch tokens are scored only on signals Robinhood Chain sources can supply (no pump.fun feed / Helius factors). Base, Monad and Ethereum (v3) have their own launch and established sets, built only from fields their sources fill (docs/chains/<chain>.md); factors no source on the chain provides are absent. Ethereum's sets are the Base sets on the Ethereum sources (ethereum-rpc / ethereum-sim / etherscan) without the launchpad factor: no Ethereum launchpad is registered, so it would be permanently null.",
+    "note": "Chain-specific factor sets: Robinhood launch tokens are scored only on signals Robinhood Chain sources can supply (no pump.fun feed / Helius factors). Base, Monad and Ethereum (v3) have their own launch and established sets, built only from fields their sources fill (docs/chains/<chain>.md); factors no source on the chain provides are absent. Ethereum's sets are the Base sets on the Ethereum sources (ethereum-rpc / ethereum-sim / etherscan) without the launchpad factor: no Ethereum launchpad is registered, so it would be permanently null. Solana established tokens use established_solana (2026-11-24): the shared established set plus the wallet-cluster meter (top10_share 8 → 3, wallet_clusters 5); Robinhood keeps established until its funding is readable.",
     "robinhood": {
       "launch": "launch_robinhood"
     },
@@ -8667,6 +10468,9 @@
     "ethereum": {
       "launch": "launch_ethereum",
       "established": "established_ethereum"
+    },
+    "solana": {
+      "established": "established_solana"
     }
   },
   "zeroActivity": {
@@ -8720,6 +10524,62 @@
     "cohortSize": "int",
     "top1ExFounderPct": "pct",
     "top10ExFounderPct": "pct",
-    "founderHoldDays": "int"
+    "founderHoldDays": "int",
+    "walletClusterMeter": "int",
+    "clusterSupplyMinPct": "pct",
+    "fundingClusterMax": "int",
+    "sameTimeFundedMax": "int",
+    "sameTimeBuyMax": "int",
+    "clusterResolvedWallets": "int",
+    "clusterSampleWallets": "int"
+  },
+  "walletClusters": {
+    "note": "Wallet-cluster meter (lib/cluster; plan docs/research/2026-11-23-team-review-plan.md §3). sameTimeSec: owner decision 2026-11-24 (30s). Strong edges merge wallets; weak ones only as two different kinds on one pair. coverage.minSampleAll (8): holder sources that list only ~10 wallets (GoPlus top-10 on Base / Monad / Ethereum) pass the bar only when all of them are resolved.",
+    "sameTimeSec": 30,
+    "strongWindowSec": 1800,
+    "weakWindowSec": 7200,
+    "batchWithdrawalMinRecipients": 20,
+    "batchWithdrawalMaxSampleShare": 0.25,
+    "dustPct": 0.05,
+    "hubNonce": 5000,
+    "hubSigs": 1000,
+    "blend": {
+      "launch": {
+        "buy": 0.6,
+        "hold": 0.4
+      },
+      "established": {
+        "buy": 0.2,
+        "hold": 0.8
+      }
+    },
+    "buyerClusterMinHoldPct": 1,
+    "floorClusterPct": 50,
+    "floorMeter": 80,
+    "minProvenPct": 10,
+    "coverage": {
+      "minResolved": 12,
+      "minHolderSupplyPct": 70,
+      "minBuyers": 10,
+      "minSampleAll": 8
+    },
+    "pending": {
+      "maxAttempts": 3,
+      "maxAgeSec": 1800
+    },
+    "inline": {
+      "holders": 10,
+      "buyers": 10
+    },
+    "sample": {
+      "holders": 20,
+      "buyers": 20
+    },
+    "bands": [
+      19,
+      39,
+      59,
+      79
+    ]
   }
 }

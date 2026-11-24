@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import rawConfig from "@/lib/scoring/factors.json";
-import { defaultConfig, loadConfig, modeFor, type ScoringConfig } from "@/lib/scoring/config";
+import { defaultConfig, loadConfig, modeFor, setFor, type ScoringConfig } from "@/lib/scoring/config";
 import { scoreSnapshot, tierCeiling } from "@/lib/scoring/engine";
 import { deriveMetrics } from "@/lib/snapshot";
 import type { ScoreReport, Tier, TokenSnapshot } from "@/lib/types";
@@ -40,7 +40,8 @@ describe("config loading", () => {
 
   it("picks up a new factor added only in config", () => {
     const cfg = clone();
-    const liq = cfg.sets.established.groups.find((g) => g.id === "liquidity")!;
+    // The set the test token (Robinhood, established) actually resolves to.
+    const liq = setFor(cfg, "established", "robinhood").groups.find((g) => g.id === "liquidity")!;
     // (token_age became bonus-only rules in §7d; take the 2 points from liq_fdv instead.)
     liq.factors.find((f) => f.id === "liq_fdv")!.weight -= 2;
     liq.factors.push({
