@@ -11,6 +11,11 @@
   - **Unchanged:** a real never-traded pump launch (genuine curve account) and PEEK stay dead.
   - **Fixture snapshots:** no tier moved.
 - **The group wording claimed the whole group was funded "within 27s" when only 2 of 4 were.** The evidence now describes the group: "all 4 first funded by X within 12 min (2 of them within 30s)".
+- **Visual check (live, 375px dark and 1024px light):** no horizontal scroll, dark tokens apply. On phones the SVG scales to about 0.5×, so its group labels were around 6px.
+  - Added an HTML legend above the map (colour chip · Group A · N wallets · %), readable at any width.
+  - Under 480px the in-map group label grows and the band caption is hidden (the figure caption repeats it).
+  - The map height now follows its content.
+  - **Not deployed yet:** this legend change passed typecheck, lint, unit tests (786/787; the one failure is the live microduck comparison that has flaked all day), build, verify:api and stability. Playwright could not run: the machine was at 100% CPU with 1.6 GB RAM free (another project's dev servers), its server did not start within 60s, and an earlier attempt had 11 timeouts. Deploy after a clean Playwright run. Production stays on 7ba9a02, which passed the full LOOP.
 - **Source line:** "Wallet funding (cluster check)" now appears in Sources.
   - **States:** ok when live; partial when pending or null, with the reason; skipped for n/a and Robinhood partial.
   - **Never "failed",** so it cannot feed the adapter outage / U logic (no factor lists it in `data`).

@@ -87,13 +87,25 @@ export default function ClusterBubbles({ graph }: { graph: ClusterGraph }) {
   const composite = graph.edges.filter((e) => e.kind === "composite" && pos.has(e.a) && pos.has(e.b));
   return (
     <figure className="m-0 space-y-1" data-testid="cluster-bubbles">
+      {/* HTML legend: readable at any width (the SVG scales down on phones). */}
+      {funders.length > 0 && (
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" data-testid="cluster-legend">
+          {graph.clusters.slice(0, funders.length).map((c, i) => (
+            <li key={c.id} className="flex items-center gap-1">
+              <span aria-hidden="true" className="inline-block h-3 w-3 rounded-full" style={{ background: `var(--cluster-${i + 1})` }} />
+              <span className="font-bold">Group {c.id}</span> · {c.members.length} wallets · {pctText(c.supplyPct)}
+            </li>
+          ))}
+          {graph.clusters.length > funders.length && <li className="text-muted">+{graph.clusters.length - funders.length} smaller groups (grey)</li>}
+        </ul>
+      )}
       <svg viewBox={`0 0 ${W} ${height}`} width="100%" role="group" aria-label={`Wallet map: ${graph.clusters.length} linked group${graph.clusters.length === 1 ? "" : "s"} among ${graph.nodes.length} sampled wallets`} className="block h-auto max-w-full">
         <line x1={0} x2={W} y1={topH + 20} y2={topH + 20} stroke="var(--muted)" strokeDasharray="2 4" />
-        <text x={8} y={topH + 34} fontSize={11} fill="var(--muted)">
+        <text x={8} y={topH + 34} fontSize={11} fill="var(--muted)" className="mm-map-caption">
           {topH ? "other sampled wallets (independent, excluded or not read yet)" : "sampled wallets — no linked group"}
         </text>
         {funders.map((f) => (
-          <text key={`l${f.id}`} x={f.x} y={18} textAnchor="middle" fontSize={13} fontWeight={700} fill={f.color}>
+          <text key={`l${f.id}`} x={f.x} y={26} textAnchor="middle" fontSize={13} fontWeight={700} fill={f.color} className="mm-map-label">
             {`group ${f.label} · ${pctText(f.pct)}`}
           </text>
         ))}

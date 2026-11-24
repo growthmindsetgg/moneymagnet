@@ -54,6 +54,9 @@ describe("wallet map (SVG)", () => {
     expect((html.match(/tabindex="0"/g) ?? []).length).toBe(14);
     expect(html).toMatch(/<title>Wallet…xxxx · 4\.0% · group A · founder · first coin from Spraye…xxxx<\/title>/);
     expect(html).toMatch(/group A · 24\.0%/);
+    // The HTML legend repeats each group readably (phones scale the SVG down).
+    expect(html).toMatch(/data-testid="cluster-legend"/);
+    expect(html).toMatch(/Group A<\/span> · 6 wallets · 24\.0%/);
   });
 });
 

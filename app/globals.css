@@ -575,3 +575,14 @@ html:not([data-view="research"]) .mm-clamp-verdict {
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
+
+/* Wallet map on phones: the SVG scales to ~0.5×, so its group label grows and the band caption (repeated in the
+   figure caption) is hidden. */
+@media (max-width: 480px) {
+  .mm-map-label {
+    font-size: 22px;
+  }
+  .mm-map-caption {
+    display: none;
+  }
+}
