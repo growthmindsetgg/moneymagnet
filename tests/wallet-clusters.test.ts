@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGraph, type FunderFact, type SampleWallet, type WalletClustersCfg } from "@/lib/cluster/graph";
+import { buildGraph, exchangeLikeMembers, type FunderFact, type SampleWallet, type WalletClustersCfg } from "@/lib/cluster/graph";
 import { bandOf, maxWindowGroup, meterFields } from "@/lib/cluster/meter";
 import { solanaReceipt, type Origin } from "@/lib/onchain/origin";
 import { defaultConfig, setFor } from "@/lib/scoring/config";
@@ -94,6 +94,18 @@ describe("cluster graph (pure)", () => {
     const g = graphOf([holder(1, 30, { holderClass: "founder" }), holder(2, 10, { holderClass: "team" })], [origin("w01", "DEV", T), origin("w02", "DEV", T + 5)], {}, ["DEV"]);
     expect(g.clusters[0].includesFounder).toBe(true);
     expect(g.clusters[0].founderOnly).toBe(true);
+  });
+
+  it("exchange-like custody: a high-activity member leaves the group; a founder / deployer-funded one stays (correction 16)", () => {
+    // Two large holders where one funded the other: the WIF-style exchange pair.
+    const g = graphOf([holder(1, 10), holder(2, 6.4)], [origin("w01", "x", T), origin("w02", "w01", T + 500)]);
+    expect(g.clusters).toHaveLength(1);
+    expect(exchangeLikeMembers(g, new Map([["w01", "≥ 1000 transactions"]]), new Set())).toEqual([{ address: "w01", label: "≥ 1000 transactions" }]);
+    // Founder / team class, or funded by the deployer: never dropped, whatever its activity.
+    const team = graphOf([holder(1, 30, { holderClass: "founder" }), holder(2, 10)], [origin("w01", "DEV", T), origin("w02", "DEV", T + 5)], {}, ["DEV"]);
+    expect(exchangeLikeMembers(team, new Map([["w01", "nonce 9000"], ["w02", "nonce 9000"]]), new Set(["DEV"]))).toEqual([]);
+    // Not a hub: stays.
+    expect(exchangeLikeMembers(g, new Map(), new Set())).toEqual([]);
   });
 
   it("deterministic: the same input gives the same clusters, ids and edge order", () => {

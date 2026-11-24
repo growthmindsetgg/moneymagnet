@@ -7,8 +7,10 @@ import type { ClusterGraph, ClusterNode } from "@/lib/cluster/graph";
  */
 
 const W = 640;
-const H = 400;
-const TOP_H = 290;
+/** The groups area grows with the largest ring (no empty canvas for one small group), within these bounds. */
+const TOP_MIN = 150;
+const TOP_MAX = 290;
+const BAND_H = 95;
 const MAX_CLUSTERS = 5;
 
 const short = (a: string) => (a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a);
@@ -34,20 +36,24 @@ interface Placed {
   color: string;
 }
 
-export function layout(graph: ClusterGraph): { placed: Placed[]; funders: { id: string; x: number; y: number; color: string; label: string; pct: number }[] } {
+export function layout(graph: ClusterGraph): { placed: Placed[]; funders: { id: string; x: number; y: number; color: string; label: string; pct: number }[]; topH: number; height: number } {
   const byAddr = new Map(graph.nodes.map((n) => [n.address, n]));
   const shown = graph.clusters.slice(0, MAX_CLUSTERS);
   const placed: Placed[] = [];
   const funders: { id: string; x: number; y: number; color: string; label: string; pct: number }[] = [];
   const cellW = W / Math.max(1, shown.length);
-  shown.forEach((c, i) => {
+  const cap = Math.max(6, Math.min(40, cellW / 6));
+  const groups = shown.map((c) => {
+    const members = c.members.map((m) => byAddr.get(m)!).filter(Boolean).sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0) || (a.address < b.address ? -1 : 1));
+    const biggest = Math.max(4, ...members.map((n) => radius(n.pct, cap)));
+    return { c, members, biggest, ring: Math.min(cellW / 2 - biggest - 6, 40 + members.length * 4, TOP_MAX / 2 - biggest - 14) };
+  });
+  const topH = shown.length ? Math.min(TOP_MAX, Math.max(TOP_MIN, Math.max(...groups.map((g) => 2 * (g.ring + g.biggest))) + 50)) : 0;
+  groups.forEach(({ c, members, ring }, i) => {
     const cx = cellW * i + cellW / 2;
-    const cy = TOP_H / 2 + 10;
+    const cy = topH / 2 + 12;
     const color = `var(--cluster-${i + 1})`;
     funders.push({ id: c.id, x: cx, y: cy, color, label: c.id, pct: c.supplyPct });
-    const members = c.members.map((m) => byAddr.get(m)!).filter(Boolean).sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0) || (a.address < b.address ? -1 : 1));
-    const cap = Math.max(6, Math.min(40, cellW / 6));
-    const ring = Math.min(cellW / 2 - cap - 6, 40 + members.length * 4, TOP_H / 2 - cap - 14);
     members.forEach((n, j) => {
       let x: number;
       let y: number;
@@ -69,22 +75,22 @@ export function layout(graph: ClusterGraph): { placed: Placed[]; funders: { id: 
   const inShown = new Set(shown.flatMap((c) => c.members));
   const rest = graph.nodes.filter((n) => !inShown.has(n.address)).sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0) || (a.address < b.address ? -1 : 1));
   const step = W / (rest.length + 1);
-  rest.forEach((n, j) => placed.push({ node: n, x: step * (j + 1), y: TOP_H + 55, r: radius(n.pct, Math.max(4, Math.min(16, step / 2 - 2))), color: "var(--muted)" }));
-  return { placed, funders };
+  rest.forEach((n, j) => placed.push({ node: n, x: step * (j + 1), y: topH + 55, r: radius(n.pct, Math.max(4, Math.min(16, step / 2 - 2))), color: "var(--muted)" }));
+  return { placed, funders, topH, height: topH + BAND_H };
 }
 
 export default function ClusterBubbles({ graph }: { graph: ClusterGraph }) {
-  const { placed, funders } = layout(graph);
+  const { placed, funders, topH, height } = layout(graph);
   const pos = new Map(placed.map((p) => [p.node.address, p]));
   const funderOf = new Map(funders.map((f) => [f.id, f]));
   const weak = graph.edges.filter((e) => e.strength === "weak" && pos.has(e.a) && pos.has(e.b));
   const composite = graph.edges.filter((e) => e.kind === "composite" && pos.has(e.a) && pos.has(e.b));
   return (
     <figure className="m-0 space-y-1" data-testid="cluster-bubbles">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="group" aria-label={`Wallet map: ${graph.clusters.length} linked group${graph.clusters.length === 1 ? "" : "s"} among ${graph.nodes.length} sampled wallets`} className="block h-auto max-w-full">
-        <line x1={0} x2={W} y1={TOP_H + 20} y2={TOP_H + 20} stroke="var(--muted)" strokeDasharray="2 4" />
-        <text x={8} y={TOP_H + 34} fontSize={11} fill="var(--muted)">
-          other sampled wallets (independent, excluded or not read yet)
+      <svg viewBox={`0 0 ${W} ${height}`} width="100%" role="group" aria-label={`Wallet map: ${graph.clusters.length} linked group${graph.clusters.length === 1 ? "" : "s"} among ${graph.nodes.length} sampled wallets`} className="block h-auto max-w-full">
+        <line x1={0} x2={W} y1={topH + 20} y2={topH + 20} stroke="var(--muted)" strokeDasharray="2 4" />
+        <text x={8} y={topH + 34} fontSize={11} fill="var(--muted)">
+          {topH ? "other sampled wallets (independent, excluded or not read yet)" : "sampled wallets — no linked group"}
         </text>
         {funders.map((f) => (
           <text key={`l${f.id}`} x={f.x} y={18} textAnchor="middle" fontSize={13} fontWeight={700} fill={f.color}>

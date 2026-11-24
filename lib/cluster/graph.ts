@@ -97,6 +97,8 @@ export interface ClusterGraph {
   edges: ClusterEdge[];
   clusters: Cluster[];
   exclusions: { address: string; kind: FunderKind; label: string; wallets: number }[];
+  /** Exchange-like custody wallets left out of the sample (still counted in concentration). */
+  custody?: { address: string; label: string; pct: number | null }[];
 }
 
 const short = (a: string) => (a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a);
@@ -266,6 +268,28 @@ export function buildGraph(input: {
     excl.set(f, e);
   }
   return { chain: input.chain, token: input.token, computedAt: input.computedAt, nodes, edges, clusters, exclusions: [...excl.values()] };
+}
+
+/**
+ * Cluster members that look like exchange custody (plan correction 16): a high-activity wallet (over the hub bar) that
+ * is not the founder / team and was not funded by the deployer. An exchange wallet funding another is how exchanges
+ * work, not one person farming a token — these leave the cluster sample (they stay counted in concentration).
+ */
+export function exchangeLikeMembers(graph: ClusterGraph, hubs: Map<string, string>, deployers: Set<string>): { address: string; label: string }[] {
+  const norm = (a: string) => (graph.chain === "solana" ? a : a.toLowerCase());
+  const dep = new Set([...deployers].map(norm));
+  const out: { address: string; label: string }[] = [];
+  for (const c of graph.clusters) {
+    for (const m of c.members) {
+      const n = graph.nodes.find((x) => x.address === m);
+      const label = hubs.get(norm(m));
+      if (!n || !label) continue;
+      if (n.holderClass && FOUNDERISH.has(n.holderClass)) continue;
+      if (n.origin?.funder && dep.has(norm(n.origin.funder))) continue;
+      out.push({ address: m, label });
+    }
+  }
+  return out;
 }
 
 function summarise(inner: ClusterEdge[], size: number, funder: string | null): string {

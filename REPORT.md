@@ -21,6 +21,9 @@
 - **Origin cache key bumped to `origin:v3`,** so the new window applies at once. `originKey()` is now shared by origin.ts and collect.ts: collect.ts had rebuilt the key by hand, and a version bump would have silently broken its in-request lookups.
 - **Monad:** the public archive answers "Block requested not found" (shallow history), so funding is not readable there. After 3 background attempts this ends as null, or n/a when the source lists fewer than 8 wallets. A deeper archive (`MONAD_RPC_URL`) would fix it.
 - **Base:** live, meter 0, 9 of 9 top holders resolved, no linked group (brett).
+- **WIF read meter 32 with "2 wallets holding 16.4% (1 direct funding)", capped at A.** Those are exchange custody wallets: one exchange wallet funding another is not one person.
+  - Added the spec's exchange-like holder test (correction 16), which first-cut stage B had skipped. A group member over the hub bar (≥ 1000 signatures in one page on Solana; nonce > 5000 on EVM) that is not founder / team and not deployer-funded leaves the cluster sample and stays counted in concentration. The graph is re-linked without it, and the section names it.
+  - Cost: only group members are tested (usually a handful), cached 7 days at `hub:v1`. The funder hub test now uses the same helper.
 
 ## Tests
 `tests/cluster-ui.test.ts` (7):

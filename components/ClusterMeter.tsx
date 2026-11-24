@@ -139,6 +139,11 @@ export default function ClusterMeter({ report }: { report: ScoreReport }) {
         </details>
       )}
 
+      {graph?.custody && graph.custody.length > 0 && (
+        <p className="break-words text-xs text-muted" data-testid="wallet-clusters-custody">
+          Left out of linking (exchange-like custody, still counted in concentration): {graph.custody.map((c) => `${short(c.address)} ${pctText(c.pct)} — ${c.label}`).join(" · ")}
+        </p>
+      )}
       {graph && graph.exclusions.length > 0 && (
         <p className="break-words text-xs text-muted" data-testid="wallet-clusters-exclusions">
           Not linked (funded by infrastructure): {graph.exclusions.map((e) => `${e.wallets} via ${e.label} ${short(e.address)}`).join(" · ")}

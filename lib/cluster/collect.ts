@@ -8,7 +8,7 @@ import { chainCexLabel, chainInfraEntry } from "../onchain/chainInfra";
 import { infraEntry } from "../onchain/infra";
 import { heliusClient, isProgramAddress, type Helius } from "../timemachine/solana";
 import { cachedOrigins, originKey, originOf, type FunderKind, type Origin, type OriginCtx } from "../onchain/origin";
-import { buildGraph, nodeStatus, type FunderFact, type SampleWallet, type WalletClustersCfg } from "./graph";
+import { buildGraph, exchangeLikeMembers, nodeStatus, type FunderFact, type SampleWallet, type WalletClustersCfg } from "./graph";
 import { meterFields } from "./meter";
 
 /**
@@ -117,26 +117,35 @@ async function classifyFunders(chain: Chain, origins: Map<string, Origin>, deplo
       }
       // The hub test only matters for funders shared by ≥ 2 sampled wallets.
       if (n < 2 || Date.now() >= ctx.deadline) return out.set(f, { kind: "eoa" });
-      const key = `funder-kind:v1:${chain}:${f}`;
-      const hit = await kvGet<FunderFact>(key);
-      if (hit) return out.set(f, hit);
-      let fact: FunderFact = { kind: "eoa" };
-      try {
-        if (chain === "solana" && ctx.helius) {
-          const sigs = await ctx.helius<{ signature: string }[]>("getSignaturesForAddress", [f, { limit: cfg.hubSigs }]);
-          if (sigs.length >= cfg.hubSigs) fact = { kind: "eoa", hub: true, label: `high-volume sender (≥ ${cfg.hubSigs} transactions)` };
-        } else if (ctx.rpc) {
-          const nonce = Number(await ctx.rpc<string>("eth_getTransactionCount", [f, "latest"]));
-          if (nonce > cfg.hubNonce) fact = { kind: "eoa", hub: true, label: `high-volume sender (nonce ${nonce})` };
-        }
-        await kvSet(key, fact, FUNDER_TTL_S);
-      } catch {
-        // Unknown hub status: treated as a plain EOA this run, not cached.
-      }
-      out.set(f, fact);
+      const hub = await hubLabel(chain, f, ctx, cfg);
+      out.set(f, hub ? { kind: "eoa", hub: true, label: `high-volume sender (${hub})` } : { kind: "eoa" });
     }),
   );
   return out;
+}
+
+/**
+ * High-activity test (cached 7 days at hub:v1): ≥ hubSigs signatures in one page (Solana) or nonce > hubNonce (EVM).
+ * Returns a short label ("≥ 1000 transactions" / "nonce 48211") or null. Unknown (read failed) ⇒ null, not cached.
+ */
+async function hubLabel(chain: Chain, address: string, ctx: { helius: Helius | null; rpc: Rpc | null }, cfg: WalletClustersCfg): Promise<string | null> {
+  const key = `hub:v1:${chain}:${address}`;
+  const hit = await kvGet<{ label: string | null }>(key);
+  if (hit) return hit.label;
+  try {
+    let label: string | null = null;
+    if (chain === "solana" && ctx.helius) {
+      const sigs = await ctx.helius<{ signature: string }[]>("getSignaturesForAddress", [address, { limit: cfg.hubSigs }]);
+      if (sigs.length >= cfg.hubSigs) label = `≥ ${cfg.hubSigs} transactions`;
+    } else if (ctx.rpc) {
+      const nonce = Number(await ctx.rpc<string>("eth_getTransactionCount", [address, "latest"]));
+      if (nonce > cfg.hubNonce) label = `nonce ${nonce}`;
+    } else return null;
+    await kvSet(key, { label }, FUNDER_TTL_S);
+    return label;
+  } catch {
+    return null;
+  }
 }
 
 /** Starts the step: cached origins + priority funding reads begin now; finish() builds the graph and the meter. */
@@ -218,7 +227,23 @@ export function startWalletClusters(chain: Chain, token: string, snapshot: Token
         await kvSet(progressKey, { attempts: 0, startedAt: Date.now() }, PROGRESS_TTL_S).catch(() => undefined);
       }
 
-      const graph = buildGraph({ chain, token, wallets: sample, origins, funders, deployers, cfg: cfgNow, computedAt: Date.now() });
+      let graph = buildGraph({ chain, token, wallets: sample, origins, funders, deployers, cfg: cfgNow, computedAt: Date.now() });
+      // Exchange-like custody wallets inside a group leave the sample (still counted in concentration), then re-link.
+      if (!partialReason && graph.clusters.length) {
+        const members = [...new Set(graph.clusters.flatMap((c) => c.members))];
+        const hubs = new Map<string, string>();
+        await mapLimit(members, 4, Math.max(Date.now() + 3_000, inlineDeadline), async (m) => {
+          const label = await hubLabel(chain, norm(chain, m), { helius, rpc }, cfgNow);
+          if (label) hubs.set(norm(chain, m), label);
+        });
+        const drop = exchangeLikeMembers(graph, hubs, deployers);
+        if (drop.length) {
+          const gone = new Set(drop.map((d) => d.address));
+          const kept = sample.filter((w) => !gone.has(w.address));
+          graph = buildGraph({ chain, token, wallets: kept, origins, funders, deployers, cfg: cfgNow, computedAt: Date.now() });
+          graph.custody = drop.map((d) => ({ address: d.address, label: `exchange-like custody wallet (${d.label})`, pct: sample.find((w) => w.address === d.address)?.pct ?? null }));
+        }
+      }
       const fields = meterFields({ graph, cfg: cfgNow, mode: modeFor(snap.ageHours, defaultConfig), pending, attempts: prog.attempts, buyersNa, partialReason });
       const { nullReasons, ...values } = fields;
       Object.assign(snap, values);

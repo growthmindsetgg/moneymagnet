@@ -46,7 +46,7 @@ describe("wallet map (SVG)", () => {
       expect(p.x).toBeGreaterThanOrEqual(0);
       expect(p.x).toBeLessThanOrEqual(640);
       expect(p.y).toBeGreaterThanOrEqual(0);
-      expect(p.y).toBeLessThanOrEqual(400);
+      expect(p.y).toBeLessThanOrEqual(layout(g).height);
     }
   });
   it("every wallet is focusable with a title naming its group and funder", () => {
