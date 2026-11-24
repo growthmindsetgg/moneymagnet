@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import type { AdapterResult, Chain, TokenSnapshot } from "../types";
+import type { AdapterResult, Chain, SourceStatus, TokenSnapshot } from "../types";
 import { defaultConfig, modeFor } from "../scoring/config";
 import { isEvmChain, type EvmChain } from "../chain";
 import { kvGet, kvSet } from "../kv";
@@ -25,16 +25,47 @@ const BACKGROUND_MS = 35_000;
 const PROGRESS_TTL_S = 6 * 3_600;
 const FUNDER_TTL_S = 7 * 86_400;
 
-interface Progress {
+export interface Progress {
   attempts: number;
   startedAt: number;
 }
 
-export interface WalletClusterRun {
-  finish(snapshot: TokenSnapshot): Promise<void>;
+/**
+ * Background episodes (plan §3.6, B2): at most maxAttempts background reads within maxAgeSec of an episode's start.
+ * A new episode starts once the last one has expired and some sampled wallets were never read (holder churn, a cache
+ * bump) — otherwise a token checked once would get no background reads for the rest of the progress TTL.
+ * endState: reads are still owed but the episode is spent ⇒ outage-unreadable wallets leave the sample (B2).
+ */
+export function episodeStep(prev: Progress | null, now: number, cfg: WalletClustersCfg, counts: { neverRead: number; retryable: number; unresolved: number }): { progress: Progress; schedule: boolean; endState: boolean } {
+  let p: Progress = prev ?? { attempts: 0, startedAt: now };
+  const expired = now - p.startedAt > cfg.pending.maxAgeSec * 1000;
+  if (expired && counts.neverRead > 0) p = { attempts: 0, startedAt: now };
+  const fresh = now - p.startedAt <= cfg.pending.maxAgeSec * 1000;
+  const schedule = counts.retryable > 0 && p.attempts < cfg.pending.maxAttempts && fresh;
+  if (schedule) p = { attempts: p.attempts + 1, startedAt: p.startedAt };
+  else if (!counts.unresolved && p.attempts) p = { attempts: 0, startedAt: now };
+  return { progress: p, schedule, endState: !schedule && counts.retryable > 0 };
 }
 
-const NOOP: WalletClusterRun = { finish: async () => undefined };
+export interface WalletClusterRun {
+  /** Builds the graph and the meter on the snapshot; returns the step's own source line (null when not run). */
+  finish(snapshot: TokenSnapshot): Promise<SourceStatus | null>;
+}
+
+const NOOP: WalletClusterRun = { finish: async () => null };
+
+/** The step's line in the Sources list (CLAUDE.md: every source's status on the page). Never "failed": the meter's own
+ *  states already carry the reason, and a failed source would feed the outage / U logic meant for adapters. */
+export function clusterSourceLine(s: TokenSnapshot, ms: number): SourceStatus {
+  const st = s.walletClusterState;
+  const cov = `${s.clusterResolvedWallets ?? 0} of ${s.clusterSampleWallets ?? 0} wallets' funding read`;
+  const why = s.nullReasons?.walletClusterMeter;
+  const base = { id: "clusters", label: "Wallet funding (cluster check)", ms };
+  if (st === "live") return { ...base, state: "ok", message: `${cov} · meter ${s.walletClusterMeter}/100` };
+  if (st === "pending") return { ...base, state: "partial", message: `${cov} · the rest in the background` };
+  if (st === "null") return { ...base, state: "partial", message: `${cov} · ${why ?? "not measured"}` };
+  return { ...base, state: "skipped", message: why ?? "not measured on this chain" };
+}
 
 const norm = (chain: Chain, a: string) => (chain === "solana" ? a : a.toLowerCase());
 
@@ -173,6 +204,7 @@ export function startWalletClusters(chain: Chain, token: string, snapshot: Token
   })();
   inline.catch(() => undefined);
 
+  const t0 = Date.now();
   return {
     async finish(snap: TokenSnapshot) {
       const cfgNow = cfg;
@@ -203,31 +235,35 @@ export function startWalletClusters(chain: Chain, token: string, snapshot: Token
 
       // Background reads for what is still unresolved, within the end-state limits.
       const unresolved = sample.filter((w) => nodeStatus(origins.get(w.address) ?? null, origins.get(w.address)?.funder ? funders.get(norm(chain, origins.get(w.address)!.funder!)) : undefined) === "unresolved");
-      const progressKey = `clusters:v1:${chain}:${norm(chain, token)}`;
-      const prog = (await kvGet<Progress>(progressKey)) ?? { attempts: 0, startedAt: Date.now() };
-      const fresh = Date.now() - prog.startedAt <= cfgNow.pending.maxAgeSec * 1000;
+      // Versioned with the origin cache key (origin:v3): a cache bump starts with a clean episode.
+      const progressKey = `clusters:v3:${chain}:${norm(chain, token)}`;
+      const stored = await kvGet<Progress>(progressKey);
       // Retryable: wallets with no origin yet, or a non-final one whose reason is a budget / outage (not a proven gap).
       const retryable = unresolved.filter((w) => {
         const o = origins.get(w.address);
         return !o || /time budget|failed|rate|timed out|unreachable|not reachable inline/i.test(o.reason ?? "");
       });
-      let pending = false;
-      if (!partialReason && retryable.length && prog.attempts < cfgNow.pending.maxAttempts && fresh) {
-        pending = true;
-        const next = { attempts: prog.attempts + 1, startedAt: prog.startedAt };
-        await kvSet(progressKey, next, PROGRESS_TTL_S).catch(() => undefined);
-        prog.attempts = next.attempts;
+      const neverRead = sample.filter((w) => !origins.has(w.address)).length;
+      const ep = partialReason ? { progress: stored ?? { attempts: 0, startedAt: Date.now() }, schedule: false, endState: false } : episodeStep(stored, Date.now(), cfgNow, { neverRead, retryable: retryable.length, unresolved: unresolved.length });
+      const prog = ep.progress;
+      if (!stored || stored.attempts !== prog.attempts || stored.startedAt !== prog.startedAt) await kvSet(progressKey, prog, PROGRESS_TTL_S).catch(() => undefined);
+      const pending = ep.schedule;
+      if (ep.schedule) {
         const bgCtx: OriginCtx = { deadline: Date.now() + BACKGROUND_MS, memo: new Map(), helius, archive: evmArchive };
         try {
           after(() => mapLimit(retryable, chain === "solana" ? 4 : 3, bgCtx.deadline, (w) => originOf(chain, w.address, bgCtx)).then(() => undefined, () => undefined));
         } catch {
           // Outside a request (scripts): the next analysis continues from the cached origins.
         }
-      } else if (!unresolved.length && prog.attempts) {
-        await kvSet(progressKey, { attempts: 0, startedAt: Date.now() }, PROGRESS_TTL_S).catch(() => undefined);
       }
+      // B2 end state: reads still owed after the episode ⇒ wallets unreadable through an outage / budget leave the sample
+      // (listed on the page) and the bar is re-tested on the rest. Token-first wallets are NOT dropped: tokens handed to
+      // fresh wallets with no coin is a bundle pattern, so they keep blocking the number with their reason.
+      const unreadable = ep.endState ? retryable.map((w) => ({ address: w.address, reason: origins.get(w.address)?.reason ?? "funding not read within the background attempts" })) : [];
+      const gone0 = new Set(unreadable.map((u) => u.address));
+      const base = gone0.size ? sample.filter((w) => !gone0.has(w.address)) : sample;
 
-      let graph = buildGraph({ chain, token, wallets: sample, origins, funders, deployers, cfg: cfgNow, computedAt: Date.now() });
+      let graph = buildGraph({ chain, token, wallets: base, origins, funders, deployers, cfg: cfgNow, computedAt: Date.now() });
       // Exchange-like custody wallets inside a group leave the sample (still counted in concentration), then re-link.
       if (!partialReason && graph.clusters.length) {
         const members = [...new Set(graph.clusters.flatMap((c) => c.members))];
@@ -239,11 +275,12 @@ export function startWalletClusters(chain: Chain, token: string, snapshot: Token
         const drop = exchangeLikeMembers(graph, hubs, deployers);
         if (drop.length) {
           const gone = new Set(drop.map((d) => d.address));
-          const kept = sample.filter((w) => !gone.has(w.address));
+          const kept = base.filter((w) => !gone.has(w.address));
           graph = buildGraph({ chain, token, wallets: kept, origins, funders, deployers, cfg: cfgNow, computedAt: Date.now() });
           graph.custody = drop.map((d) => ({ address: d.address, label: `exchange-like custody wallet (${d.label})`, pct: sample.find((w) => w.address === d.address)?.pct ?? null }));
         }
       }
+      if (unreadable.length) graph.unreadable = unreadable;
       const fields = meterFields({ graph, cfg: cfgNow, mode: modeFor(snap.ageHours, defaultConfig), pending, attempts: prog.attempts, buyersNa, partialReason });
       const { nullReasons, ...values } = fields;
       Object.assign(snap, values);
@@ -252,6 +289,7 @@ export function startWalletClusters(chain: Chain, token: string, snapshot: Token
       const nr = { ...snap.nullReasons };
       for (const k of Object.keys(values)) if ((values as Record<string, unknown>)[k] != null) delete nr[k];
       snap.nullReasons = { ...nr, ...nullReasons };
+      return clusterSourceLine(snap, Date.now() - t0);
     },
   };
 }

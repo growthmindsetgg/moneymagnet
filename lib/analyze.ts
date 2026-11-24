@@ -456,11 +456,13 @@ export async function collect(
   const clusters = startWalletClusters(chain, address, snapshot, results, deadline.at + requestRoomMs());
   await holderClassification(chain, address, snapshot, results, deadline);
   await holderStrengthStep(chain, address, snapshot, results, deadline);
-  await clusters.finish(snapshot).catch((err: Error) => {
+  const clusterLine = await clusters.finish(snapshot).catch((err: Error) => {
     snapshot.walletClusterState = "null";
     snapshot.walletClusterMeter = null;
     snapshot.nullReasons = { ...snapshot.nullReasons, walletClusterMeter: `wallet-cluster step failed: ${err.message.slice(0, 80)}` };
+    return { id: "clusters", label: "Wallet funding (cluster check)", state: "partial" as const, message: snapshot.nullReasons.walletClusterMeter };
   });
+  if (clusterLine) sources.push(clusterLine);
   return { snapshot, sources, raw };
 }
 

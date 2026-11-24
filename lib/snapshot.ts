@@ -531,7 +531,9 @@ export function deadLaunchOf(d: TokenSnapshot): boolean | null {
   if (d.ageHours < 1) return false;
   // Tx counts are not a lower bound on wallets (one wallet can trade 3 times): only unique-wallet counts clear the leg.
   const walletCounts = !/tx counts/i.test(d.buyersBasis ?? "");
-  const byBuyers = d.uniqueBuyers != null ? d.uniqueBuyers <= 2 : walletCounts && d.buyers24h != null && d.buyers24h > 2 ? false : null;
+  // Live unique-wallet buyers in 24h (> 2) contradict a "≤ 2 buyers" reading from another source: not dead by buyers.
+  const liveBuyers = walletCounts && d.buyers24h != null && d.buyers24h > 2;
+  const byBuyers = d.uniqueBuyers != null ? d.uniqueBuyers <= 2 && !liveBuyers : liveBuyers ? false : null;
   const byLiquidity = d.liquidityUsd != null ? d.liquidityUsd < 100 : null;
   const byCurve = d.deadCurve;
   const legs = [byBuyers, byLiquidity, byCurve];

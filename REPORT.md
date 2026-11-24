@@ -1,3 +1,25 @@
+# Fixes after the cluster deploys: background episodes, WIF dead launch, group wording, source line (2026-11-24)
+
+- **Background reads stopped for good after 30 minutes (a regression in stage B).**
+  - **Cause:** the progress record's `startedAt` never reset, so once 30 minutes had passed no new background read was scheduled until its 6h TTL ran out. Brett went from live 9/9 to null 7/9 after the `origin:v3` bump.
+  - **Fix:** `episodeStep()` (lib/cluster/collect.ts, pure and tested) starts a new episode once the last one has expired and some wallets were never read. The progress key is versioned with the origin key (`clusters:v3`).
+  - **The spec's B2 end state is now applied:** when an episode is spent, wallets unreadable through an outage or budget leave the sample (listed on the page) and the bar is re-tested.
+  - **Token-first wallets are deliberately NOT dropped:** tokens handed to fresh wallets with no coin is a bundle pattern, so they keep blocking the number with their reason.
+- **WIF was forced to F ("dead launch") with $3.75M liquidity and 9,230 buyers in 24h.** This predates the cluster work.
+  - **Source:** the Helius adapter derives a pump.fun bonding-curve address for every mint and replayed whatever touched it (84 unrelated txs on WIF ⇒ "0 buyers"). It now replays only when that account is owned by the pump.fun program, and otherwise says "not a pump.fun launch". A failed account read (null) keeps the replay, because an error is not proof.
+  - **Guard:** `deadLaunchOf`'s buyers leg can no longer fire when live unique-wallet `buyers24h` > 2 contradicts it. Tx counts don't count as wallets.
+  - **Unchanged:** a real never-traded pump launch (genuine curve account) and PEEK stay dead.
+  - **Fixture snapshots:** no tier moved.
+- **The group wording claimed the whole group was funded "within 27s" when only 2 of 4 were.** The evidence now describes the group: "all 4 first funded by X within 12 min (2 of them within 30s)".
+- **Source line:** "Wallet funding (cluster check)" now appears in Sources.
+  - **States:** ok when live; partial when pending or null, with the reason; skipped for n/a and Robinhood partial.
+  - **Never "failed",** so it cannot feed the adapter outage / U logic (no factor lists it in `data`).
+- **Tests:**
+  - `tests/dead-launch-guard.test.ts` (5);
+  - the episode tests (4), the custody picker, group wording, and a no-curve-account Helius test;
+  - `audit-solana`'s Helius mock now returns a pump.fun-owned curve account for the replay tests (they simulate a pump token);
+  - section7's first gate case states "≤ 2 buyers and none live", since its inputs had contradicted each other.
+
 # Wallet-cluster meter, stage C: the Linked wallets section and the wallet map (2026-11-24)
 
 ## What it shows
@@ -20,7 +42,7 @@
 - **Solana wallets that got tokens before SOL** showed no SOL receipt in their first 5 transactions (9 of 19 fartcoin holders). The window is now 25 transactions in the same single call.
 - **Origin cache key bumped to `origin:v3`,** so the new window applies at once. `originKey()` is now shared by origin.ts and collect.ts: collect.ts had rebuilt the key by hand, and a version bump would have silently broken its in-request lookups.
 - **Monad:** the public archive answers "Block requested not found" (shallow history), so funding is not readable there. After 3 background attempts this ends as null, or n/a when the source lists fewer than 8 wallets. A deeper archive (`MONAD_RPC_URL`) would fix it.
-- **Base:** live, meter 0, 9 of 9 top holders resolved, no linked group (brett).
+- **Base:** live, meter 0, 9 of 9 top holders resolved, no linked group (brett). That was before the origin:v3 bump; the episode bug above then left it null 7/9 until fixed.
 - **WIF read meter 32 with "2 wallets holding 16.4% (1 direct funding)", capped at A.** Those are exchange custody wallets: one exchange wallet funding another is not one person.
   - Added the spec's exchange-like holder test (correction 16), which first-cut stage B had skipped. A group member over the hub bar (≥ 1000 signatures in one page on Solana; nonce > 5000 on EVM) that is not founder / team and not deployer-funded leaves the cluster sample and stays counted in concentration. The graph is re-linked without it, and the section names it.
   - Cost: only group members are tested (usually a handful), cached 7 days at `hub:v1`. The funder hub test now uses the same helper.

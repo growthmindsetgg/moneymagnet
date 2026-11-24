@@ -3,7 +3,7 @@ import { rugcheck } from "@/lib/sources/rugcheck";
 import { jupiter } from "@/lib/sources/jupiter";
 import { scanhood } from "@/lib/sources/scanhood";
 import { pumpfeed } from "@/lib/sources/pumpfeed";
-import { solanaCurve, bondingCurveAddress } from "@/lib/sources/solanaCurve";
+import { solanaCurve, bondingCurveAddress, PUMP_PROGRAM } from "@/lib/sources/solanaCurve";
 import { helius } from "@/lib/sources/helius";
 import { heliusRpc, resetHeliusQueue } from "@/lib/sources/heliusQueue";
 import { applyZeroActivity, deadLaunchOf, deriveMetrics, emptySnapshot, mergeSnapshots } from "@/lib/snapshot";
@@ -228,7 +228,7 @@ describe("H3 / H4 / H5 Helius", () => {
   });
 
   /** A Helius mock: pump.fun mint whose creator comes from the creation tx, 2 curve trades, one unreadable. */
-  const heliusMock = (opts: { itemError?: { code: number; message: string }; curveAcctError?: string }) => {
+  const heliusMock = (opts: { itemError?: { code: number; message: string }; curveAcctError?: string; noCurveAccount?: boolean }) => {
     const curve = bondingCurveAddress(MINT);
     const methods: string[] = [];
     const createTx = {
@@ -262,7 +262,9 @@ describe("H3 / H4 / H5 Helius", () => {
       }
       methods.push(body.method);
       if (body.method === "getAccountInfo" && opts.curveAcctError) return json({ jsonrpc: "2.0", id: body.id, error: { code: -32602, message: opts.curveAcctError } });
-      if (body.method === "getAccountInfo") return json({ jsonrpc: "2.0", id: body.id, result: { value: null } });
+      if (body.method === "getAccountInfo" && opts.noCurveAccount) return json({ jsonrpc: "2.0", id: body.id, result: { value: null } });
+      // A pump.fun bonding curve, not graduated (the replay only runs on a pump.fun-owned curve account, 2026-11-24).
+      if (body.method === "getAccountInfo") return json({ jsonrpc: "2.0", id: body.id, result: { value: { owner: PUMP_PROGRAM, data: [Buffer.alloc(49).toString("base64"), "base64"] } } });
       return json({ jsonrpc: "2.0", id: body.id, result: result(body.method, body.params) });
     });
     return methods;
@@ -278,6 +280,16 @@ describe("H3 / H4 / H5 Helius", () => {
     }
     expect(r.failedFields ?? []).not.toContain("uniqueBuyers");
     expect(r.status.state).toBe("partial");
+  });
+
+  it("no pump.fun curve account (e.g. WIF): no replay, curve fields null with the reason — never '0 buyers'", async () => {
+    vi.stubEnv("HELIUS_API_KEY", "k");
+    const methods = heliusMock({ noCurveAccount: true });
+    const r = await helius(MINT);
+    expect(r.data.uniqueBuyers).toBeUndefined();
+    expect(r.data.nullReasons?.uniqueBuyers).toBe("not a pump.fun launch (the derived bonding-curve address is not a pump.fun account)");
+    // The curve address history is never read (its txs would be unrelated traffic).
+    expect(methods.filter((m) => m === "getSignaturesForAddress").length).toBeLessThanOrEqual(1);
   });
 
   it("a 429 inside the batch is an outage: the curve fields are stale-eligible", async () => {

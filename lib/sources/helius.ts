@@ -236,12 +236,16 @@ export async function helius(mint: string): Promise<AdapterResult> {
   const creatorAtCreation =
     creator && createTx?.meta ? (createTx.meta.postTokenBalances ?? []).filter((b) => b.mint === mint && b.owner === creator).reduce((a, b) => a + BigInt(b.uiTokenAmount.amount), 0n) : null;
   if (creator) data.deployerAddress = creator;
-  const sigs = await call<{ signature: string; err: unknown }[]>("getSignaturesForAddress", [curve, { limit: 1000 }]).catch((e) => (lost(CURVE_FIELDS)(e), []));
+  // The derived curve address exists for every mint; only a pump.fun-owned account is a bonding curve. Anything else
+  // touching that address (e.g. 84 unrelated txs on WIF) is not curve trading and must not read as "0 buyers".
+  // A failed account read (curveAcct null) keeps the replay: an error is not proof of "not pump.fun".
+  const notPump = curveAcct != null && curveAcct.value?.owner !== PUMP_PROGRAM;
+  const sigs = notPump ? [] : await call<{ signature: string; err: unknown }[]>("getSignaturesForAddress", [curve, { limit: 1000 }]).catch((e) => (lost(CURVE_FIELDS)(e), []));
   const ok = sigs.filter((s) => !s.err);
   if (!sigs.length && failed.has("allBuyersExited")) {
     for (const m of CURVE_FIELDS) nullReasons[m] = failed.get(m)!;
   } else if (!sigs.length) {
-    for (const m of ["allBuyersExited", "uniqueBuyers", "makersCount", "devBuySharePct", "devBuySol", "snipeRatioPct"]) nullReasons[m] = "no pump.fun bonding-curve history for this mint";
+    for (const m of ["allBuyersExited", "uniqueBuyers", "makersCount", "devBuySharePct", "devBuySol", "snipeRatioPct"]) nullReasons[m] = notPump ? "not a pump.fun launch (the derived bonding-curve address is not a pump.fun account)" : "no pump.fun bonding-curve history for this mint";
   } else if (sigs.length >= 1000 || ok.length > MAX_TRADE_TXS) {
     for (const m of ["allBuyersExited", "uniqueBuyers", "makersCount", "devBuySharePct", "devBuySol", "snipeRatioPct"]) nullReasons[m] = `curve history too long to replay per request (> ${MAX_TRADE_TXS} trades)`;
   } else {

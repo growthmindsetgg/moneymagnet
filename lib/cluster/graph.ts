@@ -99,6 +99,8 @@ export interface ClusterGraph {
   exclusions: { address: string; kind: FunderKind; label: string; wallets: number }[];
   /** Exchange-like custody wallets left out of the sample (still counted in concentration). */
   custody?: { address: string; label: string; pct: number | null }[];
+  /** Wallets whose funding stayed unreadable (outage / budget) after the background attempts: left out of the sample. */
+  unreadable?: { address: string; reason: string }[];
 }
 
 const short = (a: string) => (a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a);
@@ -248,7 +250,7 @@ export function buildGraph(input: {
         includesFounder: founderish.length > 0 || (funder != null && deployers.has(norm(funder))),
         founderOnly: founderish.length === g.length,
         edgeKinds: [...new Set(inner.map((e) => e.kind))],
-        evidence: summarise(inner, g.length, funder),
+        evidence: summarise(inner, g, funder, cfg.sameTimeSec),
       };
     })
     // Deterministic order: largest supply first, then address.
@@ -292,20 +294,32 @@ export function exchangeLikeMembers(graph: ClusterGraph, hubs: Map<string, strin
   return out;
 }
 
-function summarise(inner: ClusterEdge[], size: number, funder: string | null): string {
+/** Duration as "27s" / "12 min" / "1.5 h". */
+const span = (sec: number) => (sec < 120 ? `${Math.round(sec)}s` : sec < 5400 ? `${Math.round(sec / 60)} min` : `${(Math.round(sec / 360) / 10).toFixed(1)} h`);
+
+/**
+ * The group's evidence line. Counts describe the whole group, never one pair: how many came from the main funder and
+ * over what span, and how many of those fell inside the same-time window.
+ */
+function summarise(inner: ClusterEdge[], members: ClusterNode[], funder: string | null, sameTimeSec: number): string {
   const kinds = new Map<string, number>();
   for (const e of inner) kinds.set(e.kind, (kinds.get(e.kind) ?? 0) + 1);
   const parts: string[] = [];
-  const st = inner.filter((e) => e.kind === "same_time_funder");
-  if (st.length) {
-    const gaps = st.map((e) => e.gapSec ?? 0);
-    parts.push(`funded by one wallet${funder ? ` (${short(funder)})` : ""} within ${Math.max(...gaps)}s`);
+  const fromMain = funder ? members.filter((n) => n.origin?.funder === funder && n.origin.fundT != null) : [];
+  if (fromMain.length >= 2) {
+    const ts = fromMain.map((n) => n.origin!.fundT!).sort((a, b) => a - b);
+    let sameTime = 1;
+    for (let i = 0, j = 0; j < ts.length; j++) {
+      while (ts[j] - ts[i] > sameTimeSec) i++;
+      sameTime = Math.max(sameTime, j - i + 1);
+    }
+    const all = fromMain.length === members.length ? `all ${members.length}` : `${fromMain.length} of ${members.length}`;
+    parts.push(`${all} first funded by ${short(funder!)} within ${span(ts[ts.length - 1] - ts[0])}${sameTime >= 2 && sameTime < fromMain.length ? ` (${sameTime} of them within ${sameTimeSec}s)` : ""}`);
   }
-  if (kinds.get("shared_funder")) parts.push(`shared funder within 30 min`);
   if (kinds.get("direct_fund")) parts.push(`${kinds.get("direct_fund")} direct funding${kinds.get("direct_fund")! > 1 ? "s" : ""}`);
   if (kinds.get("hub_spray")) parts.push(`sprayed back to back by a high-volume sender`);
   if (kinds.get("composite")) parts.push(`${kinds.get("composite")} pair${kinds.get("composite")! > 1 ? "s" : ""} with two independent clues`);
-  return parts.length ? parts.join("; ") : `${size} wallets linked`;
+  return parts.length ? parts.join("; ") : `${members.length} wallets linked`;
 }
 
 export { pctText };

@@ -96,7 +96,8 @@ describe("§7b zero is data, not missing", () => {
 describe("§7c dead-launch gate", () => {
   const gate = (o: Partial<TokenSnapshot>) => deadLaunchOf({ ...perfectLaunch("solana", { address: MEME }), ...o });
   it("fires at ≥ 1h on ≤ 2 buyers, < $100 liquidity or a dead curve; never before 1h", () => {
-    expect(gate({ ageHours: 2, uniqueBuyers: 2 })).toBe(true);
+    // ≤ 2 buyers and none live in 24h (live unique buyers > 2 would contradict it, 2026-11-24).
+    expect(gate({ ageHours: 2, uniqueBuyers: 2, buyers24h: 2 })).toBe(true);
     expect(gate({ ageHours: 2, uniqueBuyers: 50, liquidityUsd: 80 })).toBe(true);
     expect(gate({ ageHours: 2, uniqueBuyers: 50, liquidityUsd: 5_000, deadCurve: true })).toBe(true);
     expect(gate({ ageHours: 0.5, uniqueBuyers: 0, liquidityUsd: 0 })).toBe(false);

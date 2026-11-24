@@ -139,6 +139,11 @@ export default function ClusterMeter({ report }: { report: ScoreReport }) {
         </details>
       )}
 
+      {graph?.unreadable && graph.unreadable.length > 0 && (
+        <p className="break-words text-xs text-muted" data-testid="wallet-clusters-unreadable">
+          Left out after {cfg?.pending.maxAttempts ?? 3} background attempts (funding not readable): {graph.unreadable.map((u) => `${short(u.address)} — ${u.reason}`).join(" · ")}
+        </p>
+      )}
       {graph?.custody && graph.custody.length > 0 && (
         <p className="break-words text-xs text-muted" data-testid="wallet-clusters-custody">
           Left out of linking (exchange-like custody, still counted in concentration): {graph.custody.map((c) => `${short(c.address)} ${pctText(c.pct)} — ${c.label}`).join(" · ")}

@@ -32,7 +32,10 @@ describe("cluster graph (pure)", () => {
     expect(g.clusters[0].members).toHaveLength(6);
     expect(g.clusters[0].supplyPct).toBe(24);
     expect(g.edges.filter((e) => e.kind === "same_time_funder").length).toBe(15);
-    expect(g.clusters[0].evidence).toMatch(/funded by one wallet \(SPRAYER\) within 30s/);
+    expect(g.clusters[0].evidence).toMatch(/^all 6 first funded by SPRAYER within 30s/);
+    // A group whose funding spans longer than the window says how many fell inside it (counts describe the group).
+    const wide = graphOf([holder(1, 5), holder(2, 5), holder(3, 5), holder(4, 5)], [origin("w01", "F", T), origin("w02", "F", T + 27), origin("w03", "F", T + 600), origin("w04", "F", T + 700)]);
+    expect(wide.clusters[0].evidence).toMatch(/^all 4 first funded by F within 12 min \(2 of them within 30s\)/);
     expect(g.nodes.filter((n) => n.clusterId === "A")).toHaveLength(6);
   });
 
@@ -303,5 +306,36 @@ describe("scoring: wallet_clusters factor and caps", () => {
     const f = r.groups.flatMap((g) => g.factors).find((x) => x.id === "wallet_clusters")!;
     expect(f.applicable).toBe(false);
     expect(f.missing).toBe(false);
+  });
+});
+
+describe("background episodes (B2)", () => {
+  // Imported lazily: collect.ts pulls in next/server's after(), which these pure checks do not need.
+  const step = async (...a: Parameters<typeof import("@/lib/cluster/collect").episodeStep>) => (await import("@/lib/cluster/collect")).episodeStep(...a);
+  const NOW = 1_800_000_000_000;
+  const MIN = 60_000;
+
+  it("an expired episode with never-read wallets starts a new one and schedules reads (the brett regression)", async () => {
+    const r = await step({ attempts: 0, startedAt: NOW - 120 * MIN }, NOW, cfg, { neverRead: 2, retryable: 2, unresolved: 2 });
+    expect(r.schedule).toBe(true);
+    expect(r.progress).toEqual({ attempts: 1, startedAt: NOW });
+    expect(r.endState).toBe(false);
+  });
+  it("within an episode: up to 3 attempts, then the end state (no new episode until it expires)", async () => {
+    const third = await step({ attempts: 2, startedAt: NOW - 10 * MIN }, NOW, cfg, { neverRead: 0, retryable: 3, unresolved: 3 });
+    expect(third.schedule).toBe(true);
+    expect(third.progress.attempts).toBe(3);
+    const spent = await step({ attempts: 3, startedAt: NOW - 10 * MIN }, NOW, cfg, { neverRead: 1, retryable: 3, unresolved: 3 });
+    expect(spent.schedule).toBe(false);
+    expect(spent.endState).toBe(true);
+  });
+  it("expired with nothing never-read: no new episode, end state for what is still owed", async () => {
+    const r = await step({ attempts: 1, startedAt: NOW - 60 * MIN }, NOW, cfg, { neverRead: 0, retryable: 2, unresolved: 2 });
+    expect(r.schedule).toBe(false);
+    expect(r.endState).toBe(true);
+  });
+  it("everything resolved: attempts reset, nothing scheduled, no end state", async () => {
+    const r = await step({ attempts: 2, startedAt: NOW - 5 * MIN }, NOW, cfg, { neverRead: 0, retryable: 0, unresolved: 0 });
+    expect(r).toEqual({ progress: { attempts: 0, startedAt: NOW }, schedule: false, endState: false });
   });
 });
