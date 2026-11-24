@@ -1,3 +1,37 @@
+# Wallet-cluster meter, stage C: the Linked wallets section and the wallet map (2026-11-24)
+
+## What it shows
+- **`components/ClusterMeter.tsx` (Linked wallets, default view, under Largest holder):**
+  - the 0–100 bar with band edges, the number and the band label;
+  - the largest linked group and same-time funding as sentences;
+  - any binding cluster cap in red;
+  - coverage ("N of M wallets resolved · top holders, first buyers · % of their supply resolved") and the points the factor gave;
+  - a wallet table, the infrastructure exclusions, and a method line.
+- **States:** pending, null, n/a and partial show their reason; a number never appears without the coverage bar. The section is absent on reports made before the meter existed.
+- **`components/ClusterBubbles.tsx` (wallet map):** deterministic inline SVG (viewBox 640×400, width 100%, no library, no randomness).
+  - Up to 5 linked groups as coloured cells, the shared funder as a square in the middle, members on a ring (a spiral above 8) sized by the share of supply held now.
+  - Every other sampled wallet sits in a grey band: dotted when not read, dashed when funded by infrastructure.
+  - Founder and team wallets get a thick red ring; weak clues are dashed lines; composite pairs are marked "2×".
+  - Every wallet is a focusable `<g role="img">` with a title (address, % held, buyer rank, group, funder).
+  - Colours are `--cluster-1..5`, defined for light mode and both dark-mode selectors.
+- **The research view's holder table and cluster read-out** now use the same groups as the meter ("group A ×6"). Before, they used the old Helius top-20 grouping, which could disagree on the same page.
+
+## Fixes found on the first production run (stage B deploy)
+- **Solana wallets that got tokens before SOL** showed no SOL receipt in their first 5 transactions (9 of 19 fartcoin holders). The window is now 25 transactions in the same single call.
+- **Origin cache key bumped to `origin:v3`,** so the new window applies at once. `originKey()` is now shared by origin.ts and collect.ts: collect.ts had rebuilt the key by hand, and a version bump would have silently broken its in-request lookups.
+- **Monad:** the public archive answers "Block requested not found" (shallow history), so funding is not readable there. After 3 background attempts this ends as null, or n/a when the source lists fewer than 8 wallets. A deeper archive (`MONAD_RPC_URL`) would fix it.
+- **Base:** live, meter 0, 9 of 9 top holders resolved, no linked group (brett).
+
+## Tests
+`tests/cluster-ui.test.ts` (7):
+- two renders of the map are byte-identical;
+- every wallet is placed once, inside the canvas, with no NaN;
+- every wallet is focusable with a title;
+- the live section (meter 43 "Coordinated group", lines, the binding C cap);
+- pending and null show reasons with no number;
+- the section is absent on old reports;
+- the full report renders it.
+
 # Wallet-cluster meter, stages A + B: origins, graph, meter, scoring (2026-11-24)
 
 Owner request: rate how much of a meme's buying and holding is one person, using unique vs same-time-funded wallets, as a 0–100 meter used in scoring (bubble-map style).

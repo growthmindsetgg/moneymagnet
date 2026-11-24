@@ -37,7 +37,9 @@ export interface Origin {
   reason?: string;
 }
 
-const KEY = (chain: Chain, wallet: string) => `origin:v2:${chain}:${chain === "solana" ? wallet : wallet.toLowerCase()}`;
+/** The one cache / memo key for a wallet's origin (also used by lib/cluster/collect.ts for the in-request memo). */
+export const originKey = (chain: Chain, wallet: string) => `origin:v3:${chain}:${chain === "solana" ? wallet : wallet.toLowerCase()}`;
+const KEY = originKey;
 /** Non-final results are re-read after at most an hour (a read error is never cached as a fact). */
 const NON_FINAL_TTL_S = 3_600;
 /** EVM blocks deep before a funding receipt counts as final. */
@@ -46,6 +48,8 @@ const EVM_FINALITY_BLOCKS = 64;
 const SOLANA_FINAL_AGE_S = 120;
 /** k-ary bisection: ~6 probes per round over ~10 rounds ≈ 60 archive calls per search (vs ~100 at k = 16). */
 const SEARCH_K = 6;
+/** Solana: a wallet's first transactions read in one call. 25 covers wallets that received tokens before their first SOL. */
+const SOLANA_FIRST_TXS = 25;
 const SEARCH_ROUNDS = 14;
 
 const DISPERSE: Record<string, { address: string; label: string }[]> = (disperse as { chains: Record<string, { address: string; label: string }[]> }).chains;
@@ -146,7 +150,7 @@ async function solanaOrigin(helius: Helius, wallet: string, ctx: OriginCtx): Pro
   let method: Origin["method"] = "helius-gtfa";
   if (!gtfaUnavailable) {
     try {
-      const r = await helius<{ data: FullTx[] }>("getTransactionsForAddress", [wallet, { sortOrder: "asc", limit: 5, transactionDetails: "full", encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+      const r = await helius<{ data: FullTx[] }>("getTransactionsForAddress", [wallet, { sortOrder: "asc", limit: SOLANA_FIRST_TXS, transactionDetails: "full", encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
       txs = r.data ?? [];
     } catch (e) {
       // The plan may not offer the method: remember it for this instance and use the signatures path.
@@ -170,7 +174,7 @@ async function solanaOrigin(helius: Helius, wallet: string, ctx: OriginCtx): Pro
     if (!r.funder) return { wallet, fundT: t, fundRef: tx.slot, funder: null, funderKind: "program", via: null, viaRecipients: r.credited, fundTx: tx.transaction.signatures[0] ?? null, method, final, proof: "first-tx", reason: r.why };
     return { wallet, fundT: t, fundRef: tx.slot, funder: r.funder, funderKind: "eoa", via: null, viaRecipients: r.credited, fundTx: tx.transaction.signatures[0] ?? null, method, final, proof: "first-tx" };
   }
-  return unreadable(wallet, method === "helius-gtfa" ? "first 5 transactions carry no SOL receipt (token-first wallet)" : "the oldest transaction carries no SOL receipt", method);
+  return unreadable(wallet, method === "helius-gtfa" ? `first ${txs.length} transaction${txs.length === 1 ? "" : "s"} carry no SOL receipt (token-first wallet: tokens arrived before any SOL)` : "the oldest transaction carries no SOL receipt", method);
 }
 
 // ---------------------------------------------------------------------------------------------------------------

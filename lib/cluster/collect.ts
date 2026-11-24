@@ -7,7 +7,7 @@ import { archiveRpc, chainRpc, makeRpc, type Rpc } from "../onchain/rpc";
 import { chainCexLabel, chainInfraEntry } from "../onchain/chainInfra";
 import { infraEntry } from "../onchain/infra";
 import { heliusClient, isProgramAddress, type Helius } from "../timemachine/solana";
-import { cachedOrigins, originOf, type FunderKind, type Origin, type OriginCtx } from "../onchain/origin";
+import { cachedOrigins, originKey, originOf, type FunderKind, type Origin, type OriginCtx } from "../onchain/origin";
 import { buildGraph, nodeStatus, type FunderFact, type SampleWallet, type WalletClustersCfg } from "./graph";
 import { meterFields } from "./meter";
 
@@ -170,7 +170,7 @@ export function startWalletClusters(chain: Chain, token: string, snapshot: Token
       await Promise.race([inline, new Promise((r) => setTimeout(r, Math.max(0, inlineDeadline - Date.now())))]);
       const origins = new Map<string, Origin>(await cached);
       for (const w of wallets) {
-        const p = memo.get(`origin:v2:${chain}:${norm(chain, w.address)}`);
+        const p = memo.get(originKey(chain, w.address));
         if (!p) continue;
         const o = await Promise.race([p, Promise.resolve(null)]);
         if (o) origins.set(w.address, o);

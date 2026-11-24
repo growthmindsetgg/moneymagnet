@@ -22,6 +22,7 @@ import SocialPanel from "./SocialPanel";
 import RawData from "./RawData";
 import { largestHolderLine, txUrl } from "@/lib/holderLine";
 import { clusterSummary, deployerLine, holdersTable, poolList, poolLiquidity, short } from "./research";
+import ClusterMeter from "./ClusterMeter";
 
 export { TIER_TEXT };
 
@@ -1004,6 +1005,7 @@ export default function Report({ report, cached = false, cacheAgeSeconds = null,
           <VerificationCard v={report.verification} />
         </div>
         <LargestHolder report={report} />
+        <ClusterMeter report={report} />
         <HolderStrengthDetail report={report} />
         <LiquidityHeld report={report} />
       </section>

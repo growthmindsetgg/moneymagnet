@@ -31,9 +31,17 @@ export interface HoldersTable {
   clusterNote: string | null;
 }
 
-function fundingOf(report: ScoreReport): { funding: Funding[]; largest: Set<string> } {
+function fundingOf(report: ScoreReport): { funding: Funding[]; largest: Set<string>; groupOf: Map<string, string> | null } {
+  // The wallet-cluster graph, when the report has one: the same groups the Linked wallets meter shows.
+  const g = report.token.walletClusterGraph;
+  if (g) {
+    const funding = g.nodes.filter((n) => n.origin).map((n) => ({ wallet: n.address, funder: n.status === "resolved" ? n.origin!.funder : null, firstTx: n.origin!.fundT }));
+    const groupOf = new Map<string, string>();
+    for (const c of g.clusters) for (const m of c.members) groupOf.set(key(report, m), `group ${c.id} ×${c.members.length}`);
+    return { funding, largest: new Set(g.clusters[0]?.members ?? []), groupOf };
+  }
   const h = report.raw?.helius as { funding?: Funding[]; clusters?: { wallets?: string[] } } | undefined;
-  return { funding: h?.funding ?? [], largest: new Set(h?.clusters?.wallets ?? []) };
+  return { funding: h?.funding ?? [], largest: new Set(h?.clusters?.wallets ?? []), groupOf: null };
 }
 
 /** Top 20 non-liquidity holders: on-chain balances first, swap-index buys/sells merged in by address. */
@@ -42,7 +50,7 @@ export function holdersTable(report: ScoreReport): HoldersTable {
   const swaps = new Map((t.swapHolders ?? []).map((h) => [key(report, h.address), h] as const));
   const wallet = (h: HolderRow) => h.kind !== "liquidity";
   const base = (t.holders?.length ? t.holders : (t.swapHolders ?? [])).filter(wallet).slice(0, 20);
-  const { funding, largest } = fundingOf(report);
+  const { funding, largest, groupOf } = fundingOf(report);
   const byWallet = new Map(funding.map((f) => [key(report, f.wallet), f] as const));
   const funderCount = new Map<string, number>();
   for (const f of funding) if (f.funder) funderCount.set(f.funder, (funderCount.get(f.funder) ?? 0) + 1);
@@ -57,7 +65,7 @@ export function holdersTable(report: ScoreReport): HoldersTable {
       buys: h.buys ?? s?.buys ?? null,
       sells: h.sells ?? s?.sells ?? null,
       firstSeen: f?.firstTx ? new Date(f.firstTx * 1000).toISOString() : null,
-      cluster: largest.has(h.address) && largest.size >= 2 ? `cluster ×${largest.size}` : shared >= 2 ? `same funder ×${shared}` : null,
+      cluster: groupOf ? (groupOf.get(k) ?? null) : largest.has(h.address) && largest.size >= 2 ? `cluster ×${largest.size}` : shared >= 2 ? `same funder ×${shared}` : null,
     };
   });
   const anyFirst = rows.some((r) => r.firstSeen);
@@ -118,7 +126,11 @@ export function deployerLine(report: ScoreReport): string {
 export function clusterSummary(report: ScoreReport): string[] {
   const t = report.token;
   const out: string[] = [];
-  if (t.fundingClusterMax != null) out.push(`Largest same-funder cluster: ${t.fundingClusterMax} wallets${t.clusterSupplyPct != null ? `, ${pct(t.clusterSupplyPct)} of supply` : ""}`);
+  if (t.walletClusterState) {
+    // The wallet-cluster meter (lib/cluster): the same read-out as the Linked wallets section.
+    out.push(t.walletClusterMeter != null ? `Linked wallets meter: ${t.walletClusterMeter}/100 — ${t.clusterLargestText ?? ""}` : `Linked wallets: not measured — ${why(t, "walletClusterMeter") ?? t.walletClusterState}`);
+    if (t.clusterSameTimeText) out.push(t.clusterSameTimeText.charAt(0).toUpperCase() + t.clusterSameTimeText.slice(1));
+  } else if (t.fundingClusterMax != null) out.push(`Largest same-funder cluster: ${t.fundingClusterMax} wallets${t.clusterSupplyPct != null ? `, ${pct(t.clusterSupplyPct)} of supply` : ""}`);
   else out.push(`Funding clusters: no data — ${why(t, "fundingClusterMax") ?? "not measured on this chain"}`);
   if (t.freshWalletsTop20 != null) out.push(`Fresh wallets in the top 20: ${t.freshWalletsTop20}`);
   if (t.insiderNetworks != null) out.push(`Insider networks: ${t.insiderNetworks}${t.insiderSupplyPct != null ? ` holding ${pct(t.insiderSupplyPct)}` : ""}`);

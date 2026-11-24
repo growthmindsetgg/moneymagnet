@@ -40,6 +40,12 @@
   --bad-ink: #ffffff;
   /* Red as text on paper (the --bad fill is 4.5:1 only with white on it): 6.0:1, same as tier F. */
   --bad-text: #b91c1c;
+  /* Wallet-map cluster colours (components/ClusterBubbles.tsx): distinct hues, ≥ 3:1 against paper. */
+  --cluster-1: #dc2626;
+  --cluster-2: #7c3aed;
+  --cluster-3: #0369a1;
+  --cluster-4: #b45309;
+  --cluster-5: #be185d;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   color-scheme: light;
 }
@@ -59,6 +65,11 @@
     --bad: #ef4444;
     --bad-ink: #0a0a0a;
     --bad-text: #f87171;
+    --cluster-1: #f87171;
+    --cluster-2: #a78bfa;
+    --cluster-3: #38bdf8;
+    --cluster-4: #fbbf24;
+    --cluster-5: #f472b6;
     color-scheme: dark;
   }
 }
@@ -75,6 +86,11 @@
   --bad: #ef4444;
   --bad-ink: #0a0a0a;
   --bad-text: #f87171;
+  --cluster-1: #f87171;
+  --cluster-2: #a78bfa;
+  --cluster-3: #38bdf8;
+  --cluster-4: #fbbf24;
+  --cluster-5: #f472b6;
   color-scheme: dark;
 }
 
